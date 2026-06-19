@@ -12,7 +12,7 @@ export function WebBadge() {
 
   return (
     <ThemedView style={styles.container}>
-      <ThemedText type="code" themeColor="textSecondary" style={styles.versionText}>
+      <ThemedText type="code" style={[styles.versionText, { color: '#9C8E84' }]}>
         v{version}
       </ThemedText>
       <Image
