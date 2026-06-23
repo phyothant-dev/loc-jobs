@@ -2,6 +2,7 @@ import { router, useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Alert, FlatList, Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { Ionicons } from "@expo/vector-icons";
 import { Skeleton } from '@/components/skeleton'
@@ -41,13 +42,15 @@ function relativeTime(dateStr: string, t?: (key: string) => string) {
   return new Date(dateStr).toLocaleDateString();
 }
 
-function buildConversations(msgs: any[], userId: string): Conversation[] {
+function buildConversations(msgs: any[], userId: string, lastReadAt: Map<string, number>): Conversation[] {
   const seen = new Map<string, any>();
   for (const m of msgs) {
     const otherId = m.sender_id === userId ? m.receiver_id : m.sender_id;
     const key = `${m.job_id}-${otherId}`;
     const existing = seen.get(key);
-    if (!existing || new Date(m.created_at) > new Date(existing.created_at)) {
+    const msgTime = new Date(m.created_at).getTime()
+    const isUnread = m.receiver_id === userId && msgTime > (lastReadAt.get(key) || 0)
+    if (!existing || msgTime > new Date(existing.lastMessageTime).getTime()) {
       const otherName =
         m.sender_id === userId
           ? m.receiver?.display_name || ""
@@ -65,10 +68,10 @@ function buildConversations(msgs: any[], userId: string): Conversation[] {
         otherAvatarUrl: otherAvatar,
         lastMessage: m.content || (m.image_url ? "📷 Photo" : ""),
         lastMessageTime: m.created_at,
-        unreadCount: existing ? existing.unreadCount + (m.receiver_id === userId ? 1 : 0) : (m.receiver_id === userId ? 1 : 0),
+        unreadCount: existing ? existing.unreadCount + (isUnread ? 1 : 0) : (isUnread ? 1 : 0),
       });
     } else {
-      if (m.receiver_id === userId) {
+      if (isUnread) {
         existing.unreadCount++
       }
     }
@@ -83,7 +86,13 @@ export default function ChatScreen() {
   const { t } = useLocale();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
-  const viewedKeys = useRef<Set<string>>(new Set())
+  const lastReadAt = useRef<Map<string, number>>(new Map())
+
+  useEffect(() => {
+    AsyncStorage.getItem('chat_last_read').then((val) => {
+      if (val) lastReadAt.current = new Map(JSON.parse(val))
+    })
+  }, [])
 
   const fetchAll = useCallback(async () => {
     if (!user) return;
@@ -96,7 +105,7 @@ export default function ChatScreen() {
         .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
         .order("created_at", { ascending: false });
       if (msgs) {
-        setConversations(buildConversations(msgs as any[], user.id));
+        setConversations(buildConversations(msgs as any[], user.id, lastReadAt.current));
       }
     } catch (error) {
       console.error('Failed to fetch conversations', error);
@@ -139,7 +148,7 @@ export default function ChatScreen() {
               msg.sender_id === user.id
                 ? msg.receiver?.avatar_url || null
                 : msg.sender?.avatar_url || null
-            const isUnread = msg.receiver_id === user.id && !viewedKeys.current.has(key)
+            const isUnread = msg.receiver_id === user.id && new Date(msg.created_at).getTime() > (lastReadAt.current.get(key) || 0)
             const entry: Conversation = {
               key,
               jobId: msg.job_id,
@@ -170,7 +179,8 @@ export default function ChatScreen() {
   }, [user?.id])
 
   const handlePress = (item: Conversation) => {
-    viewedKeys.current.add(item.key)
+    lastReadAt.current.set(item.key, Date.now())
+    AsyncStorage.setItem('chat_last_read', JSON.stringify(Array.from(lastReadAt.current.entries())))
     setConversations((prev) =>
       prev.map((c) => (c.key === item.key ? { ...c, unreadCount: 0 } : c))
     )

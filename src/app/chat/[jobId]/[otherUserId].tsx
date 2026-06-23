@@ -4,6 +4,7 @@ import { router, useLocalSearchParams } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import * as ImagePicker from 'expo-image-picker'
 import * as FileSystem from 'expo-file-system/legacy'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 
 import { Ionicons } from '@expo/vector-icons'
 import { ThemedText } from '@/components/themed-text'
@@ -80,6 +81,18 @@ export default function ChatDetailScreen() {
   }, [jobId, otherUserId, user])
 
   useEffect(() => { loadInitial() }, [loadInitial])
+
+  useEffect(() => {
+    if (!jobId || !otherUserId || !user) return
+    const key = `${jobId}-${otherUserId}`
+    try {
+      AsyncStorage.getItem('chat_last_read').then((val) => {
+        const map = val ? new Map(JSON.parse(val)) : new Map()
+        map.set(key, Date.now())
+        AsyncStorage.setItem('chat_last_read', JSON.stringify(Array.from(map.entries())))
+      })
+    } catch {}
+  }, [jobId, otherUserId, user])
 
   useEffect(() => {
     if (!jobId) return

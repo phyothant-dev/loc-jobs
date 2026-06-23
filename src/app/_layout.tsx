@@ -63,30 +63,26 @@ export default function RootLayout() {
 
   if (!fontsLoaded || showOnboarding === null) return null
 
-  if (showOnboarding) {
-    return (
-      <GestureHandlerRootView style={{ flex: 1 }} onLayout={onLayoutRootView}>
-        <OnboardingScreen onDone={() => setShowOnboarding(false)} />
-      </GestureHandlerRootView>
-    )
-  }
-
   return (
     <GestureHandlerRootView style={{ flex: 1 }} onLayout={onLayoutRootView}>
       <LocaleProvider>
-        <AuthProvider>
-          <RootGuard />
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="(auth)" />
-            <Stack.Screen name="(tabs)" />
-            <Stack.Screen name="post" options={{ presentation: 'modal' }} />
-            <Stack.Screen name="edit-profile" options={{ presentation: 'modal' }} />
-            <Stack.Screen name="job/[id]" />
-            <Stack.Screen name="chat/[jobId]/[otherUserId]" />
-            <Stack.Screen name="notifications" />
-            <Stack.Screen name="user/[id]" />
-          </Stack>
-        </AuthProvider>
+        {showOnboarding ? (
+          <OnboardingScreen onDone={() => setShowOnboarding(false)} />
+        ) : (
+          <AuthProvider>
+            <RootGuard />
+            <Stack screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="(auth)" />
+              <Stack.Screen name="(tabs)" />
+              <Stack.Screen name="post" options={{ presentation: 'modal' }} />
+              <Stack.Screen name="edit-profile" options={{ presentation: 'modal' }} />
+              <Stack.Screen name="job/[id]" />
+              <Stack.Screen name="chat/[jobId]/[otherUserId]" />
+              <Stack.Screen name="notifications" />
+              <Stack.Screen name="user/[id]" />
+            </Stack>
+          </AuthProvider>
+        )}
       </LocaleProvider>
     </GestureHandlerRootView>
   )
