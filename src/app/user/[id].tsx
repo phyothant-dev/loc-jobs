@@ -211,6 +211,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: FontSize.xl,
+    lineHeight: 40,
     fontWeight: 700,
     color: Brand.text,
     letterSpacing: -0.5,

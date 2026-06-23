@@ -1,6 +1,6 @@
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Alert, FlatList, Image, Pressable, StyleSheet, View } from "react-native";
+import { Alert, FlatList, Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Ionicons } from "@expo/vector-icons";
@@ -288,9 +288,9 @@ export default function ChatScreen() {
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                         {item.unreadCount > 0 && (
                           <View style={styles.unreadBadge}>
-                            <ThemedText style={styles.unreadBadgeText}>
+                            <Text style={styles.unreadBadgeText}>
                               {item.unreadCount > 9 ? '9+' : item.unreadCount}
-                            </ThemedText>
+                            </Text>
                           </View>
                         )}
                         <ThemedText
@@ -331,11 +331,12 @@ export default function ChatScreen() {
 const styles = StyleSheet.create({
   header: {
     paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.four,
+    paddingTop: Spacing.two,
     paddingBottom: Spacing.four,
   },
   headerTitle: {
     fontSize: FontSize.xl,
+    lineHeight: 40,
     fontWeight: 700,
     color: Brand.text,
     letterSpacing: -0.5,

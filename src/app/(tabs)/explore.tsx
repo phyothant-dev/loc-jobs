@@ -194,441 +194,432 @@ export default function AllJobsScreen() {
       style={{ flex: 1, backgroundColor: Brand.bg }}
       edges={["top"]}
     >
-      <View style={{ flex: 1 }}>
-        <View style={styles.header}>
-          <ThemedText style={styles.headerTitle}>{t('explore.title')}</ThemedText>
-          <Pressable
-            onPress={() => {
-              setSelectedCity(null);
-              setSelectedRegion(null);
-              setSelectedWorkType(null);
-              setSelectedCategory(null);
-              setSelectedEmploymentType(null);
-              setMinPrice('');
-              setMaxPrice('');
-              setSearch("");
-            }}
-          >
-            <ThemedText type="smallBold" style={{ color: hasAnyFilter ? Brand.primary : Brand.textSecondary }}>
-              {t('explore.reset')}
-            </ThemedText>
-          </Pressable>
-        </View>
+      <PickerModal
+        visible={showWorkTypePicker}
+        title={t('explore.selectType')}
+        options={[
+          t('explore.allTypes'),
+          ...WORK_TYPES.map((w) => w.charAt(0).toUpperCase() + w.slice(1)),
+        ]}
+        selected={
+          selectedWorkType
+            ? selectedWorkType.charAt(0).toUpperCase() +
+              selectedWorkType.slice(1)
+            : t('explore.allTypes')
+        }
+        onSelect={(val) =>
+          setSelectedWorkType(val === t('explore.allTypes') ? null : val.toLowerCase())
+        }
+        onClose={() => setShowWorkTypePicker(false)}
+      />
 
-        <View style={styles.searchContainer}>
-          <View style={styles.searchInner}>
-            <Ionicons
-              name="search"
-              size={18}
-              color={Brand.textSecondary}
-              style={{ marginRight: 8 }}
-            />
-            <TextInput
-              style={styles.searchInput}
-                  placeholder={t('explore.search')}
-              placeholderTextColor={Brand.placeholder}
-              value={search}
-              onChangeText={setSearch}
-            />
-          </View>
-        </View>
+      <PickerModal
+        visible={showEmployTypePicker}
+        title={t('explore.employmentType')}
+        options={[t('common.all'), ...EMPLOYMENT_TYPES.map((et) => EMPLOYMENT_TYPE_LABELS[et])]}
+        selected={selectedEmploymentType ? EMPLOYMENT_TYPE_LABELS[selectedEmploymentType] : t('common.all')}
+        onSelect={(val) => {
+          if (val === t('common.all')) { setSelectedEmploymentType(null); return }
+          const key = Object.entries(EMPLOYMENT_TYPE_LABELS).find(([, v]) => v === val)?.[0] || null
+          setSelectedEmploymentType(key)
+        }}
+        onClose={() => setShowEmployTypePicker(false)}
+      />
 
-        <View style={styles.filtersSection}>
-          <View style={styles.filterRow}>
-            <View style={styles.filterGroup}>
-              <ThemedText
-                type="caption"
-                style={{ marginBottom: 6, fontWeight: 600 }}
-              >
-                {t('explore.type')}
-              </ThemedText>
-              <Pressable
-                style={styles.dropdown}
-                onPress={() => setShowWorkTypePicker(true)}
-              >
-                <ThemedText
-                  type="small"
-                  style={
-                    !selectedWorkType
-                      ? { color: Brand.placeholder }
-                      : { color: Brand.text, fontWeight: 700 }
-                  }
-                >
-                  {selectedWorkType
-                    ? selectedWorkType.charAt(0).toUpperCase() +
-                      selectedWorkType.slice(1)
-                    : t('explore.allTypes')}
-                </ThemedText>
-              </Pressable>
-            </View>
-            <View style={styles.filterGroup}>
-              <ThemedText
-                type="caption"
-                style={{ marginBottom: 6, fontWeight: 600 }}
-              >
-                {t('explore.employmentType')}
-              </ThemedText>
-              <Pressable
-                style={styles.dropdown}
-                onPress={() => setShowEmployTypePicker(true)}
-              >
-                <ThemedText
-                  type="small"
-                  style={
-                    !selectedEmploymentType
-                      ? { color: Brand.placeholder }
-                      : { color: Brand.text, fontWeight: 700 }
-                  }
-                >
-                  {selectedEmploymentType
-                    ? EMPLOYMENT_TYPE_LABELS[selectedEmploymentType]
-                    : t('explore.allEmployment')}
-                </ThemedText>
-              </Pressable>
-            </View>
-          </View>
-          <View style={styles.filterRow}>
-            <View style={styles.filterGroup}>
-              <ThemedText
-                type="caption"
-                style={{ marginBottom: 6, fontWeight: 600 }}
-              >
-                {t('explore.region')}
-              </ThemedText>
-              <Pressable
-                style={styles.dropdown}
-                onPress={() => setShowRegionPicker(true)}
-              >
-                <ThemedText
-                  type="small"
-                  style={
-                    !selectedRegion
-                      ? { color: Brand.placeholder }
-                      : { color: Brand.text, fontWeight: 700 }
-                  }
-                >
-                    {selectedRegion || t('explore.allRegions')}
-                </ThemedText>
-              </Pressable>
-            </View>
-          </View>
-          <View style={styles.citySection}>
-              <ThemedText
-                type="caption"
-                style={{ marginBottom: 6, fontWeight: 600 }}
-              >
-                {t('explore.city')}
-              </ThemedText>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-              <View style={styles.cityRow}>
-                <Pressable
-                  style={[
-                    styles.cityChip,
-                    !selectedCity && styles.cityChipActive,
-                  ]}
-                  onPress={() => setSelectedCity(null)}
-                >
-                  <ThemedText
-                    type="small"
-                    style={[!selectedCity ? styles.cityChipTextActive : {}]}
-                  >
-                    All
-                  </ThemedText>
-                </Pressable>
-                {allCities.map((city) => (
-                  <Pressable
-                    key={city}
-                    style={[
-                      styles.cityChip,
-                      selectedCity === city && styles.cityChipActive,
-                    ]}
-                    onPress={() =>
-                      setSelectedCity(selectedCity === city ? null : city)
-                    }
-                  >
-                    <ThemedText
-                      type="small"
-                      style={[
-                        selectedCity === city ? styles.cityChipTextActive : {},
-                      ]}
-                    >
-                      {city}
-                    </ThemedText>
-                  </Pressable>
-                ))}
-              </View>
-            </ScrollView>
-          </View>
-          <View style={styles.citySection}>
-              <ThemedText
-                type="caption"
-                style={{ marginBottom: 6, fontWeight: 600 }}
-              >
-                {t('explore.price')}
-              </ThemedText>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-              <View style={styles.cityRow}>
-                <Pressable
-                  style={[
-                    styles.cityChip,
-                    !selectedCategory && styles.cityChipActive,
-                  ]}
-                  onPress={() => setSelectedCategory(null)}
-                >
-                  <ThemedText
-                    type="small"
-                    style={[!selectedCategory ? styles.cityChipTextActive : {}]}
-                  >
-                    {t('common.all')}
-                  </ThemedText>
-                </Pressable>
-                {CATEGORIES.map((cat) => (
-                  <Pressable
-                    key={cat}
-                    style={[
-                      styles.cityChip,
-                      selectedCategory === cat && styles.cityChipActive,
-                    ]}
-                    onPress={() =>
-                      setSelectedCategory(selectedCategory === cat ? null : cat)
-                    }
-                  >
-                    <ThemedText
-                      type="small"
-                      style={[
-                        selectedCategory === cat ? styles.cityChipTextActive : {},
-                      ]}
-                    >
-                      {cat}
-                    </ThemedText>
-                  </Pressable>
-                ))}
-              </View>
-            </ScrollView>
-          </View>
-          <View style={styles.priceRow}>
-            <TextInput
-              style={styles.priceInput}
-              placeholder={t('explore.min')}
-placeholderTextColor={Brand.placeholder}
-            value={minPrice}
-            onChangeText={setMinPrice}
-            keyboardType="number-pad"
-          />
-          <ThemedText type="small" style={{ color: Brand.textSecondary, paddingHorizontal: 4 }}>{t('explore.priceRange')}</ThemedText>
-            <TextInput
-              style={styles.priceInput}
-              placeholder={t('explore.max')}
-              placeholderTextColor={Brand.placeholder}
-              value={maxPrice}
-              onChangeText={setMaxPrice}
-              keyboardType="number-pad"
-            />
-            <ThemedText type="small" style={{ color: Brand.textSecondary, marginLeft: 4 }}>MMK</ThemedText>
-          </View>
-        </View>
+      <PickerModal
+        visible={showRegionPicker}
+        title={t('explore.selectRegion')}
+        options={[t('explore.allRegions'), ...allRegions]}
+        selected={selectedRegion || t('explore.allRegions')}
+        onSelect={(val) =>
+          setSelectedRegion(val === t('explore.allRegions') ? null : val)
+        }
+        onClose={() => setShowRegionPicker(false)}
+      />
 
-        <PickerModal
-          visible={showWorkTypePicker}
-          title={t('explore.selectType')}
-          options={[
-            t('explore.allTypes'),
-            ...WORK_TYPES.map((w) => w.charAt(0).toUpperCase() + w.slice(1)),
-          ]}
-          selected={
-            selectedWorkType
-              ? selectedWorkType.charAt(0).toUpperCase() +
-                selectedWorkType.slice(1)
-              : t('explore.allTypes')
-          }
-          onSelect={(val) =>
-            setSelectedWorkType(val === t('explore.allTypes') ? null : val.toLowerCase())
-          }
-          onClose={() => setShowWorkTypePicker(false)}
-        />
-
-        <PickerModal
-          visible={showEmployTypePicker}
-          title={t('explore.employmentType')}
-          options={[t('common.all'), ...EMPLOYMENT_TYPES.map((et) => EMPLOYMENT_TYPE_LABELS[et])]}
-          selected={selectedEmploymentType ? EMPLOYMENT_TYPE_LABELS[selectedEmploymentType] : t('common.all')}
-          onSelect={(val) => {
-            if (val === t('common.all')) { setSelectedEmploymentType(null); return }
-            const key = Object.entries(EMPLOYMENT_TYPE_LABELS).find(([, v]) => v === val)?.[0] || null
-            setSelectedEmploymentType(key)
-          }}
-          onClose={() => setShowEmployTypePicker(false)}
-        />
-
-        <PickerModal
-          visible={showRegionPicker}
-          title={t('explore.selectRegion')}
-          options={[t('explore.allRegions'), ...allRegions]}
-          selected={selectedRegion || t('explore.allRegions')}
-          onSelect={(val) =>
-            setSelectedRegion(val === t('explore.allRegions') ? null : val)
-          }
-          onClose={() => setShowRegionPicker(false)}
-        />
-
-        {loading ? (
-          <View style={{ flex: 1, backgroundColor: Brand.bg, paddingHorizontal: SCREEN_PADDING }}>
-            <View style={styles.grid}>
-              {Array.from({ length: 4 }).map((_, i) => (
-                <View key={i} style={styles.card}>
-                  <Skeleton width="100%" height={140} borderRadius={BorderRadius.md} />
-                  <View style={{ marginTop: Spacing.three }}>
-                    <Skeleton width="70%" height={16} />
-                  </View>
-                  <View style={{ marginTop: 4 }}>
-                    <Skeleton width="50%" height={14} />
-                  </View>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 }}>
-                    <Skeleton width={60} height={18} borderRadius={BorderRadius.sm} />
-                    <Skeleton width={100} height={14} />
-                  </View>
+      {loading ? (
+        <View style={{ flex: 1, backgroundColor: Brand.bg, paddingHorizontal: SCREEN_PADDING }}>
+          <View style={styles.grid}>
+            {Array.from({ length: 4 }).map((_, i) => (
+              <View key={i} style={styles.card}>
+                <Skeleton width="100%" height={140} borderRadius={BorderRadius.md} />
+                <View style={{ marginTop: Spacing.three }}>
+                  <Skeleton width="70%" height={16} />
                 </View>
-              ))}
-            </View>
+                <View style={{ marginTop: 4 }}>
+                  <Skeleton width="50%" height={14} />
+                </View>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 }}>
+                  <Skeleton width={60} height={18} borderRadius={BorderRadius.sm} />
+                  <Skeleton width={100} height={14} />
+                </View>
+              </View>
+            ))}
           </View>
-        ) : filtered.length === 0 ? (
-          <View
-            style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
-          >
-            <View style={{ alignItems: "center", paddingVertical: Spacing.five }}>
-              <Ionicons name="search-outline" size={48} color={Brand.textSecondary} />
-              <ThemedText type="small" style={{ color: Brand.textSecondary }}>
-                {t('explore.noJobs')}
-              </ThemedText>
-            </View>
+        </View>
+      ) : filtered.length === 0 ? (
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+          <View style={{ alignItems: "center", paddingVertical: Spacing.five }}>
+            <Ionicons name="search-outline" size={48} color={Brand.textSecondary} />
+            <ThemedText type="small" style={{ color: Brand.textSecondary }}>
+              {t('explore.noJobs')}
+            </ThemedText>
           </View>
-        ) : (
-          <FlatList
-            data={groupedByType}
-            keyExtractor={([type]) => type}
-            contentContainerStyle={{
-              paddingHorizontal: SCREEN_PADDING,
-              paddingBottom: BottomTabInset + Spacing.four,
-            }}
-            showsVerticalScrollIndicator={false}
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            renderItem={({ item: [type, typeJobs] }) => {
-              const color = WORK_TYPE_COLORS[type];
-              const bg = WORK_TYPE_BG[type];
-              return (
-                <View style={{ marginBottom: Spacing.five }}>
-                  <View style={styles.sectionHeader}>
-                    <View
-                      style={[styles.sectionDot, { backgroundColor: color }]}
-                    />
-                    <ThemedText style={styles.sectionTitle}>
-                      {type.charAt(0).toUpperCase() + type.slice(1)}
-                    </ThemedText>
+        </View>
+      ) : (
+        <FlatList
+          data={groupedByType}
+          keyExtractor={([type]) => type}
+          contentContainerStyle={{
+            paddingHorizontal: SCREEN_PADDING,
+            paddingBottom: BottomTabInset + Spacing.four,
+          }}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          ListHeaderComponent={
+            <View>
+              <View style={styles.header}>
+                <ThemedText style={styles.headerTitle}>{t('explore.title')}</ThemedText>
+                <Pressable
+                  onPress={() => {
+                    setSelectedCity(null);
+                    setSelectedRegion(null);
+                    setSelectedWorkType(null);
+                    setSelectedCategory(null);
+                    setSelectedEmploymentType(null);
+                    setMinPrice('');
+                    setMaxPrice('');
+                    setSearch("");
+                  }}
+                >
+                  <ThemedText type="smallBold" style={{ color: hasAnyFilter ? Brand.primary : Brand.textSecondary }}>
+                    {t('explore.reset')}
+                  </ThemedText>
+                </Pressable>
+              </View>
+
+              <View style={styles.searchContainer}>
+                <View style={styles.searchInner}>
+                  <Ionicons
+                    name="search"
+                    size={18}
+                    color={Brand.textSecondary}
+                    style={{ marginRight: 8 }}
+                  />
+                  <TextInput
+                    style={styles.searchInput}
+                        placeholder={t('explore.search')}
+                    placeholderTextColor={Brand.placeholder}
+                    value={search}
+                    onChangeText={setSearch}
+                  />
+                </View>
+              </View>
+
+              <View style={styles.filtersSection}>
+                <View style={styles.filterRow}>
+                  <View style={styles.filterGroup}>
                     <ThemedText
                       type="caption"
-                      style={{ color: Brand.textSecondary }}
+                      style={{ marginBottom: 6, fontWeight: 600 }}
                     >
-                      {typeJobs.length}
+                      {t('explore.type')}
                     </ThemedText>
+                    <Pressable
+                      style={styles.dropdown}
+                      onPress={() => setShowWorkTypePicker(true)}
+                    >
+                      <ThemedText
+                        type="small"
+                        style={
+                          !selectedWorkType
+                            ? { color: Brand.placeholder }
+                            : { color: Brand.text, fontWeight: 700 }
+                        }
+                      >
+                        {selectedWorkType
+                          ? selectedWorkType.charAt(0).toUpperCase() +
+                            selectedWorkType.slice(1)
+                          : t('explore.allTypes')}
+                      </ThemedText>
+                    </Pressable>
                   </View>
-                  <View style={styles.grid}>
-                    {typeJobs.map((job) => {
-                      const s = STATUS_STYLE[job.status] || STATUS_STYLE.open;
-                      return (
-                        <Pressable
-                          key={job.id}
-                          style={styles.card}
-                          onPress={() => router.push(`/job/${job.id}`)}
-                        >
-                          <Pressable
-                            style={styles.saveBtn}
-                            onPress={() => toggleSave(job.id)}
-                            hitSlop={8}
-                          >
-                            <Ionicons
-                              name={savedJobIds.has(job.id) ? "heart" : "heart-outline"}
-                              size={18}
-                              color={savedJobIds.has(job.id) ? Brand.danger : Brand.textSecondary}
-                            />
-                          </Pressable>
-                          <View
-                            style={[
-                              styles.workTypeTag,
-                              { backgroundColor: bg },
-                            ]}
-                          />
-                          {job.category && (
-                            <View style={styles.categoryBadge}>
-                              <ThemedText type="caption" style={styles.categoryBadgeText}>
-                                {job.category}
-                              </ThemedText>
-                            </View>
-                          )}
-                          <ThemedText
-                            style={styles.cardTitle}
-                            numberOfLines={2}
-                          >
-                            {job.title}
-                          </ThemedText>
-                          <View style={styles.cardLocation}>
-                            <ThemedText type="caption" numberOfLines={1}>
-                              {job.city}
-                              {job.region ? `, ${job.region}` : ""}
-                            </ThemedText>
-                          </View>
-                          {job.employment_type && (
-                            <View style={{ backgroundColor: Brand.primaryLight, paddingHorizontal: 6, paddingVertical: 1, borderRadius: BorderRadius.sm, alignSelf: 'flex-start', marginTop: 4 }}>
-                              <ThemedText type="caption" style={{ color: Brand.primary, fontWeight: 600 }}>{EMPLOYMENT_TYPE_LABELS[job.employment_type]}</ThemedText>
-                            </View>
-                          )}
-                          {job.price && !job.employment_type && (
-                            <ThemedText type="price" style={styles.cardPrice}>
-                              {job.price.toLocaleString()} MMK
-                            </ThemedText>
-                          )}
-                          {job.salary_min && job.employment_type && (
-                            <ThemedText type="price" style={styles.cardPrice}>
-                              {job.salary_min.toLocaleString()} - {job.salary_max?.toLocaleString() ?? ''} MMK{job.salary_period ? `/${SALARY_PERIOD_LABELS[job.salary_period] || ''}` : ''}
-                            </ThemedText>
-                          )}
-                          <View
-                            style={[
-                              styles.cardStatus,
-                              { backgroundColor: s.bg },
-                            ]}
-                          >
-                            <ThemedText
-                              style={[
-                                styles.cardStatusText,
-                                { color: s.color },
-                              ]}
-                            >
-                              {job.status === "full" ? "Full" : job.status}
-                            </ThemedText>
-                          </View>
-                          {job.vacancies && (
-                            <ThemedText
-                              type="caption"
-                              style={{
-                                color: Brand.textSecondary,
-                                marginTop: 4,
-                              }}
-                            >
-                              {job.vacancies} vacanc
-                              {job.vacancies > 1 ? "ies" : "y"}
-                            </ThemedText>
-                          )}
-                        </Pressable>
-                      );
-                    })}
+                  <View style={styles.filterGroup}>
+                    <ThemedText
+                      type="caption"
+                      style={{ marginBottom: 6, fontWeight: 600 }}
+                    >
+                      {t('explore.employmentType')}
+                    </ThemedText>
+                    <Pressable
+                      style={styles.dropdown}
+                      onPress={() => setShowEmployTypePicker(true)}
+                    >
+                      <ThemedText
+                        type="small"
+                        style={
+                          !selectedEmploymentType
+                            ? { color: Brand.placeholder }
+                            : { color: Brand.text, fontWeight: 700 }
+                        }
+                      >
+                        {selectedEmploymentType
+                          ? EMPLOYMENT_TYPE_LABELS[selectedEmploymentType]
+                          : t('explore.allEmployment')}
+                      </ThemedText>
+                    </Pressable>
                   </View>
                 </View>
-              );
-            }}
-          />
-        )}
-      </View>
+                <View style={styles.filterRow}>
+                  <View style={styles.filterGroup}>
+                    <ThemedText
+                      type="caption"
+                      style={{ marginBottom: 6, fontWeight: 600 }}
+                    >
+                      {t('explore.region')}
+                    </ThemedText>
+                    <Pressable
+                      style={styles.dropdown}
+                      onPress={() => setShowRegionPicker(true)}
+                    >
+                      <ThemedText
+                        type="small"
+                        style={
+                          !selectedRegion
+                            ? { color: Brand.placeholder }
+                            : { color: Brand.text, fontWeight: 700 }
+                        }
+                      >
+                          {selectedRegion || t('explore.allRegions')}
+                      </ThemedText>
+                    </Pressable>
+                  </View>
+                </View>
+                <View style={styles.citySection}>
+                    <ThemedText
+                      type="caption"
+                      style={{ marginBottom: 6, fontWeight: 600 }}
+                    >
+                      {t('explore.city')}
+                    </ThemedText>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+                    <View style={styles.cityRow}>
+                      <Pressable
+                        style={[
+                          styles.cityChip,
+                          !selectedCity && styles.cityChipActive,
+                        ]}
+                        onPress={() => setSelectedCity(null)}
+                      >
+                        <ThemedText
+                          type="small"
+                          style={[!selectedCity ? styles.cityChipTextActive : {}]}
+                        >
+                          All
+                        </ThemedText>
+                      </Pressable>
+                      {allCities.map((city) => (
+                        <Pressable
+                          key={city}
+                          style={[
+                            styles.cityChip,
+                            selectedCity === city && styles.cityChipActive,
+                          ]}
+                          onPress={() =>
+                            setSelectedCity(selectedCity === city ? null : city)
+                          }
+                        >
+                          <ThemedText
+                            type="small"
+                            style={[
+                              selectedCity === city ? styles.cityChipTextActive : {},
+                            ]}
+                          >
+                            {city}
+                          </ThemedText>
+                        </Pressable>
+                      ))}
+                    </View>
+                  </ScrollView>
+                </View>
+                <View style={styles.citySection}>
+                    <ThemedText
+                      type="caption"
+                      style={{ marginBottom: 6, fontWeight: 600 }}
+                    >
+                      {t('explore.category')}
+                    </ThemedText>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+                    <View style={styles.cityRow}>
+                      <Pressable
+                        style={[
+                          styles.cityChip,
+                          !selectedCategory && styles.cityChipActive,
+                        ]}
+                        onPress={() => setSelectedCategory(null)}
+                      >
+                        <ThemedText
+                          type="small"
+                          style={[!selectedCategory ? styles.cityChipTextActive : {}]}
+                        >
+                          {t('common.all')}
+                        </ThemedText>
+                      </Pressable>
+                      {CATEGORIES.map((cat) => (
+                        <Pressable
+                          key={cat}
+                          style={[
+                            styles.cityChip,
+                            selectedCategory === cat && styles.cityChipActive,
+                          ]}
+                          onPress={() =>
+                            setSelectedCategory(selectedCategory === cat ? null : cat)
+                          }
+                        >
+                          <ThemedText
+                            type="small"
+                            style={[
+                              selectedCategory === cat ? styles.cityChipTextActive : {},
+                            ]}
+                          >
+                            {cat}
+                          </ThemedText>
+                        </Pressable>
+                      ))}
+                    </View>
+                  </ScrollView>
+                </View>
+                <View style={styles.priceRow}>
+                  <TextInput
+                    style={styles.priceInput}
+                    placeholder={t('explore.min')}
+                    placeholderTextColor={Brand.placeholder}
+                    value={minPrice}
+                    onChangeText={setMinPrice}
+                    keyboardType="number-pad"
+                  />
+                  <ThemedText type="small" style={{ color: Brand.textSecondary, paddingHorizontal: 4 }}>—</ThemedText>
+                  <TextInput
+                    style={styles.priceInput}
+                    placeholder={t('explore.max')}
+                    placeholderTextColor={Brand.placeholder}
+                    value={maxPrice}
+                    onChangeText={setMaxPrice}
+                    keyboardType="number-pad"
+                  />
+                  <ThemedText type="small" style={{ color: Brand.textSecondary, marginLeft: 4 }}>MMK</ThemedText>
+                </View>
+              </View>
+            </View>
+          }
+          renderItem={({ item: [type, typeJobs] }) => {
+            const color = WORK_TYPE_COLORS[type];
+            const bg = WORK_TYPE_BG[type];
+            return (
+              <View style={{ marginBottom: Spacing.five }}>
+                <View style={styles.sectionHeader}>
+                  <View
+                    style={[styles.sectionDot, { backgroundColor: color }]}
+                  />
+                  <ThemedText style={styles.sectionTitle}>
+                    {type.charAt(0).toUpperCase() + type.slice(1)}
+                  </ThemedText>
+                  <ThemedText
+                    type="caption"
+                    style={{ color: Brand.textSecondary }}
+                  >
+                    {typeJobs.length}
+                  </ThemedText>
+                </View>
+                <View style={styles.grid}>
+                  {typeJobs.map((job) => {
+                    const s = STATUS_STYLE[job.status] || STATUS_STYLE.open;
+                    return (
+                      <Pressable
+                        key={job.id}
+                        style={styles.card}
+                        onPress={() => router.push(`/job/${job.id}`)}
+                      >
+                        <Pressable
+                          style={styles.saveBtn}
+                          onPress={() => toggleSave(job.id)}
+                          hitSlop={8}
+                        >
+                          <Ionicons
+                            name={savedJobIds.has(job.id) ? "heart" : "heart-outline"}
+                            size={18}
+                            color={savedJobIds.has(job.id) ? Brand.danger : Brand.textSecondary}
+                          />
+                        </Pressable>
+                        <View
+                          style={[
+                            styles.workTypeTag,
+                            { backgroundColor: bg },
+                          ]}
+                        />
+                        {job.category && (
+                          <View style={styles.categoryBadge}>
+                            <ThemedText type="caption" style={styles.categoryBadgeText}>
+                              {job.category}
+                            </ThemedText>
+                          </View>
+                        )}
+                        <ThemedText
+                          style={styles.cardTitle}
+                          numberOfLines={2}
+                        >
+                          {job.title}
+                        </ThemedText>
+                        <View style={styles.cardLocation}>
+                          <ThemedText type="caption" numberOfLines={1}>
+                            {job.city}
+                            {job.region ? `, ${job.region}` : ""}
+                          </ThemedText>
+                        </View>
+                        {job.employment_type && (
+                          <View style={{ backgroundColor: Brand.primaryLight, paddingHorizontal: 6, paddingVertical: 1, borderRadius: BorderRadius.sm, alignSelf: 'flex-start', marginTop: 4 }}>
+                            <ThemedText type="caption" style={{ color: Brand.primary, fontWeight: 600 }}>{EMPLOYMENT_TYPE_LABELS[job.employment_type]}</ThemedText>
+                          </View>
+                        )}
+                        <View style={styles.cardMetaRow}>
+                          <View style={styles.cardPrice}>
+                            <Ionicons name="cash-outline" size={14} color={Brand.primary} />
+                            <ThemedText
+                              type="caption"
+                              style={{ color: Brand.primary, fontWeight: 600 }}
+                            >
+                              {job.employment_type ? (
+                                job.salary_min != null && job.salary_max != null
+                                  ? `${job.salary_min.toLocaleString()} — ${job.salary_max.toLocaleString()} ${SALARY_PERIOD_LABELS[job.salary_period || 'month']}`
+                                  : job.salary_min != null
+                                    ? `From ${job.salary_min.toLocaleString()} ${SALARY_PERIOD_LABELS[job.salary_period || 'month']}`
+                                    : job.salary_max != null
+                                      ? `Up to ${job.salary_max.toLocaleString()} ${SALARY_PERIOD_LABELS[job.salary_period || 'month']}`
+                                      : EMPLOYMENT_TYPE_LABELS[job.employment_type]
+                              ) : (
+                                job.price != null
+                                  ? `${job.price.toLocaleString()} MMK`
+                                  : EMPLOYMENT_TYPE_LABELS[job.employment_type || 'full_time']
+                              )}
+                            </ThemedText>
+                          </View>
+                          <View style={styles.cardStatus}>
+                            <ThemedText type="caption" style={{ color: s.color }}>
+                              {job.status.charAt(0).toUpperCase() + job.status.slice(1)}
+                            </ThemedText>
+                          </View>
+                        </View>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
+            );
+          }}
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -638,18 +629,18 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: Spacing.four,
-    paddingVertical: Spacing.four,
+    paddingTop: Spacing.two,
+    paddingBottom: Spacing.four,
   },
   headerTitle: {
     fontSize: FontSize.xl,
+    lineHeight: 40,
     fontWeight: 700,
     color: Brand.text,
     padding: Spacing.one,
     letterSpacing: -0.5,
   },
   searchContainer: {
-    paddingHorizontal: Spacing.four,
     marginBottom: Spacing.three,
   },
   searchInner: {
@@ -668,7 +659,6 @@ const styles = StyleSheet.create({
     color: Brand.text,
   },
   filtersSection: {
-    paddingHorizontal: Spacing.four,
     marginBottom: Spacing.three,
   },
   filterRow: {
@@ -756,9 +746,8 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontWeight: 700,
     fontSize: FontSize.base,
+    lineHeight: 24,
     color: Brand.text,
-    lineHeight: 20,
-    minHeight: 40,
   },
   cardLocation: {
     marginTop: 4,
@@ -797,6 +786,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.two,
     marginBottom: Spacing.three,
+  },
+  cardMetaRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: Spacing.two,
   },
   priceInput: {
     flex: 1,

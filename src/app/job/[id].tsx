@@ -1011,6 +1011,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: FontSize.xl,
+    lineHeight: 40,
     fontWeight: 700,
     color: Brand.text,
     padding: Spacing.one,

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Animated, Dimensions, Easing, FlatList, Pressable, StyleSheet, View } from 'react-native'
+import { router } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import AsyncStorage from '@react-native-async-storage/async-storage'
@@ -82,7 +83,7 @@ function PageAnimation({ icon, color, bg, index, currentIndex }: {
   )
 }
 
-export default function OnboardingScreen({ onDone }: { onDone: () => void }) {
+export default function OnboardingScreen({ onDone }: { onDone?: () => void }) {
   const [page, setPage] = useState(0)
   const listRef = useRef<FlatList>(null)
   const fadeAnim = useRef(new Animated.Value(1)).current
@@ -111,7 +112,8 @@ export default function OnboardingScreen({ onDone }: { onDone: () => void }) {
 
   const onComplete = useCallback(async () => {
     await AsyncStorage.setItem('onboarding_complete', 'true')
-    onDone()
+    if (onDone) onDone()
+    else router.back()
   }, [onDone])
 
   return (

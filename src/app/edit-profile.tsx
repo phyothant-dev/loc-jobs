@@ -207,6 +207,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: FontSize.md,
+    lineHeight: 28,
     fontWeight: 700,
     color: Brand.text,
   },

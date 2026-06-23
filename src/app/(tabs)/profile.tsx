@@ -327,6 +327,14 @@ export default function ProfileScreen() {
                     <Ionicons name="chevron-forward" size={16} color={Brand.textSecondary} />
                   </View>
                 </Pressable>
+                <View style={styles.settingDivider} />
+                <Pressable
+                  style={styles.settingRow}
+                  onPress={() => router.push('/onboarding')}
+                >
+                  <ThemedText style={styles.settingLabel}>Onboarding</ThemedText>
+                  <Ionicons name="chevron-forward" size={16} color={Brand.textSecondary} />
+                </Pressable>
               </View>
 
               <Pressable
@@ -370,11 +378,13 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: Spacing.four,
-    paddingVertical: Spacing.four,
+    paddingTop: Spacing.two,
+    paddingBottom: Spacing.four,
   },
   headerTitle: {
     padding: Spacing.one,
     fontSize: FontSize.xl,
+    lineHeight: 40,
     fontWeight: 700,
     color: Brand.text,
     letterSpacing: -0.5,
@@ -493,6 +503,7 @@ const styles = StyleSheet.create({
   },
   jobTitle: {
     fontSize: FontSize.base,
+    lineHeight: 24,
     fontWeight: 600,
     color: Brand.text,
   },
@@ -512,6 +523,11 @@ const styles = StyleSheet.create({
     fontWeight: 600,
     color: Brand.textSecondary,
     fontSize: FontSize.sm,
+  },
+  settingDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: Brand.borderLight,
+    marginHorizontal: Spacing.four,
   },
   deleteAccountBtn: {
     backgroundColor: Brand.dangerLight,

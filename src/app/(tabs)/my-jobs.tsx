@@ -1,6 +1,6 @@
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
-import { Alert, FlatList, Pressable, StyleSheet, View } from "react-native";
+import { Alert, FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Ionicons } from "@expo/vector-icons";
@@ -267,7 +267,7 @@ export default function MyJobsScreen() {
               style={styles.topPostBtn}
               onPress={() => router.push("/post")}
             >
-              <ThemedText style={styles.topPostBtnText}>+</ThemedText>
+              <Text style={styles.topPostBtnText}>+</Text>
             </Pressable>
           )}
         </View>
@@ -398,9 +398,9 @@ export default function MyJobsScreen() {
                         {item.price.toLocaleString()} MMK
                       </ThemedText>
                     )}
-                    {item.salary_min && item.employment_type && (
+                    {item.salary_min != null && item.employment_type && (
                         <ThemedText type="price">
-                          {item.salary_min.toLocaleString()} - {item.salary_max?.toLocaleString()} MMK{item.salary_period ? `/${SALARY_PERIOD_LABELS[item.salary_period] || ''}` : ''}
+                          {item.salary_min.toLocaleString()} - {item.salary_max != null ? item.salary_max.toLocaleString() : ''} MMK{item.salary_period ? `/${SALARY_PERIOD_LABELS[item.salary_period] || ''}` : ''}
                         </ThemedText>
                       )}
 
@@ -613,12 +613,13 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: Spacing.four,
-    paddingVertical: Spacing.four,
+    paddingTop: Spacing.two,
     paddingBottom: Spacing.four,
     minHeight: 52,
   },
   headerTitle: {
     fontSize: FontSize.xl,
+    lineHeight: 40,
     fontWeight: 700,
     color: Brand.text,
     padding: Spacing.one,
@@ -666,6 +667,7 @@ const styles = StyleSheet.create({
   jobTitle: {
     fontWeight: 700,
     fontSize: FontSize.md,
+    lineHeight: 26,
     color: Brand.text,
     flex: 1,
   },
@@ -743,9 +745,12 @@ const styles = StyleSheet.create({
   },
   topPostBtnText: {
     color: Brand.white,
-    fontWeight: 700,
+    fontWeight: '700',
     fontSize: 22,
     lineHeight: 24,
+    textAlign: 'center',
+    textAlignVertical: 'center',
+    includeFontPadding: false,
   },
   chatBtn: {
     backgroundColor: Brand.primaryLight,

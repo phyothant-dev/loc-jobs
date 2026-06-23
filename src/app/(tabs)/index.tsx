@@ -6,8 +6,8 @@ import { Image, Linking, Platform, Pressable, ScrollView, StyleSheet, View } fro
 import { Ionicons } from "@expo/vector-icons";
 import MapView, { Marker } from "react-native-maps";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import LottieView from 'lottie-react-native';
 
-import { Skeleton } from '@/components/skeleton'
 import { ThemedText } from "@/components/themed-text";
 import {
   BorderRadius,
@@ -246,35 +246,12 @@ export default function NearbyJobsScreen() {
 
       {loading ? (
         <View style={styles.loadingOverlay}>
-          <ScrollView contentContainerStyle={{ paddingTop: 120, paddingHorizontal: Spacing.four, gap: Spacing.three }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.two }}>
-              <Skeleton height={40} borderRadius={20} style={{ flex: 1 }} />
-              <Skeleton width={40} height={40} borderRadius={20} />
-            </View>
-            <View style={{ alignItems: 'center', gap: Spacing.two }}>
-              <Skeleton width="60%" height={14} />
-              <Skeleton width={100} height={28} borderRadius={14} />
-            </View>
-            {[1, 2, 3].map((i) => (
-              <View key={i} style={styles.jobCard}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <Skeleton width="60%" height={16} />
-                  <Skeleton width={60} height={24} borderRadius={12} />
-                </View>
-                <Skeleton width="100%" height={14} style={{ marginTop: 8 }} />
-                <View style={{ flexDirection: 'row', gap: Spacing.two, marginTop: 8 }}>
-                  <Skeleton width="30%" height={12} />
-                  <Skeleton width="20%" height={12} />
-                  <Skeleton width="20%" height={12} />
-                </View>
-                <Skeleton width="20%" height={12} style={{ marginTop: 6 }} />
-                <View style={[styles.jobCardFooter, { borderTopWidth: 0, marginTop: 12, paddingTop: 0 }]}>
-                  <Skeleton width={60} height={24} borderRadius={12} />
-                  <Skeleton width="40%" height={14} />
-                </View>
-              </View>
-            ))}
-          </ScrollView>
+          <LottieView
+            source={require('@/assets/images/crew-loader.json')}
+            style={{ width: '100%', height: '100%' }}
+            autoPlay
+            loop
+          />
         </View>
       ) : (
         <BottomSheet
@@ -438,9 +415,9 @@ export default function NearbyJobsScreen() {
                           {item.price.toLocaleString()} MMK
                         </ThemedText>
                       )}
-                      {item.salary_min && item.employment_type && (
+                      {item.salary_min != null && item.employment_type && (
                         <ThemedText type="price">
-                          {item.salary_min.toLocaleString()} - {item.salary_max?.toLocaleString() ?? ''} MMK{item.salary_period ? `/${SALARY_PERIOD_LABELS[item.salary_period] || ''}` : ''}
+                          {item.salary_min.toLocaleString()} - {item.salary_max != null ? item.salary_max.toLocaleString() : ''} MMK{item.salary_period ? `/${SALARY_PERIOD_LABELS[item.salary_period] || ''}` : ''}
                         </ThemedText>
                       )}
                       {item.vacancies && (
@@ -651,6 +628,7 @@ const styles = StyleSheet.create({
   },
   jobTitle: {
     fontSize: FontSize.base,
+    lineHeight: 24,
     fontWeight: "700",
     color: Brand.text,
     flex: 1,
@@ -688,6 +666,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 3,
     borderRadius: BorderRadius.sm,
+    marginRight: 28,
   },
   statusBadgeText: {
     fontSize: FontSize.xs,
