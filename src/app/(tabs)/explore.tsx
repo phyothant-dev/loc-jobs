@@ -1,19 +1,34 @@
+import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { useEffect, useState } from "react";
-import { FlatList, Pressable, StyleSheet, TextInput, View } from "react-native";
+import { useEffect, useMemo, useState } from "react";
+import {
+    Dimensions,
+    FlatList,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    TextInput,
+    View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { PickerModal } from "@/components/picker-modal";
+import { Skeleton } from '@/components/skeleton'
 import { ThemedText } from "@/components/themed-text";
-import { ThemedView } from "@/components/themed-view";
+import LottieView from 'lottie-react-native';
 import {
     BorderRadius,
     BottomTabInset,
     Brand,
+    FontSize,
     Shadow,
     Spacing,
 } from "@/constants/theme";
 import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/contexts/AuthContext";
+import { useLocale } from "@/contexts/LocaleContext";
+import { CATEGORIES, EMPLOYMENT_TYPES, EMPLOYMENT_TYPE_LABELS, SALARY_PERIOD_LABELS } from "@/lib/categories";
+import { REGIONS } from "@/lib/regions";
 
 interface Job {
   id: string;
@@ -23,256 +38,597 @@ interface Job {
   price: number | null;
   work_type: string;
   status: string;
+  vacancies: number;
+  category: string | null;
+  employment_type: string | null;
+  salary_min: number | null;
+  salary_max: number | null;
+  salary_period: string | null;
 }
 
 const WORK_TYPES = ["onsite", "remote", "hybrid"] as const;
 
-function StatusBadge({ status }: { status: string }) {
-  const colors: Record<string, string> = {
-    open: Brand.success,
-    accepted: Brand.warning,
-    completed: Brand.primary,
-    cancelled: Brand.danger,
-  };
-  const bgColors: Record<string, string> = {
-    open: Brand.successLight,
-    accepted: Brand.warningLight,
-    completed: Brand.primaryLight,
-    cancelled: Brand.dangerLight,
-  };
-  return (
-    <View
-      style={[
-        styles.statusBadge,
-        { backgroundColor: bgColors[status] || Brand.primaryLight },
-      ]}
-    >
-      <ThemedText
-        style={[
-          styles.statusBadgeText,
-          { color: colors[status] || Brand.primary },
-        ]}
-      >
-        {status}
-      </ThemedText>
-    </View>
-  );
-}
+const WORK_TYPE_COLORS: Record<string, string> = {
+  onsite: "#F97316",
+  remote: "#6366F1",
+  hybrid: "#06B6D4",
+};
+
+const WORK_TYPE_BG: Record<string, string> = {
+  onsite: "#FFF7ED",
+  remote: "#EEF2FF",
+  hybrid: "#ECFEFF",
+};
+
+const STATUS_STYLE: Record<string, { color: string; bg: string }> = {
+  open: { color: Brand.success, bg: Brand.successLight },
+  full: { color: Brand.warning, bg: Brand.warningLight },
+  accepted: { color: Brand.warning, bg: Brand.warningLight },
+  completed: { color: Brand.primary, bg: Brand.primaryLight },
+  cancelled: { color: Brand.danger, bg: Brand.dangerLight },
+};
+
+const NUM_COLUMNS = 2;
+const CARD_GAP = Spacing.three;
+const SCREEN_PADDING = Spacing.four;
+const CARD_WIDTH =
+  (Dimensions.get("window").width - SCREEN_PADDING * 2 - CARD_GAP) /
+  NUM_COLUMNS;
 
 export default function AllJobsScreen() {
+  const { user } = useAuth();
+  const { t } = useLocale();
   const [jobs, setJobs] = useState<Job[]>([]);
-  const [cities, setCities] = useState<string[]>([]);
   const [selectedCity, setSelectedCity] = useState<string | null>(null);
+  const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
   const [selectedWorkType, setSelectedWorkType] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedEmploymentType, setSelectedEmploymentType] = useState<string | null>(null);
+  const [minPrice, setMinPrice] = useState('');
+  const [maxPrice, setMaxPrice] = useState('');
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
-  const [showCityPicker, setShowCityPicker] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [showWorkTypePicker, setShowWorkTypePicker] = useState(false);
+  const [showEmployTypePicker, setShowEmployTypePicker] = useState(false);
+  const [showRegionPicker, setShowRegionPicker] = useState(false);
+  const [savedJobIds, setSavedJobIds] = useState<Set<string>>(new Set());
+
+  const loadSavedJobs = async () => {
+    if (!user) return
+    const { data } = await supabase.from('saved_jobs').select('job_id').eq('user_id', user.id)
+    setSavedJobIds(new Set((data ?? []).map((r: any) => r.job_id)))
+  }
+
+  const toggleSave = async (jobId: string) => {
+    if (!user) return
+    const isSaved = savedJobIds.has(jobId)
+    if (isSaved) {
+      setSavedJobIds((prev) => { const next = new Set(prev); next.delete(jobId); return next })
+      await supabase.from('saved_jobs').delete().eq('user_id', user.id).eq('job_id', jobId)
+    } else {
+      setSavedJobIds((prev) => { const next = new Set(prev); next.add(jobId); return next })
+      await supabase.from('saved_jobs').insert({ user_id: user.id, job_id: jobId })
+    }
+  }
+
+  const fetchJobs = async () => {
+    const { data } = await supabase
+      .from("jobs")
+      .select("*")
+      .eq("status", "open")
+      .eq("deleted", false)
+      .order("created_at", { ascending: false });
+    const allJobs = (data ?? []) as Job[];
+    setJobs(allJobs);
+  };
+
+  const allRegions = Object.keys(REGIONS).sort();
+  const allCities = selectedRegion
+    ? (REGIONS[selectedRegion] || []).sort()
+    : Object.values(REGIONS).flat().sort();
 
   useEffect(() => {
     (async () => {
-      const { data } = await supabase
-        .from("jobs")
-        .select("*")
-        .eq("status", "open")
-        .order("created_at", { ascending: false });
-      const allJobs = (data ?? []) as Job[];
-      setJobs(allJobs);
-      const uniqueCities = [
-        ...new Set(allJobs.map((j) => j.city).filter(Boolean)),
-      ] as string[];
-      setCities(uniqueCities);
+      await fetchJobs();
+      await loadSavedJobs();
       setLoading(false);
     })();
   }, []);
 
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchJobs();
+    await loadSavedJobs();
+    setRefreshing(false);
+  };
+
+  useEffect(() => {
+    const sub = supabase
+      .channel(`explore-jobs-${Date.now()}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "jobs",
+          filter: "status=eq.open",
+        },
+        (payload) => {
+          const newJob = payload.new as Job;
+          setJobs((prev) => [newJob, ...prev]);
+        },
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(sub);
+    };
+  }, []);
+
   const filtered = jobs.filter((j) => {
     const matchCity = !selectedCity || j.city === selectedCity;
+    const matchRegion = !selectedRegion || j.region === selectedRegion;
     const matchWorkType = !selectedWorkType || j.work_type === selectedWorkType;
+    const matchCategory = !selectedCategory || j.category === selectedCategory;
+    const matchMinPrice = !minPrice || (j.price != null && j.price >= parseInt(minPrice, 10));
+    const matchMaxPrice = !maxPrice || (j.price != null && j.price <= parseInt(maxPrice, 10));
     const matchSearch =
       !search || j.title.toLowerCase().includes(search.toLowerCase());
-    return matchCity && matchWorkType && matchSearch;
+    const matchEmployType = !selectedEmploymentType || j.employment_type === selectedEmploymentType;
+    return matchCity && matchRegion && matchWorkType && matchCategory && matchMinPrice && matchMaxPrice && matchSearch && matchEmployType;
   });
 
-  const hasAnyFilter = selectedCity || selectedWorkType;
-  const clearFilters = () => {
-    setSelectedCity(null);
-    setSelectedWorkType(null);
-    setSearch("");
-  };
+  const hasAnyFilter = selectedCity || selectedRegion || selectedWorkType || selectedCategory || selectedEmploymentType || minPrice || maxPrice || search;
+
+  const groupedByType = useMemo(() => {
+    const groups: Record<string, Job[]> = {};
+    for (const wt of WORK_TYPES) groups[wt] = [];
+    for (const job of filtered) {
+      if (groups[job.work_type]) groups[job.work_type].push(job);
+    }
+    return Object.entries(groups).filter(([, jobs]) => jobs.length > 0);
+  }, [filtered]);
 
   return (
     <SafeAreaView
       style={{ flex: 1, backgroundColor: Brand.bg }}
       edges={["top"]}
     >
-      <ThemedView style={{ flex: 1, backgroundColor: Brand.bg }}>
+      <View style={{ flex: 1 }}>
         <View style={styles.header}>
-          <ThemedText style={styles.headerTitle}>All Jobs</ThemedText>
-          {hasAnyFilter && (
-            <Pressable onPress={clearFilters}>
-              <ThemedText style={styles.clearText}>Clear</ThemedText>
-            </Pressable>
-          )}
+          <ThemedText style={styles.headerTitle}>{t('explore.title')}</ThemedText>
+          <Pressable
+            onPress={() => {
+              setSelectedCity(null);
+              setSelectedRegion(null);
+              setSelectedWorkType(null);
+              setSelectedCategory(null);
+              setSelectedEmploymentType(null);
+              setMinPrice('');
+              setMaxPrice('');
+              setSearch("");
+            }}
+          >
+            <ThemedText type="smallBold" style={{ color: hasAnyFilter ? Brand.primary : Brand.textSecondary }}>
+              {t('explore.reset')}
+            </ThemedText>
+          </Pressable>
         </View>
 
         <View style={styles.searchContainer}>
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search jobs..."
-            placeholderTextColor={Brand.placeholder}
-            value={search}
-            onChangeText={setSearch}
-          />
+          <View style={styles.searchInner}>
+            <Ionicons
+              name="search"
+              size={18}
+              color={Brand.textSecondary}
+              style={{ marginRight: 8 }}
+            />
+            <TextInput
+              style={styles.searchInput}
+                  placeholder={t('explore.search')}
+              placeholderTextColor={Brand.placeholder}
+              value={search}
+              onChangeText={setSearch}
+            />
+          </View>
         </View>
 
         <View style={styles.filtersSection}>
-          {/* Location picker */}
           <View style={styles.filterRow}>
-            <View style={styles.filterPickerGroup}>
-              <ThemedText style={styles.filterLabel}>Location</ThemedText>
+            <View style={styles.filterGroup}>
+              <ThemedText
+                type="caption"
+                style={{ marginBottom: 6, fontWeight: 600 }}
+              >
+                {t('explore.type')}
+              </ThemedText>
               <Pressable
-                style={[
-                  styles.pickerBtn,
-                  selectedCity && styles.pickerBtnActive,
-                ]}
-                onPress={() => setShowCityPicker(true)}
+                style={styles.dropdown}
+                onPress={() => setShowWorkTypePicker(true)}
               >
                 <ThemedText
-                  style={[
-                    styles.pickerBtnText,
-                    selectedCity && styles.pickerBtnTextActive,
-                  ]}
+                  type="small"
+                  style={
+                    !selectedWorkType
+                      ? { color: Brand.placeholder }
+                      : { color: Brand.text, fontWeight: 700 }
+                  }
                 >
-                  {selectedCity || "All cities"}
-                </ThemedText>
-                <ThemedText
-                  style={[
-                    styles.pickerChevron,
-                    selectedCity && styles.pickerBtnTextActive,
-                  ]}
-                >
-                  ›
+                  {selectedWorkType
+                    ? selectedWorkType.charAt(0).toUpperCase() +
+                      selectedWorkType.slice(1)
+                    : t('explore.allTypes')}
                 </ThemedText>
               </Pressable>
             </View>
-
-            {/* Work type pills */}
-            <View style={styles.filterPickerGroup}>
-              <ThemedText style={styles.filterLabel}>Work Type</ThemedText>
-              <FlatList
-                horizontal
-                data={WORK_TYPES}
-                keyExtractor={(item) => item}
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.filterList}
-                renderItem={({ item }) => (
+            <View style={styles.filterGroup}>
+              <ThemedText
+                type="caption"
+                style={{ marginBottom: 6, fontWeight: 600 }}
+              >
+                {t('explore.employmentType')}
+              </ThemedText>
+              <Pressable
+                style={styles.dropdown}
+                onPress={() => setShowEmployTypePicker(true)}
+              >
+                <ThemedText
+                  type="small"
+                  style={
+                    !selectedEmploymentType
+                      ? { color: Brand.placeholder }
+                      : { color: Brand.text, fontWeight: 700 }
+                  }
+                >
+                  {selectedEmploymentType
+                    ? EMPLOYMENT_TYPE_LABELS[selectedEmploymentType]
+                    : t('explore.allEmployment')}
+                </ThemedText>
+              </Pressable>
+            </View>
+          </View>
+          <View style={styles.filterRow}>
+            <View style={styles.filterGroup}>
+              <ThemedText
+                type="caption"
+                style={{ marginBottom: 6, fontWeight: 600 }}
+              >
+                {t('explore.region')}
+              </ThemedText>
+              <Pressable
+                style={styles.dropdown}
+                onPress={() => setShowRegionPicker(true)}
+              >
+                <ThemedText
+                  type="small"
+                  style={
+                    !selectedRegion
+                      ? { color: Brand.placeholder }
+                      : { color: Brand.text, fontWeight: 700 }
+                  }
+                >
+                    {selectedRegion || t('explore.allRegions')}
+                </ThemedText>
+              </Pressable>
+            </View>
+          </View>
+          <View style={styles.citySection}>
+              <ThemedText
+                type="caption"
+                style={{ marginBottom: 6, fontWeight: 600 }}
+              >
+                {t('explore.city')}
+              </ThemedText>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+              <View style={styles.cityRow}>
+                <Pressable
+                  style={[
+                    styles.cityChip,
+                    !selectedCity && styles.cityChipActive,
+                  ]}
+                  onPress={() => setSelectedCity(null)}
+                >
+                  <ThemedText
+                    type="small"
+                    style={[!selectedCity ? styles.cityChipTextActive : {}]}
+                  >
+                    All
+                  </ThemedText>
+                </Pressable>
+                {allCities.map((city) => (
                   <Pressable
+                    key={city}
                     style={[
-                      styles.pill,
-                      selectedWorkType === item && styles.pillActive,
+                      styles.cityChip,
+                      selectedCity === city && styles.cityChipActive,
                     ]}
                     onPress={() =>
-                      setSelectedWorkType(
-                        selectedWorkType === item ? null : item,
-                      )
+                      setSelectedCity(selectedCity === city ? null : city)
                     }
                   >
                     <ThemedText
+                      type="small"
                       style={[
-                        styles.pillText,
-                        selectedWorkType === item && styles.pillTextActive,
+                        selectedCity === city ? styles.cityChipTextActive : {},
                       ]}
                     >
-                      {item.charAt(0).toUpperCase() + item.slice(1)}
+                      {city}
                     </ThemedText>
                   </Pressable>
-                )}
-                ListHeaderComponent={
+                ))}
+              </View>
+            </ScrollView>
+          </View>
+          <View style={styles.citySection}>
+              <ThemedText
+                type="caption"
+                style={{ marginBottom: 6, fontWeight: 600 }}
+              >
+                {t('explore.price')}
+              </ThemedText>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+              <View style={styles.cityRow}>
+                <Pressable
+                  style={[
+                    styles.cityChip,
+                    !selectedCategory && styles.cityChipActive,
+                  ]}
+                  onPress={() => setSelectedCategory(null)}
+                >
+                  <ThemedText
+                    type="small"
+                    style={[!selectedCategory ? styles.cityChipTextActive : {}]}
+                  >
+                    {t('common.all')}
+                  </ThemedText>
+                </Pressable>
+                {CATEGORIES.map((cat) => (
                   <Pressable
+                    key={cat}
                     style={[
-                      styles.pill,
-                      !selectedWorkType && styles.pillActive,
+                      styles.cityChip,
+                      selectedCategory === cat && styles.cityChipActive,
                     ]}
-                    onPress={() => setSelectedWorkType(null)}
+                    onPress={() =>
+                      setSelectedCategory(selectedCategory === cat ? null : cat)
+                    }
                   >
                     <ThemedText
+                      type="small"
                       style={[
-                        styles.pillText,
-                        !selectedWorkType && styles.pillTextActive,
+                        selectedCategory === cat ? styles.cityChipTextActive : {},
                       ]}
                     >
-                      All
+                      {cat}
                     </ThemedText>
                   </Pressable>
-                }
-              />
-            </View>
+                ))}
+              </View>
+            </ScrollView>
+          </View>
+          <View style={styles.priceRow}>
+            <TextInput
+              style={styles.priceInput}
+              placeholder={t('explore.min')}
+placeholderTextColor={Brand.placeholder}
+            value={minPrice}
+            onChangeText={setMinPrice}
+            keyboardType="number-pad"
+          />
+          <ThemedText type="small" style={{ color: Brand.textSecondary, paddingHorizontal: 4 }}>{t('explore.priceRange')}</ThemedText>
+            <TextInput
+              style={styles.priceInput}
+              placeholder={t('explore.max')}
+              placeholderTextColor={Brand.placeholder}
+              value={maxPrice}
+              onChangeText={setMaxPrice}
+              keyboardType="number-pad"
+            />
+            <ThemedText type="small" style={{ color: Brand.textSecondary, marginLeft: 4 }}>MMK</ThemedText>
           </View>
         </View>
 
         <PickerModal
-          visible={showCityPicker}
-          title="Select City"
-          options={["All", ...cities]}
-          selected={selectedCity ?? "All"}
-          onSelect={(val) => setSelectedCity(val === "All" ? null : val)}
-          onClose={() => setShowCityPicker(false)}
+          visible={showWorkTypePicker}
+          title={t('explore.selectType')}
+          options={[
+            t('explore.allTypes'),
+            ...WORK_TYPES.map((w) => w.charAt(0).toUpperCase() + w.slice(1)),
+          ]}
+          selected={
+            selectedWorkType
+              ? selectedWorkType.charAt(0).toUpperCase() +
+                selectedWorkType.slice(1)
+              : t('explore.allTypes')
+          }
+          onSelect={(val) =>
+            setSelectedWorkType(val === t('explore.allTypes') ? null : val.toLowerCase())
+          }
+          onClose={() => setShowWorkTypePicker(false)}
+        />
+
+        <PickerModal
+          visible={showEmployTypePicker}
+          title={t('explore.employmentType')}
+          options={[t('common.all'), ...EMPLOYMENT_TYPES.map((et) => EMPLOYMENT_TYPE_LABELS[et])]}
+          selected={selectedEmploymentType ? EMPLOYMENT_TYPE_LABELS[selectedEmploymentType] : t('common.all')}
+          onSelect={(val) => {
+            if (val === t('common.all')) { setSelectedEmploymentType(null); return }
+            const key = Object.entries(EMPLOYMENT_TYPE_LABELS).find(([, v]) => v === val)?.[0] || null
+            setSelectedEmploymentType(key)
+          }}
+          onClose={() => setShowEmployTypePicker(false)}
+        />
+
+        <PickerModal
+          visible={showRegionPicker}
+          title={t('explore.selectRegion')}
+          options={[t('explore.allRegions'), ...allRegions]}
+          selected={selectedRegion || t('explore.allRegions')}
+          onSelect={(val) =>
+            setSelectedRegion(val === t('explore.allRegions') ? null : val)
+          }
+          onClose={() => setShowRegionPicker(false)}
         />
 
         {loading ? (
+          <View style={{ flex: 1, backgroundColor: Brand.bg, paddingHorizontal: SCREEN_PADDING }}>
+            <View style={styles.grid}>
+              {Array.from({ length: 4 }).map((_, i) => (
+                <View key={i} style={styles.card}>
+                  <Skeleton width="100%" height={140} borderRadius={BorderRadius.md} />
+                  <View style={{ marginTop: Spacing.three }}>
+                    <Skeleton width="70%" height={16} />
+                  </View>
+                  <View style={{ marginTop: 4 }}>
+                    <Skeleton width="50%" height={14} />
+                  </View>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 }}>
+                    <Skeleton width={60} height={18} borderRadius={BorderRadius.sm} />
+                    <Skeleton width={100} height={14} />
+                  </View>
+                </View>
+              ))}
+            </View>
+          </View>
+        ) : filtered.length === 0 ? (
           <View
             style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
           >
-            <ThemedText>Loading...</ThemedText>
+            <View style={{ alignItems: "center", paddingVertical: Spacing.five }}>
+              <Ionicons name="search-outline" size={48} color={Brand.textSecondary} />
+              <ThemedText type="small" style={{ color: Brand.textSecondary }}>
+                {t('explore.noJobs')}
+              </ThemedText>
+            </View>
           </View>
         ) : (
           <FlatList
-            data={filtered}
-            keyExtractor={(item) => item.id}
+            data={groupedByType}
+            keyExtractor={([type]) => type}
             contentContainerStyle={{
-              padding: Spacing.four,
+              paddingHorizontal: SCREEN_PADDING,
               paddingBottom: BottomTabInset + Spacing.four,
             }}
-            ItemSeparatorComponent={() => (
-              <View style={{ height: Spacing.two }} />
-            )}
-            ListEmptyComponent={
-              <View style={{ padding: Spacing.four, alignItems: "center" }}>
-                <ThemedText>No jobs found</ThemedText>
-              </View>
-            }
-            renderItem={({ item }) => (
-              <Pressable onPress={() => router.push(`/job/${item.id}`)}>
-                <View style={styles.jobCard}>
-                  <View style={{ flex: 1 }}>
+            showsVerticalScrollIndicator={false}
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            renderItem={({ item: [type, typeJobs] }) => {
+              const color = WORK_TYPE_COLORS[type];
+              const bg = WORK_TYPE_BG[type];
+              return (
+                <View style={{ marginBottom: Spacing.five }}>
+                  <View style={styles.sectionHeader}>
                     <View
-                      style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        gap: Spacing.two,
-                      }}
-                    >
-                      <ThemedText style={styles.jobTitle} numberOfLines={1}>
-                        {item.title}
-                      </ThemedText>
-                      <StatusBadge status={item.status} />
-                    </View>
-                    <ThemedText style={styles.jobMeta}>
-                      {item.city}
-                      {item.region ? `, ${item.region}` : ""} · {item.work_type}
+                      style={[styles.sectionDot, { backgroundColor: color }]}
+                    />
+                    <ThemedText style={styles.sectionTitle}>
+                      {type.charAt(0).toUpperCase() + type.slice(1)}
                     </ThemedText>
-                    {item.price && (
-                      <ThemedText style={styles.priceText}>
-                        {item.price.toLocaleString()} MMK
-                      </ThemedText>
-                    )}
+                    <ThemedText
+                      type="caption"
+                      style={{ color: Brand.textSecondary }}
+                    >
+                      {typeJobs.length}
+                    </ThemedText>
+                  </View>
+                  <View style={styles.grid}>
+                    {typeJobs.map((job) => {
+                      const s = STATUS_STYLE[job.status] || STATUS_STYLE.open;
+                      return (
+                        <Pressable
+                          key={job.id}
+                          style={styles.card}
+                          onPress={() => router.push(`/job/${job.id}`)}
+                        >
+                          <Pressable
+                            style={styles.saveBtn}
+                            onPress={() => toggleSave(job.id)}
+                            hitSlop={8}
+                          >
+                            <Ionicons
+                              name={savedJobIds.has(job.id) ? "heart" : "heart-outline"}
+                              size={18}
+                              color={savedJobIds.has(job.id) ? Brand.danger : Brand.textSecondary}
+                            />
+                          </Pressable>
+                          <View
+                            style={[
+                              styles.workTypeTag,
+                              { backgroundColor: bg },
+                            ]}
+                          />
+                          {job.category && (
+                            <View style={styles.categoryBadge}>
+                              <ThemedText type="caption" style={styles.categoryBadgeText}>
+                                {job.category}
+                              </ThemedText>
+                            </View>
+                          )}
+                          <ThemedText
+                            style={styles.cardTitle}
+                            numberOfLines={2}
+                          >
+                            {job.title}
+                          </ThemedText>
+                          <View style={styles.cardLocation}>
+                            <ThemedText type="caption" numberOfLines={1}>
+                              {job.city}
+                              {job.region ? `, ${job.region}` : ""}
+                            </ThemedText>
+                          </View>
+                          {job.employment_type && (
+                            <View style={{ backgroundColor: Brand.primaryLight, paddingHorizontal: 6, paddingVertical: 1, borderRadius: BorderRadius.sm, alignSelf: 'flex-start', marginTop: 4 }}>
+                              <ThemedText type="caption" style={{ color: Brand.primary, fontWeight: 600 }}>{EMPLOYMENT_TYPE_LABELS[job.employment_type]}</ThemedText>
+                            </View>
+                          )}
+                          {job.price && !job.employment_type && (
+                            <ThemedText type="price" style={styles.cardPrice}>
+                              {job.price.toLocaleString()} MMK
+                            </ThemedText>
+                          )}
+                          {job.salary_min && job.employment_type && (
+                            <ThemedText type="price" style={styles.cardPrice}>
+                              {job.salary_min.toLocaleString()} - {job.salary_max?.toLocaleString() ?? ''} MMK{job.salary_period ? `/${SALARY_PERIOD_LABELS[job.salary_period] || ''}` : ''}
+                            </ThemedText>
+                          )}
+                          <View
+                            style={[
+                              styles.cardStatus,
+                              { backgroundColor: s.bg },
+                            ]}
+                          >
+                            <ThemedText
+                              style={[
+                                styles.cardStatusText,
+                                { color: s.color },
+                              ]}
+                            >
+                              {job.status === "full" ? "Full" : job.status}
+                            </ThemedText>
+                          </View>
+                          {job.vacancies && (
+                            <ThemedText
+                              type="caption"
+                              style={{
+                                color: Brand.textSecondary,
+                                marginTop: 4,
+                              }}
+                            >
+                              {job.vacancies} vacanc
+                              {job.vacancies > 1 ? "ies" : "y"}
+                            </ThemedText>
+                          )}
+                        </Pressable>
+                      );
+                    })}
                   </View>
                 </View>
-              </Pressable>
-            )}
+              );
+            }}
           />
         )}
-      </ThemedView>
+      </View>
     </SafeAreaView>
   );
 }
@@ -283,134 +639,173 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.three,
-    paddingBottom: Spacing.one,
+    paddingVertical: Spacing.four,
   },
   headerTitle: {
-    fontSize: 28,
-    fontWeight: "800",
+    fontSize: FontSize.xl,
+    fontWeight: 700,
     color: Brand.text,
-  },
-  clearText: {
-    color: Brand.primary,
-    fontWeight: "700",
-    fontSize: 14,
+    padding: Spacing.one,
+    letterSpacing: -0.5,
   },
   searchContainer: {
     paddingHorizontal: Spacing.four,
     marginBottom: Spacing.three,
   },
-  searchInput: {
-    borderWidth: 1,
-    borderColor: Brand.border,
-    borderRadius: BorderRadius.full,
-    paddingHorizontal: 18,
-    paddingVertical: 12,
-    fontSize: 15,
+  searchInner: {
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: Brand.white,
+    borderWidth: 1,
+    borderColor: Brand.borderLight,
+    borderRadius: BorderRadius.md,
+    paddingHorizontal: 14,
+  },
+  searchInput: {
+    flex: 1,
+    paddingVertical: 12,
+    fontSize: FontSize.base,
     color: Brand.text,
   },
   filtersSection: {
-    marginBottom: Spacing.two,
     paddingHorizontal: Spacing.four,
+    marginBottom: Spacing.three,
   },
   filterRow: {
-    gap: Spacing.three,
-  },
-  filterPickerGroup: {
-    gap: 6,
-  },
-  filterLabel: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: Brand.textSecondary,
-    textTransform: "uppercase",
-    letterSpacing: 1,
-  },
-  pickerBtn: {
     flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+    gap: Spacing.three,
+    marginBottom: Spacing.three,
+  },
+  filterGroup: {
+    flex: 1,
+  },
+  dropdown: {
     borderWidth: 1,
-    borderColor: Brand.border,
-    borderRadius: BorderRadius.md,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    borderColor: Brand.borderLight,
+    borderRadius: BorderRadius.sm,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
     backgroundColor: Brand.white,
   },
-  pickerBtnActive: {
-    borderColor: Brand.primary,
-    backgroundColor: Brand.primaryLight,
+  citySection: {
+    marginBottom: Spacing.two,
   },
-  pickerBtnText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: Brand.textSecondary,
-  },
-  pickerBtnTextActive: {
-    color: Brand.primary,
-  },
-  pickerChevron: {
-    fontSize: 20,
-    color: Brand.textSecondary,
-    lineHeight: 22,
-  },
-  filterList: {
+  cityRow: {
+    flexDirection: "row",
     gap: Spacing.two,
   },
-  pill: {
-    paddingHorizontal: 16,
+  cityChip: {
+    paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: BorderRadius.full,
     borderWidth: 1,
-    borderColor: Brand.border,
+    borderColor: Brand.borderLight,
     backgroundColor: Brand.white,
   },
-  pillActive: {
+  cityChipActive: {
     backgroundColor: Brand.primary,
     borderColor: Brand.primary,
   },
-  pillText: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: Brand.textSecondary,
-  },
-  pillTextActive: {
+  cityChipTextActive: {
     color: Brand.white,
+    fontWeight: 700,
   },
-  jobCard: {
+  sectionHeader: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: Brand.white,
-    padding: Spacing.three,
-    borderRadius: BorderRadius.lg,
-    ...Shadow.card,
+    gap: Spacing.two,
+    marginBottom: Spacing.three,
+    paddingTop: Spacing.two,
   },
-  jobTitle: {
-    fontWeight: "700",
-    fontSize: 16,
+  sectionDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  sectionTitle: {
+    fontWeight: 700,
+    fontSize: FontSize.md,
     color: Brand.text,
+    textTransform: "capitalize",
     flex: 1,
   },
-  jobMeta: {
-    fontSize: 13,
-    color: Brand.textSecondary,
+  grid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: CARD_GAP,
+  },
+  card: {
+    width: CARD_WIDTH,
+    backgroundColor: Brand.white,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.four,
+    ...Shadow.card,
+  },
+  saveBtn: {
+    position: 'absolute',
+    top: Spacing.two,
+    right: Spacing.two,
+    zIndex: 1,
+  },
+  workTypeTag: {
+    width: 32,
+    height: 4,
+    borderRadius: 2,
+    marginBottom: Spacing.three,
+  },
+  cardTitle: {
+    fontWeight: 700,
+    fontSize: FontSize.base,
+    color: Brand.text,
+    lineHeight: 20,
+    minHeight: 40,
+  },
+  cardLocation: {
     marginTop: 4,
   },
-  priceText: {
-    fontWeight: "800",
-    color: Brand.primary,
-    fontSize: 14,
-    marginTop: 6,
+  cardPrice: {
+    marginTop: 8,
+    fontSize: FontSize.md,
   },
-  statusBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: BorderRadius.full,
+  cardStatus: {
+    alignSelf: "flex-start",
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: BorderRadius.sm,
+    marginTop: 8,
   },
-  statusBadgeText: {
-    fontSize: 11,
-    fontWeight: "700",
+  cardStatusText: {
+    fontSize: FontSize.xs,
+    fontWeight: 700,
     textTransform: "capitalize",
+  },
+  categoryBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: Brand.primaryLight,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: BorderRadius.sm,
+    marginBottom: Spacing.two,
+  },
+  categoryBadgeText: {
+    color: Brand.primary,
+    fontSize: FontSize.xs,
+    fontWeight: 600,
+  },
+  priceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+    marginBottom: Spacing.three,
+  },
+  priceInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: Brand.border,
+    borderRadius: BorderRadius.md,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    fontSize: FontSize.sm,
+    color: Brand.text,
   },
 });

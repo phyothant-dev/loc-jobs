@@ -1,42 +1,44 @@
 import { FlatList, Modal, Pressable, StyleSheet, View } from 'react-native'
-import { ThemedView } from './themed-view'
 import { ThemedText } from './themed-text'
-import { BorderRadius, Brand, Spacing } from '@/constants/theme'
+import { BorderRadius, Brand, Spacing, FontSize } from '@/constants/theme'
 
 interface PickerModalProps {
   visible: boolean
   title: string
   options: string[]
-  selected: string | null
+  selected: string
   onSelect: (value: string) => void
   onClose: () => void
+  disabledOptions?: string[]
 }
 
-export function PickerModal({ visible, title, options, selected, onSelect, onClose }: PickerModalProps) {
+export function PickerModal({ visible, title, options, selected, onSelect, onClose, disabledOptions }: PickerModalProps) {
   return (
     <Modal visible={visible} animationType="slide" transparent>
       <Pressable style={styles.overlay} onPress={onClose}>
-        <ThemedView style={styles.sheet}>
-          <Pressable onPress={() => {}}>
-            <View style={styles.handle} />
-            <ThemedText style={styles.title}>{title}</ThemedText>
-            <FlatList
-              data={options}
-              keyExtractor={(item) => item}
-              style={styles.list}
-              renderItem={({ item }) => (
+        <Pressable style={styles.sheet} onPress={() => {}}>
+          <View style={styles.handle} />
+          <ThemedText style={styles.title}>{title}</ThemedText>
+          <FlatList
+            data={options}
+            keyExtractor={(item) => item}
+            style={styles.list}
+            renderItem={({ item }) => {
+              const isSelected = item === selected
+              const isDisabled = disabledOptions?.includes(item)
+              return (
                 <Pressable
-                  style={[styles.option, selected === item && styles.optionSelected]}
-                  onPress={() => { onSelect(item); onClose() }}
+                  style={[styles.option, isSelected && styles.optionSelected, isDisabled && styles.optionDisabled]}
+                  onPress={() => { if (!isDisabled) { onSelect(item); onClose() } }}
                 >
-                  <ThemedText style={[styles.optionText, selected === item && styles.optionTextSelected]}>
+                  <ThemedText style={[styles.optionText, isSelected && styles.optionTextSelected, isDisabled && styles.optionTextDisabled]}>
                     {item}
                   </ThemedText>
                 </Pressable>
-              )}
-            />
-          </Pressable>
-        </ThemedView>
+              )
+            }}
+          />
+        </Pressable>
       </Pressable>
     </Modal>
   )
@@ -45,51 +47,54 @@ export function PickerModal({ visible, title, options, selected, onSelect, onClo
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
     justifyContent: 'flex-end',
+    backgroundColor: Brand.overlay,
   },
   sheet: {
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
     maxHeight: '60%',
-    paddingBottom: Spacing.six,
+    backgroundColor: Brand.white,
+    borderTopLeftRadius: BorderRadius.xl,
+    borderTopRightRadius: BorderRadius.xl,
+    paddingBottom: 34,
   },
   handle: {
-    width: 44,
-    height: 5,
-    borderRadius: 3,
-    backgroundColor: Brand.border,
+    width: 36,
+    height: 4,
+    backgroundColor: Brand.borderLight,
+    borderRadius: 2,
     alignSelf: 'center',
-    marginTop: Spacing.three,
-    marginBottom: Spacing.three,
+    marginTop: 10,
+    marginBottom: 8,
   },
   title: {
-    fontSize: 18,
-    fontWeight: '800',
-    textAlign: 'center',
-    marginBottom: Spacing.three,
-    paddingHorizontal: Spacing.four,
+    fontSize: FontSize.md,
+    fontWeight: 700,
     color: Brand.text,
+    paddingHorizontal: Spacing.four,
+    paddingVertical: Spacing.three,
   },
   list: {
-    paddingHorizontal: Spacing.four,
+    maxHeight: 300,
   },
   option: {
-    paddingVertical: Spacing.three,
+    paddingVertical: 12,
     paddingHorizontal: Spacing.four,
-    borderRadius: BorderRadius.md,
-    marginBottom: Spacing.half,
   },
   optionSelected: {
-    backgroundColor: Brand.primary,
-  },
-  optionText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: Brand.text,
+    backgroundColor: Brand.primaryLight,
   },
   optionTextSelected: {
-    color: Brand.white,
-    fontWeight: '700',
+    color: Brand.primary,
+    fontWeight: 700,
+  },
+  optionDisabled: {
+    opacity: 0.4,
+  },
+  optionTextDisabled: {
+    color: Brand.textSecondary,
+  },
+  optionText: {
+    fontSize: FontSize.base,
+    color: Brand.text,
   },
 })

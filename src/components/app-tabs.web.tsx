@@ -12,21 +12,29 @@ import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
 
 import { Spacing } from '@/constants/theme';
+import { useLocale } from '@/contexts/LocaleContext';
 
 export default function AppTabs() {
+  const { t } = useLocale()
   return (
     <Tabs>
       <TabSlot style={{ height: '100%' }} />
       <TabList asChild>
         <CustomTabList>
           <TabTrigger name="home" href="/" asChild>
-            <TabButton>Home</TabButton>
+            <TabButton>{t('tabs.nearby')}</TabButton>
+          </TabTrigger>
+          <TabTrigger name="explore" href="/explore" asChild>
+            <TabButton>{t('tabs.explore')}</TabButton>
           </TabTrigger>
           <TabTrigger name="my-jobs" href="/my-jobs" asChild>
-            <TabButton>My Jobs</TabButton>
+            <TabButton>{t('tabs.myJobs')}</TabButton>
+          </TabTrigger>
+          <TabTrigger name="chat" href="/chat" asChild>
+            <TabButton>{t('tabs.chat')}</TabButton>
           </TabTrigger>
           <TabTrigger name="profile" href="/profile" asChild>
-            <TabButton>Profile</TabButton>
+            <TabButton>{t('tabs.profile')}</TabButton>
           </TabTrigger>
         </CustomTabList>
       </TabList>
@@ -70,7 +78,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.five,
     borderRadius: Spacing.five,
     flexDirection: 'row',
+    flexWrap: 'wrap',
     alignItems: 'center',
+    justifyContent: 'center',
     flexGrow: 1,
     gap: Spacing.two,
     maxWidth: 800,

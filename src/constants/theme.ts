@@ -13,10 +13,23 @@ export const Brand = {
   white: '#FFFFFF',
   bg: '#FFF8F4',
   card: '#FFFFFF',
-  border: '#F5E6DC',
+  border: '#F0E4DA',
+  borderLight: '#F8F0EA',
   placeholder: '#C4B5A6',
   text: '#2D2B2A',
-  textSecondary: '#9C8E84',
+  textSecondary: '#A09388',
+  textTertiary: '#C4B5A6',
+  overlay: 'rgba(0,0,0,0.35)',
+} as const;
+
+export const FontSize = {
+  xs: 11,
+  sm: 13,
+  base: 15,
+  md: 17,
+  lg: 20,
+  xl: 26,
+  xxl: 34,
 } as const;
 
 export const Spacing = {
@@ -24,37 +37,38 @@ export const Spacing = {
   one: 4,
   two: 8,
   three: 12,
-  four: 20,
-  five: 32,
-  six: 48,
+  four: 16,
+  five: 24,
+  six: 32,
+  seven: 48,
 } as const;
 
 export const BorderRadius = {
-  sm: 12,
-  md: 16,
-  lg: 24,
-  xl: 32,
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 20,
   full: 9999,
 } as const;
 
 export const Shadow = {
   card: Platform.select({
     ios: {
-      shadowColor: Brand.primary,
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.08,
-      shadowRadius: 12,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.06,
+      shadowRadius: 8,
     },
     android: {
-      elevation: 4,
+      elevation: 2,
     },
     default: {},
   }),
-  button: Platform.select({
+  elevated: Platform.select({
     ios: {
-      shadowColor: Brand.primary,
-      shadowOffset: { width: 0, height: 6 },
-      shadowOpacity: 0.25,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.1,
       shadowRadius: 12,
     },
     android: {
@@ -62,6 +76,14 @@ export const Shadow = {
     },
     default: {},
   }),
+} as const;
+
+export const FontFamily = {
+  regular: 'PlusJakartaSans_400Regular',
+  medium: 'PlusJakartaSans_500Medium',
+  semiBold: 'PlusJakartaSans_600SemiBold',
+  bold: 'PlusJakartaSans_700Bold',
+  extraBold: 'PlusJakartaSans_800ExtraBold',
 } as const;
 
 export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;

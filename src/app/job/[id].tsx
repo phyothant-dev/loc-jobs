@@ -1,381 +1,1248 @@
-import { useEffect, useState } from 'react'
-import { Dimensions, Linking, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native'
-import { Image } from 'expo-image'
-import { useLocalSearchParams, router } from 'expo-router'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { Ionicons } from "@expo/vector-icons";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
+import LottieView from "lottie-react-native";
+import { useCallback, useEffect, useState } from "react";
+import { Skeleton } from "@/components/skeleton";
+import {
+    ActivityIndicator,
+    Alert,
+    Dimensions,
+    FlatList,
+    Image,
+    Linking,
+    Modal,
+    Pressable,
+    ScrollView,
+    Share,
+    StyleSheet,
+    TextInput,
+    View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-import { ThemedView } from '@/components/themed-view'
-import { ThemedText } from '@/components/themed-text'
-import { BorderRadius, Brand, Shadow, Spacing } from '@/constants/theme'
-import { supabase } from '@/lib/supabase'
-import { useAuth } from '@/contexts/AuthContext'
+import { ThemedText } from "@/components/themed-text";
+import { StarRating } from "@/components/star-rating";
+import {
+    BorderRadius,
+    Brand,
+    FontSize,
+    Shadow,
+    Spacing,
+} from "@/constants/theme";
+import { useAuth } from "@/contexts/AuthContext";
+import { useLocale } from "@/contexts/LocaleContext";
+import { supabase } from "@/lib/supabase";
+import { EMPLOYMENT_TYPE_LABELS, SALARY_PERIOD_LABELS } from "@/lib/categories";
+import * as Location from "expo-location";
 
-function parseCoords(job: { location: unknown; lat?: number | null; lng?: number | null }): { latitude: number; longitude: number } | null {
-  if (job.lat != null && job.lng != null) return { latitude: job.lat, longitude: job.lng }
-  if (!job.location || typeof job.location !== 'string') return null
-  const hex = job.location.startsWith('\\x') ? job.location.slice(2) : job.location
-  if (hex.length < 34) return null
-  const lngHex = hex.slice(18, 34)
-  const latHex = hex.slice(34, 50)
-  const hexToDouble = (h: string) => {
-    const bytes = []
-    for (let i = 0; i < 16; i += 2) bytes.push(parseInt(h.slice(i, i + 2), 16))
-    const buf = new ArrayBuffer(8)
-    const view = new DataView(buf)
-    bytes.forEach((b, i) => view.setUint8(i, b))
-    return view.getFloat64(0, true)
-  }
-  return { latitude: hexToDouble(latHex), longitude: hexToDouble(lngHex) }
+interface Applicant {
+  id: string;
+  name: string;
+  phone: string;
+  avatarUrl: string | null;
+  status: "pending" | "accepted" | "rejected";
+  message: string | null;
+  reject_reason: string | null;
 }
 
-interface JobDetail {
-  id: string
-  title: string
-  description: string | null
-  work_type: string
-  location: unknown | null
-  lat: number | null
-  lng: number | null
-  address: string | null
-  city: string | null
-  region: string | null
-  price: number | null
-  status: string
-  uploader_id: string
-  created_at: string
-  image_urls: string[] | null
-}
-
-const SCREEN_WIDTH = Dimensions.get('window').width
-
-function StatusBadge({ status }: { status: string }) {
-  const colors: Record<string, string> = {
-    open: Brand.success,
-    accepted: Brand.warning,
-    completed: Brand.primary,
-    cancelled: Brand.danger,
-  }
-  const bgColors: Record<string, string> = {
-    open: Brand.successLight,
-    accepted: Brand.warningLight,
-    completed: Brand.primaryLight,
-    cancelled: Brand.dangerLight,
-  }
-  return (
-    <View style={[styles.statusBadge, { backgroundColor: bgColors[status] || Brand.primaryLight }]}>
-      <ThemedText style={[styles.statusBadgeText, { color: colors[status] || Brand.primary }]}>
-        {status}
-      </ThemedText>
-    </View>
-  )
-}
+const STATUS_COLOR: Record<string, { color: string; bg: string }> = {
+  pending: { color: Brand.warning, bg: Brand.warningLight },
+  accepted: { color: Brand.success, bg: Brand.successLight },
+  rejected: { color: Brand.danger, bg: Brand.dangerLight },
+};
 
 export default function JobDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>()
-  const { user } = useAuth()
-  const [job, setJob] = useState<JobDetail | null>(null)
-  const [uploaderName, setUploaderName] = useState<string | null>(null)
-  const [searcherName, setSearcherName] = useState<string | null>(null)
-  const [searcherPhone, setSearcherPhone] = useState<string | null>(null)
-  const [isAccepted, setIsAccepted] = useState(false)
-  const [acceptedByMe, setAcceptedByMe] = useState(false)
-  const [isMyJob, setIsMyJob] = useState(false)
-  const [loading, setLoading] = useState(true)
-  const [accepting, setAccepting] = useState(false)
-  const [completing, setCompleting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const { user } = useAuth();
+  const { t } = useLocale();
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const [job, setJob] = useState<any>(null);
+  const [uploaderName, setUploaderName] = useState("");
+  const [uploaderPhone, setUploaderPhone] = useState("");
+  const [uploaderAvatarUrl, setUploaderAvatarUrl] = useState<string | null>(
+    null,
+  );
+  const [applicants, setApplicants] = useState<Applicant[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [vacanciesFilled, setVacanciesFilled] = useState(0);
+  const [applying, setApplying] = useState(false);
+  const [completing, setCompleting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [myApplication, setMyApplication] = useState<Applicant | null>(null);
+  const [savedJobIds, setSavedJobIds] = useState<Set<string>>(new Set());
+  const [reviewedUserIds, setReviewedUserIds] = useState<Set<string>>(new Set());
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [reviewTarget, setReviewTarget] = useState<{ id: string; name: string } | null>(null);
+  const [reviewRating, setReviewRating] = useState(0);
+  const [reviewComment, setReviewComment] = useState('');
+  const [submittingReview, setSubmittingReview] = useState(false);
+  const [galleryIndex, setGalleryIndex] = useState(0);
+  const [showApplyModal, setShowApplyModal] = useState(false);
+  const [applyMessage, setApplyMessage] = useState('');
 
-  const loadJob = async () => {
-    if (!id || !user) return
-    const { data: jobData } = await supabase.from('jobs').select('*').eq('id', id).single()
-    if (!jobData) { setError('Job not found'); setLoading(false); return }
-    const j = jobData as JobDetail
-    setJob(j)
-    setIsMyJob(j.uploader_id === user.id)
-    const { data: userData } = await supabase.from('users').select('display_name').eq('id', j.uploader_id).single()
-    if (userData) setUploaderName((userData as any).display_name)
-    const { data: acceptData } = await supabase.from('acceptances').select('searcher_id').eq('job_id', id).maybeSingle()
-    if (acceptData) {
-      setIsAccepted(true)
-      const searcherId = (acceptData as any).searcher_id
-      setAcceptedByMe(searcherId === user.id)
-      if (j.uploader_id === user.id || searcherId === user.id) {
-        const { data: sd } = await supabase.from('users').select('display_name, phone').eq('id', searcherId).single()
-        if (sd) { setSearcherName((sd as any).display_name); setSearcherPhone((sd as any).phone) }
-      }
+  const loadSavedJobs = async () => {
+    if (!user) return
+    const { data } = await supabase.from('saved_jobs').select('job_id').eq('user_id', user.id)
+    setSavedJobIds(new Set((data ?? []).map((r: any) => r.job_id)))
+  }
+
+  const toggleSave = async (jobId: string) => {
+    if (!user) return
+    const isSaved = savedJobIds.has(jobId)
+    if (isSaved) {
+      setSavedJobIds((prev) => { const next = new Set(prev); next.delete(jobId); return next })
+      await supabase.from('saved_jobs').delete().eq('user_id', user.id).eq('job_id', jobId)
+    } else {
+      setSavedJobIds((prev) => { const next = new Set(prev); next.add(jobId); return next })
+      await supabase.from('saved_jobs').insert({ user_id: user.id, job_id: jobId })
     }
-    setLoading(false)
   }
 
-  useEffect(() => { loadJob() }, [id, user])
-
-  const handleAccept = async () => {
-    if (!user || !job) return
-    setAccepting(true)
-    setError(null)
-    const { error: ae } = await supabase.from('acceptances').insert({ job_id: job.id, searcher_id: user.id })
-    if (ae) setError(ae.message)
-    else { setJob((p) => p ? { ...p, status: 'accepted' } : p); setIsAccepted(true); setAcceptedByMe(true) }
-    setAccepting(false)
+  const loadReviews = async () => {
+    if (!job || !user) return
+    const { data } = await supabase
+      .from('reviews')
+      .select('reviewee_id')
+      .eq('job_id', job.id)
+      .eq('reviewer_id', user.id)
+    setReviewedUserIds(new Set((data ?? []).map((r: any) => r.reviewee_id)))
   }
+
+  const openReviewModal = (targetId: string, targetName: string) => {
+    setReviewTarget({ id: targetId, name: targetName })
+    setReviewRating(0)
+    setReviewComment('')
+    setShowReviewModal(true)
+  }
+
+  const handleSubmitReview = async () => {
+    if (!job || !user || !reviewTarget || reviewRating === 0) return
+    setSubmittingReview(true)
+    await supabase.from('reviews').insert({
+      job_id: job.id,
+      reviewer_id: user.id,
+      reviewee_id: reviewTarget.id,
+      rating: reviewRating,
+      comment: reviewComment.trim() || null,
+    })
+    setSubmittingReview(false)
+    setShowReviewModal(false)
+    setReviewTarget(null)
+    setReviewRating(0)
+    setReviewComment('')
+    loadReviews()
+  }
+
+  const handleReport = () => {
+    if (!job || !user) return
+    Alert.alert(t('jobDetail.reportTitle'), t('jobDetail.reportPrompt'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('jobDetail.reportSpam'), onPress: () => submitReport(t('jobDetail.reportSpam')) },
+      { text: t('jobDetail.reportInappropriate'), onPress: () => submitReport(t('jobDetail.reportInappropriate')) },
+      { text: t('jobDetail.reportFake'), onPress: () => submitReport(t('jobDetail.reportFake')) },
+      { text: t('jobDetail.reportWrongCategory'), onPress: () => submitReport(t('jobDetail.reportWrongCategory')) },
+    ])
+  }
+
+  const submitReport = async (reason: string) => {
+    if (!job || !user) return
+    await supabase.from('reports').insert({
+      job_id: job.id,
+      reporter_id: user.id,
+      reason,
+    })
+  }
+
+  const handleShare = async () => {
+    if (!job) return
+    await Share.share({
+      message: `Check out this job on LocJobs: ${job.title}`,
+    })
+  }
+
+  const loadJob = useCallback(async () => {
+    if (!id) return;
+    try {
+      const { data } = await supabase
+        .from("jobs")
+        .select("*")
+        .eq("id", id)
+        .single();
+      if (data) {
+        setJob(data as any);
+        const uRes = await supabase
+          .from("users")
+          .select("display_name, phone, avatar_url")
+          .eq("id", data.uploader_id)
+          .single();
+        if (uRes.data) {
+          setUploaderName(uRes.data.display_name || "");
+          setUploaderPhone(uRes.data.phone || "");
+          setUploaderAvatarUrl(uRes.data.avatar_url || null);
+        }
+        const { data: apps } = await supabase
+          .from("applications")
+          .select("searcher_id, status, message, reject_reason")
+          .eq("job_id", id);
+        const applicantList: Applicant[] = [];
+        let filled = 0;
+        if (apps && apps.length > 0) {
+          const sIds = apps.map((a: any) => a.searcher_id);
+          const { data: users } = await supabase
+            .from("users")
+            .select("id, display_name, phone, avatar_url")
+            .in("id", sIds);
+          const userMap: Record<string, any> = {};
+          for (const u of (users ?? []) as any) userMap[u.id] = u;
+          for (const a of apps as any[]) {
+            const u = userMap[a.searcher_id];
+            const applicant: Applicant = {
+              id: a.searcher_id,
+              name: u?.display_name || "",
+              phone: u?.phone || "",
+              avatarUrl: u?.avatar_url || null,
+              status: a.status,
+              message: a.message || null,
+              reject_reason: a.reject_reason || null,
+            };
+            applicantList.push(applicant);
+            if (applicant.status === "accepted") filled++;
+            if (a.searcher_id === user?.id) setMyApplication(applicant);
+          }
+          setVacanciesFilled(filled);
+        } else {
+          setVacanciesFilled(0);
+          setMyApplication(null);
+        }
+        setApplicants(applicantList);
+      }
+      loadSavedJobs()
+      loadReviews()
+    } catch (error) {
+      console.error('Failed to load job', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [id]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadJob();
+    }, [loadJob]),
+  );
+
+  useEffect(() => {
+    if (!id) return;
+    const sub = supabase
+      .channel(`job-applications-${Date.now()}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "applications",
+          filter: `job_id=eq.${id}`,
+        },
+        () => {
+          loadJob();
+        },
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(sub);
+    };
+  }, [id]);
+
+  const handleApply = async (message?: string) => {
+    if (!job || !user) return;
+    setApplying(true);
+    setError(null);
+    const { error: applyErr } = await supabase
+      .from("applications")
+      .insert({ job_id: job.id, searcher_id: user.id, message: message || null });
+    if (applyErr) {
+      setError(applyErr.message);
+      setApplying(false);
+      return;
+    }
+    setApplying(false);
+    setShowApplyModal(false);
+    setApplyMessage('');
+    loadJob();
+  };
+
+  const handleAccept = async (applicationUserId: string) => {
+    const { data: app } = await supabase
+      .from("applications")
+      .select("id")
+      .eq("job_id", job.id)
+      .eq("searcher_id", applicationUserId)
+      .single();
+    if (!app) return;
+    const { error } = await supabase.rpc("accept_application", {
+      p_application_id: (app as any).id,
+    });
+    if (error) {
+      setError(error.message);
+      return;
+    }
+    loadJob();
+  };
+
+  const handleReject = async (applicationUserId: string, reason?: string) => {
+    if (!job) return
+    if (!reason) {
+      Alert.alert(t('jobDetail.rejectTitle'), t('jobDetail.rejectPrompt'), [
+        { text: t('common.cancel'), style: 'cancel' },
+        { text: t('jobDetail.rejectNotAvailable'), onPress: () => handleReject(applicationUserId, t('jobDetail.rejectNotAvailable')) },
+        { text: t('jobDetail.rejectNotQualified'), onPress: () => handleReject(applicationUserId, t('jobDetail.rejectNotQualified')) },
+        { text: t('jobDetail.rejectPositionFilled'), onPress: () => handleReject(applicationUserId, t('jobDetail.rejectPositionFilled')) },
+        { text: t('jobDetail.rejectOther'), onPress: () => handleReject(applicationUserId, t('jobDetail.rejectOther')) },
+      ])
+      return
+    }
+    const { data: app } = await supabase
+      .from("applications")
+      .select("id")
+      .eq("job_id", job.id)
+      .eq("searcher_id", applicationUserId)
+      .single();
+    if (!app) return;
+    const { error } = await supabase
+      .from("applications")
+      .update({ status: 'rejected', reject_reason: reason })
+      .eq("id", (app as any).id);
+    if (error) {
+      setError(error.message);
+      return;
+    }
+    loadJob();
+  };
 
   const handleComplete = async () => {
-    if (!job) return
-    setCompleting(true)
-    const { error: ue } = await supabase.from('jobs').update({ status: 'completed' }).eq('id', job.id)
-    if (ue) setError(ue.message)
-    else setJob((p) => p ? { ...p, status: 'completed' } : p)
-    setCompleting(false)
-  }
+    if (!job) return;
+    setCompleting(true);
+    const { error: updateErr } = await supabase
+      .from("jobs")
+      .update({ status: "completed" })
+      .eq("id", job.id);
+    if (updateErr) setError(updateErr.message);
+    // check verification for uploader and accepted applicants
+    await supabase.rpc("check_user_verification", { p_user_id: job.uploader_id });
+    const { data: acceptedApps } = await supabase
+      .from("applications")
+      .select("searcher_id")
+      .eq("job_id", job.id)
+      .eq("status", "accepted");
+    if (acceptedApps) {
+      for (const app of acceptedApps as any[]) {
+        await supabase.rpc("check_user_verification", { p_user_id: app.searcher_id });
+      }
+    }
+    setCompleting(false);
+    loadJob();
+  };
+
+  const handleDirections = async () => {
+    if (!job?.lat || !job?.lng) return;
+    const { status } = await Location.requestForegroundPermissionsAsync();
+    if (status !== "granted") return;
+    const userLoc = await Location.getCurrentPositionAsync({});
+    const url = `https://www.google.com/maps/dir/${userLoc.coords.latitude},${userLoc.coords.longitude}/${job.lat},${job.lng}`;
+    Linking.openURL(url);
+  };
+
+  const hasLocation = job?.lat && job?.lng;
+  const isUploader = user?.id === job?.uploader_id;
+  const isTaken = job?.status === "full" || job?.status === "completed";
+  const isCompleted = job?.status === "completed";
+  const vacanciesTotal = job?.vacancies || 1;
+  const canApply = !isUploader && job?.status === "open" && !myApplication;
+  const canComplete = isUploader && !isCompleted;
 
   if (loading) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: Brand.bg }}>
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <ThemedText>Loading...</ThemedText>
+      <SafeAreaView style={{ flex: 1, backgroundColor: Brand.bg }} edges={["top"]}>
+        <View style={styles.header}>
+          <Skeleton width={36} height={36} borderRadius={18} />
+          <Skeleton width="50%" height={22} />
+          <View style={{ flexDirection: 'row', gap: Spacing.two, alignItems: 'center' }}>
+            <Skeleton width={36} height={36} borderRadius={18} />
+          </View>
         </View>
+        <ScrollView contentContainerStyle={styles.content}>
+          <Skeleton width="100%" height={220} borderRadius={BorderRadius.md} />
+          <View style={{ height: Spacing.four }} />
+          <Skeleton width="80%" height={22} />
+          <View style={{ height: Spacing.two }} />
+          <Skeleton width="60%" height={14} />
+          <View style={{ height: Spacing.two }} />
+          <View style={{ flexDirection: 'row', gap: Spacing.two }}>
+            <Skeleton width={80} height={24} />
+            <Skeleton width={80} height={24} />
+            <Skeleton width={60} height={24} />
+          </View>
+          <View style={{ height: Spacing.four }} />
+          <View style={{ width: '100%', height: 1, backgroundColor: Brand.border }} />
+          <View style={{ height: Spacing.four }} />
+          <Skeleton width={100} height={14} />
+          <View style={{ height: Spacing.two }} />
+          <Skeleton width="100%" height={14} />
+          <View style={{ height: Spacing.two }} />
+          <Skeleton width="90%" height={14} />
+          <View style={{ height: Spacing.two }} />
+          <Skeleton width="80%" height={14} />
+          <View style={{ height: Spacing.four }} />
+          <View style={{ width: '100%', height: 1, backgroundColor: Brand.border }} />
+          <View style={{ height: Spacing.four }} />
+          <Skeleton width={80} height={14} />
+          <View style={{ height: Spacing.two }} />
+          <Skeleton width="70%" height={14} />
+          <View style={{ height: Spacing.two }} />
+          <Skeleton width="100%" height={150} borderRadius={BorderRadius.md} />
+          <View style={{ height: Spacing.four }} />
+          <View style={{ width: '100%', height: 1, backgroundColor: Brand.border }} />
+          <View style={{ height: Spacing.four }} />
+          <Skeleton width={100} height={14} />
+          <View style={{ height: Spacing.two }} />
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.two }}>
+            <Skeleton width={36} height={36} borderRadius={18} />
+            <Skeleton width="30%" height={14} />
+            <Skeleton width={60} height={24} />
+            <Skeleton width={60} height={24} />
+          </View>
+          <View style={{ height: Spacing.four }} />
+          <Skeleton width="100%" height={56} borderRadius={BorderRadius.md} />
+        </ScrollView>
       </SafeAreaView>
-    )
+    );
   }
 
-  if (error || !job) {
+  if (!job) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: Brand.bg }}>
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: Spacing.four }}>
-          <ThemedText style={{ color: Brand.danger, marginBottom: Spacing.three, fontSize: 15 }}>{error || 'Job not found'}</ThemedText>
-          <Pressable style={styles.backBtn} onPress={() => router.back()}>
-            <ThemedText style={{ color: Brand.white, fontWeight: '800' }}>Go Back</ThemedText>
+        <View
+          style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+        >
+			<ThemedText type="small" style={{ color: Brand.textSecondary }}>
+				{t('jobDetail.jobNotFound')}
+			</ThemedText>
+          <Pressable onPress={() => router.back()} style={styles.backBtn}>
+            <Ionicons name="chevron-back" size={22} color={Brand.primary} />
           </Pressable>
         </View>
       </SafeAreaView>
-    )
+    );
   }
 
-  const canAccept = !isMyJob && job.status === 'open' && !isAccepted
-  const canComplete = (isMyJob || acceptedByMe) && job.status === 'accepted'
-
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: Brand.bg }}>
-      <View style={{ flex: 1 }}>
-        <View style={styles.header}>
-          <Pressable onPress={() => router.back()} style={styles.backArrow}>
-            <ThemedText style={{ color: Brand.primary, fontWeight: '800', fontSize: 15 }}>← Back</ThemedText>
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: Brand.bg }}
+      edges={["top"]}
+    >
+      <View style={styles.header}>
+        <Pressable onPress={() => router.back()} style={styles.backBtn}>
+          <Ionicons name="chevron-back" size={22} color={Brand.primary} />
+        </Pressable>
+        <View style={{ flexDirection: 'row', gap: Spacing.two, alignItems: 'center' }}>
+          <Pressable
+            style={styles.flagBtn}
+            onPress={handleReport}
+            hitSlop={8}
+          >
+            <Ionicons name="flag-outline" size={18} color={Brand.textSecondary} />
           </Pressable>
-          {isMyJob && (
-            <View style={styles.myJobPill}>
-              <ThemedText style={{ color: Brand.primary, fontSize: 12, fontWeight: '700' }}>Your job</ThemedText>
+          <Pressable
+            style={styles.shareBtn}
+            onPress={handleShare}
+            hitSlop={8}
+          >
+            <Ionicons name="share-outline" size={18} color={Brand.primary} />
+          </Pressable>
+          {isUploader && (
+            <>
+              <Pressable
+                style={styles.editBtn}
+                onPress={() => router.push(`/post?id=${job.id}` as any)}
+              >
+                <Ionicons name="pencil" size={18} color={Brand.primary} />
+              </Pressable>
+              <Pressable
+                style={styles.deleteBtn}
+                onPress={() => {
+                  Alert.alert(
+                    t('jobDetail.deleteJob'),
+                    t('common.deleteWarning'),
+                    [
+                      { text: t('common.cancel'), style: 'cancel' },
+                      { text: t('common.delete'), style: 'destructive', onPress: async () => {
+                        await supabase.from('jobs').update({ deleted: true }).eq('id', job.id)
+                        router.back()
+                      }},
+                    ],
+                  )
+                }}
+              >
+                <Ionicons name="trash-outline" size={18} color={Brand.danger} />
+              </Pressable>
+            </>
+          )}
+          <Pressable
+            style={styles.headerSaveBtn}
+            onPress={() => toggleSave(job.id)}
+            hitSlop={8}
+          >
+            <Ionicons
+              name={savedJobIds.has(job.id) ? "heart" : "heart-outline"}
+              size={22}
+              color={savedJobIds.has(job.id) ? Brand.danger : Brand.textSecondary}
+            />
+          </Pressable>
+        </View>
+      </View>
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <View style={styles.titleSection}>
+          <ThemedText style={styles.title}>{job.title}</ThemedText>
+          <View style={styles.titleMeta}>
+            <View
+              style={[
+                styles.statusBadge,
+                {
+                  backgroundColor:
+                    job.status === "open"
+                      ? Brand.successLight
+                      : job.status === "full"
+                        ? Brand.warningLight
+                        : job.status === "completed"
+                          ? Brand.primaryLight
+                          : Brand.dangerLight,
+                },
+              ]}
+            >
+              <ThemedText
+                type="caption"
+                style={{
+                  fontWeight: 700,
+                  color:
+                    job.status === "open"
+                      ? Brand.success
+                      : job.status === "full"
+                        ? Brand.warning
+                        : job.status === "completed"
+                          ? Brand.primary
+                          : Brand.danger,
+                }}
+              >
+                {job.status === "full" ? "Full" : job.status}
+              </ThemedText>
             </View>
+            <ThemedText type="caption">{job.work_type}</ThemedText>
+            {job.employment_type && (
+              <View style={{ backgroundColor: Brand.primaryLight, paddingHorizontal: 8, paddingVertical: 2, borderRadius: BorderRadius.sm, alignSelf: 'flex-start', marginTop: 4 }}>
+                <ThemedText type="caption" style={{ color: Brand.primary, fontWeight: 600 }}>{EMPLOYMENT_TYPE_LABELS[job.employment_type]}</ThemedText>
+              </View>
+            )}
+          <ThemedText type="caption" style={{ color: Brand.textSecondary }}>
+            {vacanciesFilled}/{vacanciesTotal} {t('jobDetail.filled')}
+          </ThemedText>
+          </View>
+          {job.price && !job.employment_type && (
+            <ThemedText
+              type="price"
+              style={{ marginTop: 8, padding: Spacing.one }}
+            >
+              {job.price.toLocaleString()} MMK
+            </ThemedText>
+          )}
+          {job.salary_min && job.employment_type && (
+            <ThemedText
+              type="price"
+              style={{ marginTop: 8, padding: Spacing.one }}
+            >
+              {job.salary_min.toLocaleString()} - {job.salary_max?.toLocaleString()} MMK{job.salary_period ? `/${SALARY_PERIOD_LABELS[job.salary_period] || ''}` : ''}
+            </ThemedText>
           )}
         </View>
 
-        <ScrollView contentContainerStyle={styles.content}>
-          <View style={styles.titleCard}>
-            <ThemedText style={styles.title}>{job.title}</ThemedText>
-            <View style={styles.badgeRow}>
-              <View style={[styles.workTypePill, { backgroundColor: Brand.primaryLight }]}>
-                <ThemedText style={{ color: Brand.primary, fontWeight: '700', fontSize: 13 }}>{job.work_type}</ThemedText>
-              </View>
-              <StatusBadge status={job.status} />
-            </View>
-            {job.price && (
-              <ThemedText style={styles.price}>{job.price.toLocaleString()} MMK</ThemedText>
-            )}
-          </View>
-
-          {job.image_urls && job.image_urls.length > 0 && (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.imageGallery}>
-              {job.image_urls.map((url, i) => (
-                <Image key={i} source={{ uri: url }} style={styles.galleryImage} contentFit="cover" />
-              ))}
-            </ScrollView>
-          )}
-
-          <View style={styles.sectionCard}>
-            <ThemedText style={styles.sectionLabel}>Description</ThemedText>
-            <ThemedText style={{ lineHeight: 22, color: Brand.text }}>{job.description || 'No description'}</ThemedText>
-          </View>
-
-          <View style={styles.sectionCard}>
-            <ThemedText style={styles.sectionLabel}>Location</ThemedText>
-            <ThemedText style={{ color: Brand.text }}>{[job.address, job.city, job.region].filter(Boolean).join(', ') || 'Remote'}</ThemedText>
-            {(() => {
-              const coords = parseCoords(job)
-              if (!coords) return null
-              return (
-                <Pressable style={styles.dirBtn} onPress={() => {
-                  const url = Platform.select({
-                    ios: `maps://app?daddr=${coords.latitude},${coords.longitude}`,
-                    android: `geo:${coords.latitude},${coords.longitude}?q=${coords.latitude},${coords.longitude}`,
-                    default: `https://www.google.com/maps/dir/?api=1&destination=${coords.latitude},${coords.longitude}`,
-                  })
-                  Linking.openURL(url)
-                }}>
-                  <ThemedText style={styles.dirBtnText}>Get Directions</ThemedText>
-                </Pressable>
-              )
-            })()}
-          </View>
-
-          <View style={styles.sectionCard}>
-            <ThemedText style={styles.sectionLabel}>Posted by</ThemedText>
-            <ThemedText style={{ color: Brand.text }}>{uploaderName || 'Unknown'}</ThemedText>
-          </View>
-
-          {isAccepted && (isMyJob || acceptedByMe) && (
-            <View style={styles.sectionCard}>
-              <ThemedText style={styles.sectionLabel}>
-                {isMyJob ? 'Accepted by' : 'You accepted this job'}
-              </ThemedText>
-              {searcherName && <ThemedText style={{ color: Brand.text }}>Name: {searcherName}</ThemedText>}
-              {searcherPhone && (
-                <ThemedText style={{ marginTop: Spacing.one, color: Brand.text }}>
-                  Phone:{' '}
-                  <Pressable onPress={() => Linking.openURL(`tel:${searcherPhone}`)}>
-                    <ThemedText style={{ color: Brand.primary, fontWeight: '700' }}>{searcherPhone}</ThemedText>
-                  </Pressable>
-                </ThemedText>
+        {job.image_urls && job.image_urls.length > 0 && (
+          <View style={{ marginBottom: Spacing.four }}>
+            <FlatList
+              data={job.image_urls}
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              onMomentumScrollEnd={(e) => {
+                const idx = Math.round(e.nativeEvent.contentOffset.x / (Dimensions.get("window").width - Spacing.four * 2))
+                setGalleryIndex(idx)
+              }}
+              renderItem={({ item }) => (
+                <Image
+                  source={{ uri: item }}
+                  style={{
+                    width: Dimensions.get("window").width - Spacing.four * 2,
+                    height: 220,
+                    borderRadius: BorderRadius.md,
+                  }}
+                  resizeMode="cover"
+                />
               )}
-            </View>
-          )}
-        </ScrollView>
-
-        {(canAccept || canComplete) && (
-          <View style={styles.footer}>
-            {canAccept && (
-              <Pressable style={[styles.actionBtn, { backgroundColor: Brand.primary }, accepting && { opacity: 0.6 }]} onPress={handleAccept} disabled={accepting}>
-                <ThemedText style={styles.actionBtnText}>{accepting ? 'Accepting...' : 'Accept Job'}</ThemedText>
-              </Pressable>
-            )}
-            {canComplete && (
-              <Pressable style={[styles.actionBtn, { backgroundColor: Brand.success }, completing && { opacity: 0.6 }]} onPress={handleComplete} disabled={completing}>
-                <ThemedText style={styles.actionBtnText}>{completing ? 'Completing...' : 'Complete'}</ThemedText>
-              </Pressable>
+              keyExtractor={(_, i) => String(i)}
+            />
+            {job.image_urls.length > 1 && (
+              <View style={{ flexDirection: "row", justifyContent: "center", gap: 6, marginTop: Spacing.two }}>
+                {job.image_urls.map((_: string, i: number) => (
+                  <View
+                    key={i}
+                    style={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: 3,
+                      backgroundColor: i === galleryIndex ? Brand.primary : Brand.border,
+                    }}
+                  />
+                ))}
+              </View>
             )}
           </View>
         )}
-      </View>
+
+        {job.description && (
+          <View style={styles.card}>
+            <ThemedText
+              type="caption"
+              style={{
+                fontWeight: 600,
+                color: Brand.textSecondary,
+                marginBottom: 6,
+              }}
+            >
+              Description
+            </ThemedText>
+            <ThemedText style={{ lineHeight: 22, color: Brand.text }}>
+              {job.description}
+            </ThemedText>
+          </View>
+        )}
+
+        <View style={styles.card}>
+          <ThemedText
+            type="caption"
+            style={{
+              fontWeight: 600,
+              color: Brand.textSecondary,
+              marginBottom: 8,
+            }}
+          >
+            Location
+          </ThemedText>
+          {hasLocation ? (
+            <ThemedText style={styles.infoLine}>
+              {job.city ? `${job.city}, ` : ""}
+              {job.region || ""}
+            </ThemedText>
+          ) : (
+            <ThemedText style={styles.infoLine}>Remote</ThemedText>
+          )}
+          {hasLocation && (
+            <Pressable style={styles.directionsBtn} onPress={handleDirections}>
+			<ThemedText style={styles.directionsBtnText}>
+				{t('jobDetail.getDirections')}
+			</ThemedText>
+            </Pressable>
+          )}
+        </View>
+
+        <View style={styles.card}>
+          <ThemedText
+            type="caption"
+            style={{
+              fontWeight: 600,
+              color: Brand.textSecondary,
+              marginBottom: 8,
+            }}
+          >
+            Uploader
+          </ThemedText>
+          <Pressable
+            onPress={() => router.push(`/user/${job.uploader_id}`)}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: Spacing.three,
+            }}
+          >
+            {uploaderAvatarUrl ? (
+              <Image
+                source={{ uri: uploaderAvatarUrl }}
+                style={styles.applicantAvatar}
+              />
+            ) : (
+              <View
+                style={[
+                  styles.applicantAvatarPlaceholder,
+                  { backgroundColor: Brand.primaryLight },
+                ]}
+              >
+                <ThemedText style={styles.applicantAvatarText}>
+                  {(uploaderName.charAt(0) || "?").toUpperCase()}
+                </ThemedText>
+              </View>
+            )}
+            <View>
+              <ThemedText style={[styles.infoLine, { color: Brand.primary }]}>
+                {uploaderName || "Anonymous"}
+              </ThemedText>
+              {uploaderPhone && (
+                <ThemedText
+                  type="caption"
+                  style={{ color: Brand.textSecondary }}
+                >
+                  {uploaderPhone}
+                </ThemedText>
+              )}
+            </View>
+          </Pressable>
+        </View>
+
+        {myApplication && !isUploader && (
+          <View style={styles.card}>
+            <ThemedText
+              type="caption"
+              style={{
+                fontWeight: 600,
+                color: Brand.textSecondary,
+                marginBottom: 6,
+              }}
+            >
+              My Application
+            </ThemedText>
+            <View
+              style={[
+                styles.miniBadge,
+                {
+                  backgroundColor: STATUS_COLOR[myApplication.status].bg,
+                  alignSelf: "flex-start",
+                },
+              ]}
+            >
+              <ThemedText
+                type="caption"
+                style={{
+                  fontWeight: 700,
+                  color: STATUS_COLOR[myApplication.status].color,
+                }}
+              >
+                {myApplication.status.charAt(0).toUpperCase() +
+                  myApplication.status.slice(1)}
+              </ThemedText>
+            </View>
+          </View>
+        )}
+
+        {applicants.length > 0 && (
+          <View style={styles.card}>
+            <ThemedText
+              type="caption"
+              style={{
+                fontWeight: 600,
+                color: Brand.textSecondary,
+                marginBottom: 8,
+              }}
+            >
+              Applicants ({applicants.length})
+            </ThemedText>
+            {applicants.map((a, i) => {
+              const sc = STATUS_COLOR[a.status];
+              return (
+                <View
+                  key={i}
+                  style={{
+                    marginBottom: i < applicants.length - 1 ? Spacing.three : 0,
+                  }}
+                >
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                    }}
+                  >
+                    <View style={{ flex: 1 }}>
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: Spacing.two,
+                        }}
+                      >
+                        {a.avatarUrl ? (
+                          <Image
+                            source={{ uri: a.avatarUrl }}
+                            style={styles.applicantAvatar}
+                          />
+                        ) : (
+                          <View style={styles.applicantAvatarPlaceholder}>
+                            <ThemedText style={styles.applicantAvatarText}>
+                              {(a.name.charAt(0) || "?").toUpperCase()}
+                            </ThemedText>
+                          </View>
+                        )}
+                        <Pressable onPress={() => router.push(`/user/${a.id}`)}>
+                          <ThemedText
+                            style={[styles.infoLine, { color: Brand.primary }]}
+                          >
+                            {a.name || "Anonymous"}
+                          </ThemedText>
+                        </Pressable>
+                        <View
+                          style={[styles.miniBadge, { backgroundColor: sc.bg }]}
+                        >
+                          <ThemedText
+                            type="caption"
+                            style={{ fontWeight: 700, color: sc.color }}
+                          >
+                            {a.status.charAt(0).toUpperCase() +
+                              a.status.slice(1)}
+                          </ThemedText>
+                        </View>
+                      </View>
+                      {a.phone ? (
+                        <ThemedText
+                          type="caption"
+                          style={{ color: Brand.textSecondary, marginTop: 2 }}
+                        >
+                          {a.phone}
+                        </ThemedText>
+                      ) : null}
+                      {a.message && isUploader && (
+                        <ThemedText
+                          type="caption"
+                          style={{ color: Brand.textSecondary, marginTop: 4, fontStyle: 'italic' }}
+                          numberOfLines={2}
+                        >
+                          "{a.message}"
+                        </ThemedText>
+                      )}
+                      {a.reject_reason && a.status === "rejected" && (
+                        <ThemedText
+                          type="caption"
+                          style={{ color: Brand.danger, marginTop: 4 }}
+                        >
+                          Reason: {a.reject_reason}
+                        </ThemedText>
+                      )}
+                    </View>
+                    {isUploader && a.status === "pending" && (
+                      <View style={{ flexDirection: "row", gap: 6 }}>
+                        <Pressable
+                          onPress={() => handleAccept(a.id)}
+                          style={styles.acceptBtn}
+                        >
+                          <ThemedText style={styles.acceptBtnText}>
+                      {t('jobDetail.accept')}
+                    </ThemedText>
+                  </Pressable>
+                  <Pressable
+                    style={styles.rejectBtn}
+                    onPress={() => handleReject(a.id)}
+                  >
+                    <ThemedText style={styles.rejectBtnText}>
+                      {t('jobDetail.reject')}
+                    </ThemedText>
+                        </Pressable>
+                      </View>
+                    )}
+                    {isUploader && a.status !== "pending" && (
+                      <Pressable
+                        onPress={() => router.push(`/chat/${job.id}/${a.id}`)}
+                        style={styles.chatBtn}
+                      >
+                        <ThemedText style={styles.chatBtnText}>{t('tabs.chat')}</ThemedText>
+                      </Pressable>
+                    )}
+                    {isCompleted && isUploader && a.status === "accepted" && !reviewedUserIds.has(a.id) && (
+                      <Pressable
+                        onPress={() => openReviewModal(a.id, a.name)}
+                        style={styles.reviewBtn}
+                      >
+                        <ThemedText style={styles.reviewBtnText}>Review</ThemedText>
+                      </Pressable>
+                    )}
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+        )}
+
+        {isCompleted && !isUploader && myApplication?.status === "accepted" && !reviewedUserIds.has(job?.uploader_id ?? '') && (
+          <Pressable
+            onPress={() => openReviewModal(job.uploader_id, uploaderName || 'Uploader')}
+            style={styles.reviewFullBtn}
+          >
+            <ThemedText style={styles.reviewFullBtnText}>Leave a Review for {uploaderName || 'Uploader'}</ThemedText>
+          </Pressable>
+        )}
+
+        {canApply && (
+          <Pressable
+            style={[styles.primaryBtn, applying && { opacity: 0.6 }]}
+            onPress={() => setShowApplyModal(true)}
+            disabled={applying}
+          >
+            {applying ? <ActivityIndicator size="small" color={Brand.white} /> : <ThemedText style={styles.primaryBtnText}>{t('jobDetail.apply')}</ThemedText>}
+          </Pressable>
+        )}
+
+        {canComplete && (
+          <Pressable
+            style={[
+              styles.primaryBtn,
+              { backgroundColor: Brand.success },
+              completing && { opacity: 0.6 },
+            ]}
+            onPress={handleComplete}
+            disabled={completing}
+          >
+            {completing ? <ActivityIndicator size="small" color={Brand.white} /> : <ThemedText style={styles.primaryBtnText}>Mark as Completed</ThemedText>}
+          </Pressable>
+        )}
+
+        {error && (
+          <ThemedText
+            type="small"
+            style={{
+              color: Brand.danger,
+              textAlign: "center",
+              marginTop: Spacing.three,
+            }}
+          >
+            {error}
+          </ThemedText>
+        )}
+      </ScrollView>
+
+      <Modal visible={showReviewModal} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <ThemedText style={styles.modalTitle}>Rate {reviewTarget?.name || 'User'}</ThemedText>
+            <View style={{ alignItems: 'center', marginBottom: Spacing.four }}>
+              <StarRating rating={reviewRating} size={36} interactive onChange={setReviewRating} />
+            </View>
+            <TextInput
+              style={styles.modalInput}
+              placeholder="Write a comment (optional)"
+              placeholderTextColor={Brand.textSecondary}
+              value={reviewComment}
+              onChangeText={setReviewComment}
+              multiline
+              maxLength={500}
+            />
+            <View style={{ flexDirection: 'row', gap: Spacing.two, marginTop: Spacing.three }}>
+              <Pressable
+                onPress={() => setShowReviewModal(false)}
+                style={[styles.modalBtn, { backgroundColor: Brand.border }]}
+              >
+                <ThemedText style={[styles.modalBtnText, { color: Brand.text }]}>Cancel</ThemedText>
+              </Pressable>
+              <Pressable
+                onPress={handleSubmitReview}
+                disabled={reviewRating === 0 || submittingReview}
+                style={[
+                  styles.modalBtn,
+                  { backgroundColor: Brand.primary },
+                  (reviewRating === 0 || submittingReview) && { opacity: 0.6 },
+                ]}
+              >
+                {submittingReview ? <ActivityIndicator size="small" color={Brand.white} /> : <ThemedText style={styles.modalBtnText}>Submit</ThemedText>}
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={showApplyModal} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <ThemedText style={styles.modalTitle}>{t('jobDetail.applyingModalTitle')}</ThemedText>
+            <ThemedText type="small" style={{ color: Brand.textSecondary, textAlign: 'center', marginBottom: Spacing.four }}>
+                {t('jobDetail.applyingModalHelper')}
+            </ThemedText>
+            <TextInput
+              style={styles.modalInput}
+                placeholder={t('jobDetail.applyingModalPlaceholder')}
+              placeholderTextColor={Brand.textSecondary}
+              value={applyMessage}
+              onChangeText={setApplyMessage}
+              multiline
+              maxLength={500}
+            />
+            <View style={{ flexDirection: 'row', gap: Spacing.two, marginTop: Spacing.three }}>
+              <Pressable
+                onPress={() => { setShowApplyModal(false); setApplyMessage('') }}
+                style={[styles.modalBtn, { backgroundColor: Brand.border }]}
+              >
+                <ThemedText style={[styles.modalBtnText, { color: Brand.text }]}>Cancel</ThemedText>
+              </Pressable>
+              <Pressable
+                onPress={() => handleApply(applyMessage)}
+                disabled={applying}
+                style={[
+                  styles.modalBtn,
+                  { backgroundColor: Brand.primary },
+                  applying && { opacity: 0.6 },
+                ]}
+              >
+                {applying ? <ActivityIndicator size="small" color={Brand.white} /> : <ThemedText style={styles.modalBtnText}>Send Application</ThemedText>}
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.four,
-    paddingVertical: Spacing.two,
-  },
-  backArrow: {
-    paddingVertical: Spacing.one,
-  },
-  myJobPill: {
-    backgroundColor: Brand.primaryLight,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: BorderRadius.full,
-  },
   content: {
     padding: Spacing.four,
-    gap: Spacing.three,
-    paddingBottom: Spacing.six,
   },
-  titleCard: {
-    backgroundColor: Brand.white,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.three,
-    ...Shadow.card,
+  titleSection: {
+    marginBottom: Spacing.five,
   },
   title: {
-    fontSize: 24,
-    fontWeight: '800',
+    fontSize: FontSize.xl,
+    fontWeight: 700,
     color: Brand.text,
-    marginBottom: Spacing.two,
+    padding: Spacing.one,
+    letterSpacing: -0.5,
   },
-  badgeRow: {
-    flexDirection: 'row',
+  titleMeta: {
+    flexDirection: "row",
+    alignItems: "center",
     gap: Spacing.two,
-    marginBottom: Spacing.two,
-  },
-  workTypePill: {
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: BorderRadius.full,
-  },
-  price: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: Brand.primary,
-  },
-  sectionCard: {
-    backgroundColor: Brand.white,
-    padding: Spacing.three,
-    borderRadius: BorderRadius.lg,
-    ...Shadow.card,
-  },
-  sectionLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: Brand.textSecondary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-    marginBottom: 6,
-  },
-  dirBtn: {
-    backgroundColor: Brand.primary,
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    borderRadius: BorderRadius.full,
-    marginTop: Spacing.two,
-    alignSelf: 'flex-start',
-  },
-  dirBtnText: {
-    color: Brand.white,
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  footer: {
-    padding: Spacing.four,
-    borderTopWidth: 1,
-    borderTopColor: Brand.border,
-    gap: Spacing.two,
-  },
-  actionBtn: {
-    paddingVertical: 16,
-    borderRadius: BorderRadius.full,
-    alignItems: 'center',
-    ...Shadow.button,
-  },
-  actionBtnText: {
-    color: Brand.white,
-    fontSize: 16,
-    fontWeight: '800',
-  },
-  imageGallery: {
-    marginVertical: Spacing.one,
-    marginHorizontal: -Spacing.four,
-    paddingHorizontal: Spacing.four,
-  },
-  galleryImage: {
-    width: SCREEN_WIDTH * 0.75,
-    height: 200,
-    borderRadius: BorderRadius.lg,
-    marginRight: Spacing.two,
-  },
-  backBtn: {
-    backgroundColor: Brand.primary,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: BorderRadius.full,
+    marginTop: 6,
   },
   statusBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: BorderRadius.full,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: BorderRadius.sm,
   },
-  statusBadgeText: {
-    fontSize: 12,
-    fontWeight: '700',
-    textTransform: 'capitalize',
+  miniBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: BorderRadius.sm,
   },
-})
+  card: {
+    backgroundColor: Brand.white,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.four,
+    marginBottom: Spacing.three,
+    ...Shadow.card,
+  },
+  infoLine: {
+    fontSize: FontSize.base,
+    color: Brand.text,
+  },
+  detailImage: {
+    width: 200,
+    height: 150,
+    borderRadius: BorderRadius.md,
+  },
+  directionsBtn: {
+    backgroundColor: Brand.primaryLight,
+    paddingVertical: 10,
+    borderRadius: BorderRadius.sm,
+    alignItems: "center",
+    marginTop: Spacing.two,
+  },
+  directionsBtnText: {
+    color: Brand.primary,
+    fontWeight: 700,
+    fontSize: FontSize.sm,
+  },
+  primaryBtn: {
+    backgroundColor: Brand.primary,
+    paddingVertical: 14,
+    borderRadius: BorderRadius.md,
+    alignItems: "center",
+    marginTop: Spacing.three,
+    ...Shadow.elevated,
+  },
+  primaryBtnText: {
+    color: Brand.white,
+    fontSize: FontSize.base,
+    fontWeight: 700,
+  },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: Spacing.four,
+    paddingVertical: Spacing.four,
+  },
+  backBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Brand.primaryLight,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  editBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Brand.primaryLight,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  deleteBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Brand.dangerLight,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  flagBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Brand.borderLight,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  shareBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Brand.primaryLight,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  headerSaveBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Brand.primaryLight,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  chatBtn: {
+    backgroundColor: Brand.primaryLight,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: BorderRadius.sm,
+  },
+  chatBtnText: {
+    color: Brand.primary,
+    fontWeight: 700,
+    fontSize: FontSize.sm,
+  },
+  acceptBtn: {
+    backgroundColor: Brand.successLight,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: BorderRadius.sm,
+  },
+  acceptBtnText: {
+    color: Brand.success,
+    fontWeight: 700,
+    fontSize: FontSize.sm,
+  },
+  rejectBtn: {
+    backgroundColor: Brand.dangerLight,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: BorderRadius.sm,
+  },
+  rejectBtnText: {
+    color: Brand.danger,
+    fontWeight: 700,
+    fontSize: FontSize.sm,
+  },
+  applicantAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+  },
+  applicantAvatarPlaceholder: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: Brand.primaryLight,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  applicantAvatarText: {
+    color: Brand.primary,
+    fontWeight: 700,
+    fontSize: FontSize.sm,
+  },
+  reviewBtn: {
+    backgroundColor: Brand.warningLight,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: BorderRadius.sm,
+    marginLeft: 6,
+  },
+  reviewBtnText: {
+    color: Brand.warning,
+    fontWeight: 700,
+    fontSize: FontSize.sm,
+  },
+  reviewFullBtn: {
+    backgroundColor: Brand.warningLight,
+    paddingVertical: 14,
+    borderRadius: BorderRadius.md,
+    alignItems: 'center',
+    marginTop: Spacing.three,
+  },
+  reviewFullBtnText: {
+    color: Brand.warning,
+    fontSize: FontSize.base,
+    fontWeight: 700,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: Brand.overlay,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: Spacing.four,
+  },
+  modalContent: {
+    backgroundColor: Brand.white,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.five,
+    width: '100%',
+    maxWidth: 340,
+  },
+  modalTitle: {
+    fontSize: FontSize.lg,
+    fontWeight: 700,
+    color: Brand.text,
+    textAlign: 'center',
+    marginBottom: Spacing.four,
+  },
+  modalInput: {
+    borderWidth: 1,
+    borderColor: Brand.border,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.three,
+    fontSize: FontSize.base,
+    color: Brand.text,
+    minHeight: 80,
+    textAlignVertical: 'top',
+  },
+  modalBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: BorderRadius.md,
+    alignItems: 'center',
+  },
+  modalBtnText: {
+    color: Brand.white,
+    fontWeight: 700,
+    fontSize: FontSize.base,
+  },
+});

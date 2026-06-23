@@ -1,205 +1,528 @@
-import { useCallback, useState } from 'react'
-import { Pressable, StyleSheet, ScrollView, View, Image } from 'react-native'
-import { router, useFocusEffect } from 'expo-router'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { Ionicons } from "@expo/vector-icons";
+import { router, useFocusEffect } from "expo-router";
+import { useCallback, useState } from "react";
+import { Alert, Image, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-import { ThemedText } from '@/components/themed-text'
-import { BorderRadius, BottomTabInset, Brand, Shadow, Spacing } from '@/constants/theme'
-import { supabase } from '@/lib/supabase'
-import { useAuth } from '@/contexts/AuthContext'
+import { ThemedText } from "@/components/themed-text";
+import { StarRating } from "@/components/star-rating";
+import { Skeleton } from '@/components/skeleton'
+import {
+    BorderRadius,
+    BottomTabInset,
+    Brand,
+    FontSize,
+    Shadow,
+    Spacing,
+} from "@/constants/theme";
+import { useAuth } from "@/contexts/AuthContext";
+import { useLocale } from "@/contexts/LocaleContext";
+import { supabase } from "@/lib/supabase";
 
 export default function ProfileScreen() {
-  const { user, signOut } = useAuth()
-  const [displayName, setDisplayName] = useState('')
-  const [phone, setPhone] = useState('')
-  const [city, setCity] = useState('')
-  const [region, setRegion] = useState('')
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
-  const [loading, setLoading] = useState(true)
+  const { user, signOut } = useAuth();
+  const { t, locale, setLocale } = useLocale();
+  const [displayName, setDisplayName] = useState("");
+  const [bio, setBio] = useState("");
+  const [phone, setPhone] = useState("");
+  const [city, setCity] = useState("");
+  const [region, setRegion] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [verified, setVerified] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [completedJobs, setCompletedJobs] = useState<any[]>([]);
+  const [savedJobs, setSavedJobs] = useState<any[]>([]);
+  const [avgRating, setAvgRating] = useState(0);
+  const [ratingCount, setRatingCount] = useState(0);
 
   const loadProfile = useCallback(async () => {
-    if (!user) return
-    setLoading(true)
-    const { data } = await supabase.from('users').select('*').eq('id', user.id).single()
-    if (data) {
-      const u = data as any
-      setDisplayName(u.display_name || '')
-      setPhone(u.phone || '')
-      setCity(u.city || '')
-      setRegion(u.region || '')
-      setAvatarUrl(u.avatar_url || null)
+    if (!user) return;
+    setLoading(true);
+    try {
+      const { data } = await supabase
+        .from("users")
+        .select("*")
+        .eq("id", user.id)
+        .single();
+      if (data) {
+        const u = data as any;
+        setDisplayName(u.display_name || "");
+        setBio(u.bio || "");
+        setPhone(u.phone || "");
+        setCity(u.city || "");
+        setRegion(u.region || "");
+        setAvatarUrl(u.avatar_url || null);
+        setVerified(u.verified || false);
+      }
+
+      const { data: myCompleted } = await supabase
+        .from("jobs")
+        .select("*")
+        .eq("uploader_id", user.id)
+        .eq("status", "completed")
+        .eq("deleted", false)
+        .order("updated_at", { ascending: false });
+
+      const { data: myApps } = await supabase
+        .from("applications")
+        .select("job_id")
+        .eq("searcher_id", user.id)
+        .eq("status", "accepted");
+
+      let workedJobs: any[] = [];
+      const jobIds = (myApps ?? []).map((a: any) => a.job_id);
+      if (jobIds.length > 0) {
+        const { data } = await supabase
+          .from("jobs")
+          .select("*")
+          .in("id", jobIds)
+          .eq("status", "completed")
+          .order("updated_at", { ascending: false });
+        workedJobs = (data ?? []) as any[];
+      }
+
+      const all = [...((myCompleted ?? []) as any[]), ...workedJobs];
+      const unique = all.filter((j, i, arr) => arr.findIndex((x) => x.id === j.id) === i);
+      setCompletedJobs(unique);
+
+      const { data: savedRows } = await supabase
+        .from("saved_jobs")
+        .select("job_id")
+        .eq("user_id", user.id);
+
+      const savedJobIds = (savedRows ?? []).map((r: any) => r.job_id);
+      if (savedJobIds.length > 0) {
+        const { data: sj } = await supabase
+          .from("jobs")
+          .select("*")
+          .in("id", savedJobIds)
+          .order("created_at", { ascending: false });
+        setSavedJobs((sj ?? []) as any[]);
+      } else {
+        setSavedJobs([]);
+      }
+
+      const { data: ratingData } = await supabase
+        .from('reviews')
+        .select('rating')
+        .eq('reviewee_id', user.id);
+      if (ratingData && ratingData.length > 0) {
+        const sum = ratingData.reduce((acc: number, r: any) => acc + r.rating, 0);
+        setAvgRating(Number((sum / ratingData.length).toFixed(1)));
+        setRatingCount(ratingData.length);
+      } else {
+        setAvgRating(0);
+        setRatingCount(0);
+      }
+    } catch (error) {
+      console.error('Failed to load profile', error);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false)
-  }, [user])
+  }, [user]);
 
-  useFocusEffect(useCallback(() => {
-    loadProfile()
-  }, [loadProfile]))
+  useFocusEffect(
+    useCallback(() => {
+      loadProfile();
+    }, [loadProfile]),
+  );
 
-  const initial = (displayName || user?.email || '?')[0].toUpperCase()
+  const initial = (displayName || user?.email || "?")[0].toUpperCase();
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: Brand.bg }} edges={['top']}>
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: Brand.bg }}
+      edges={["top"]}
+    >
       <View style={{ flex: 1 }}>
         <View style={styles.header}>
-          <ThemedText style={styles.headerTitle}>Profile</ThemedText>
+          <ThemedText style={styles.headerTitle}>{t('profile.title')}</ThemedText>
           <Pressable onPress={signOut} style={styles.signOutBtn}>
-            <ThemedText style={styles.signOutText}>Sign Out</ThemedText>
+            <ThemedText style={styles.signOutText}>{t('profile.signOut')}</ThemedText>
           </Pressable>
         </View>
 
-        <ScrollView contentContainerStyle={styles.content}>
+        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           {loading ? (
-            <ThemedText>Loading...</ThemedText>
+            <View style={{ gap: Spacing.four }}>
+              <View style={styles.profileCard}>
+                <Skeleton width={88} height={88} borderRadius={44} />
+                <Skeleton width="50%" height={18} style={{ marginTop: Spacing.three }} />
+              </View>
+
+              <View style={styles.infoCard}>
+                <View style={styles.infoRow}>
+                  <Skeleton width="30%" height={14} />
+                  <Skeleton width="50%" height={14} />
+                </View>
+                <View style={styles.divider} />
+                <View style={styles.infoRow}>
+                  <Skeleton width="30%" height={14} />
+                  <Skeleton width="50%" height={14} />
+                </View>
+                <View style={styles.divider} />
+                <View style={styles.infoRow}>
+                  <Skeleton width="30%" height={14} />
+                  <Skeleton width="50%" height={14} />
+                </View>
+              </View>
+
+              <View style={styles.sectionCard}>
+                <ThemedText style={styles.sectionTitle}>{t('profile.completedJobs', { count: 0 })}</ThemedText>
+                <View style={styles.jobRow}>
+                  <Skeleton width="60%" height={14} />
+                  <Ionicons name="chevron-forward" size={18} color={Brand.borderLight} />
+                </View>
+                <View style={styles.divider} />
+                <View style={styles.jobRow}>
+                  <Skeleton width="60%" height={14} />
+                  <Ionicons name="chevron-forward" size={18} color={Brand.borderLight} />
+                </View>
+                <View style={styles.divider} />
+                <View style={styles.jobRow}>
+                  <Skeleton width="60%" height={14} />
+                  <Ionicons name="chevron-forward" size={18} color={Brand.borderLight} />
+                </View>
+              </View>
+
+              <View style={styles.sectionCard}>
+                <ThemedText style={styles.sectionTitle}>{t('profile.savedJobs', { count: 0 })}</ThemedText>
+                <View style={styles.jobRow}>
+                  <Skeleton width="60%" height={14} />
+                  <Ionicons name="chevron-forward" size={18} color={Brand.borderLight} />
+                </View>
+                <View style={styles.divider} />
+                <View style={styles.jobRow}>
+                  <Skeleton width="60%" height={14} />
+                  <Ionicons name="chevron-forward" size={18} color={Brand.borderLight} />
+                </View>
+              </View>
+            </View>
           ) : (
             <>
-              <View style={styles.avatarCard}>
-                <View style={styles.avatarContainer}>
+              <View style={styles.profileCard}>
+                <Pressable
+                  style={styles.editBtn}
+                  onPress={() => router.push("/edit-profile" as any)}
+                >
+                  <Ionicons name="pencil" size={16} color={Brand.primary} />
+                </Pressable>
+
+                <View style={styles.avatarWrap}>
                   {avatarUrl ? (
                     <Image source={{ uri: avatarUrl }} style={styles.avatar} />
                   ) : (
                     <View style={styles.avatar}>
-                      <ThemedText style={styles.avatarInitial}>{initial}</ThemedText>
+                      <ThemedText style={styles.avatarInitial}>
+                        {initial}
+                      </ThemedText>
                     </View>
                   )}
                 </View>
-                <ThemedText style={styles.emailText}>{user?.email}</ThemedText>
-              </View>
 
-              <View style={styles.profileCard}>
-                {displayName && (
-                  <View style={styles.fieldRow}>
-                    <ThemedText style={styles.fieldLabel}>Name</ThemedText>
-                    <ThemedText style={styles.fieldValue}>{displayName}</ThemedText>
+                {displayName ? (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <ThemedText style={styles.nameText}>{displayName}</ThemedText>
+                    {verified && (
+                      <Ionicons name="checkmark-circle" size={18} color={Brand.primary} />
+                    )}
                   </View>
-                )}
-                {phone && (
-                  <View style={styles.fieldRow}>
-                    <ThemedText style={styles.fieldLabel}>Phone</ThemedText>
-                    <ThemedText style={styles.fieldValue}>{phone}</ThemedText>
+                ) : null}
+                <ThemedText type="small" style={{ color: Brand.textSecondary }}>
+                  {user?.email}
+                </ThemedText>
+                {bio ? (
+                  <ThemedText type="small" style={{ color: Brand.text, marginTop: Spacing.two, textAlign: 'center', paddingHorizontal: Spacing.four }}>
+                    {bio}
+                  </ThemedText>
+                ) : null}
+                {ratingCount > 0 && (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: Spacing.half, gap: 6 }}>
+                    <StarRating rating={Math.round(avgRating)} size={14} />
+                    <ThemedText type="caption" style={{ color: Brand.textSecondary }}>
+                      {avgRating} ({ratingCount})
+                    </ThemedText>
                   </View>
-                )}
-                {city && (
-                  <View style={styles.fieldRow}>
-                    <ThemedText style={styles.fieldLabel}>City</ThemedText>
-                    <ThemedText style={styles.fieldValue}>{city}</ThemedText>
-                  </View>
-                )}
-                {region && (
-                  <View style={styles.fieldRow}>
-                    <ThemedText style={styles.fieldLabel}>Region</ThemedText>
-                    <ThemedText style={styles.fieldValue}>{region}</ThemedText>
-                  </View>
-                )}
-                {!displayName && !phone && !city && (
-                  <ThemedText style={{ color: Brand.textSecondary }}>No info set yet</ThemedText>
                 )}
               </View>
 
-              <Pressable style={styles.editBtn} onPress={() => router.push('/edit-profile' as any)}>
-                <ThemedText style={styles.editBtnText}>Edit Profile</ThemedText>
+              <View style={styles.infoCard}>
+                <View style={styles.infoRow}>
+                  <ThemedText type="caption" style={styles.infoLabel}>
+                    {t('profile.phone')}
+                  </ThemedText>
+                  <ThemedText style={styles.infoValue}>
+                    {phone || t('profile.emDash')}
+                  </ThemedText>
+                </View>
+                <View style={styles.divider} />
+                <View style={styles.infoRow}>
+                  <ThemedText type="caption" style={styles.infoLabel}>
+                    {t('profile.city')}
+                  </ThemedText>
+                  <ThemedText style={styles.infoValue}>
+                    {city || t('profile.emDash')}
+                  </ThemedText>
+                </View>
+                <View style={styles.divider} />
+                <View style={styles.infoRow}>
+                  <ThemedText type="caption" style={styles.infoLabel}>
+                    {t('profile.region')}
+                  </ThemedText>
+                  <ThemedText style={styles.infoValue}>
+                    {region || t('profile.emDash')}
+                  </ThemedText>
+                </View>
+              </View>
+
+              {completedJobs.length > 0 && (
+                <View style={styles.sectionCard}>
+                  <ThemedText style={styles.sectionTitle}>{t('profile.completedJobs', { count: completedJobs.length })}</ThemedText>
+                  {completedJobs.map((job, i) => (
+                    <Pressable key={job.id} onPress={() => router.push(`/job/${job.id}`)}>
+                      <View style={[styles.jobRow, i < completedJobs.length - 1 && styles.jobRowBorder]}>
+                        <View style={{ flex: 1 }}>
+                          <ThemedText style={styles.jobTitle}>{job.title}</ThemedText>
+                          {job.price ? <ThemedText type="caption" style={{ color: Brand.textSecondary }}>{job.price.toLocaleString()} MMK</ThemedText> : null}
+                        </View>
+                        <Ionicons name="chevron-forward" size={18} color={Brand.textSecondary} />
+                      </View>
+                    </Pressable>
+                  ))}
+                </View>
+              )}
+
+              {savedJobs.length > 0 && (
+                <View style={styles.sectionCard}>
+                  <ThemedText style={styles.sectionTitle}>{t('profile.savedJobs', { count: savedJobs.length })}</ThemedText>
+                  {savedJobs.map((job, i) => (
+                    <Pressable key={job.id} onPress={() => router.push(`/job/${job.id}`)}>
+                      <View style={[styles.jobRow, i < savedJobs.length - 1 && styles.jobRowBorder]}>
+                        <View style={{ flex: 1 }}>
+                          <ThemedText style={styles.jobTitle}>{job.title}</ThemedText>
+                          {job.price ? <ThemedText type="caption" style={{ color: Brand.textSecondary }}>{job.price.toLocaleString()} MMK</ThemedText> : null}
+                        </View>
+                        <Ionicons name="chevron-forward" size={18} color={Brand.textSecondary} />
+                      </View>
+                    </Pressable>
+                  ))}
+                </View>
+              )}
+
+              <View style={styles.sectionCard}>
+                <ThemedText style={styles.sectionTitle}>{t('profile.settings')}</ThemedText>
+                <Pressable
+                  style={styles.settingRow}
+                  onPress={() =>
+                    Alert.alert(t('profile.language'), '', [
+                      { text: t('profile.english'), onPress: () => setLocale('en') },
+                      { text: t('profile.burmese'), onPress: () => setLocale('my') },
+                      { text: t('common.cancel'), style: 'cancel' },
+                    ])
+                  }
+                >
+                  <ThemedText style={styles.settingLabel}>{t('profile.language')}</ThemedText>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                    <ThemedText style={styles.settingValue}>{locale === 'en' ? t('profile.english') : t('profile.burmese')}</ThemedText>
+                    <Ionicons name="chevron-forward" size={16} color={Brand.textSecondary} />
+                  </View>
+                </Pressable>
+              </View>
+
+              <Pressable
+                style={styles.deleteAccountBtn}
+                onPress={() => {
+                  Alert.alert(
+                    t('profile.deleteAccount'),
+                    t('profile.deleteWarning'),
+                    [
+                      { text: t('common.cancel'), style: 'cancel' },
+                      { text: t('common.delete'), style: 'destructive', onPress: async () => {
+                        if (!user) return
+                        await supabase.from('users').update({
+                          deleted_at: new Date().toISOString(),
+                          display_name: null,
+                          phone: null,
+                          avatar_url: null,
+                          bio: null,
+                          city: null,
+                          region: null,
+                        }).eq('id', user.id)
+                        signOut()
+                      }},
+                    ],
+                  )
+                }}
+              >
+                <ThemedText style={styles.deleteAccountText}>{t('profile.deleteAccount')}</ThemedText>
               </Pressable>
             </>
           )}
         </ScrollView>
       </View>
     </SafeAreaView>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.three,
-    paddingBottom: Spacing.three,
+    paddingVertical: Spacing.four,
   },
   headerTitle: {
-    fontSize: 28,
-    fontWeight: '800',
+    padding: Spacing.one,
+    fontSize: FontSize.xl,
+    fontWeight: 700,
     color: Brand.text,
+    letterSpacing: -0.5,
   },
   signOutBtn: {
     backgroundColor: Brand.dangerLight,
-    paddingHorizontal: 18,
-    paddingVertical: 8,
-    borderRadius: BorderRadius.full,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: BorderRadius.sm,
   },
   signOutText: {
     color: Brand.danger,
-    fontWeight: '700',
-    fontSize: 13,
+    fontWeight: 700,
+    fontSize: FontSize.sm,
   },
   content: {
     padding: Spacing.four,
-    gap: Spacing.three,
+    gap: Spacing.four,
     paddingBottom: BottomTabInset + Spacing.four,
   },
-  avatarCard: {
-    alignItems: 'center',
-    paddingVertical: Spacing.four,
+  profileCard: {
+    alignItems: "center",
+    paddingVertical: Spacing.five,
+    paddingTop: Spacing.six,
     backgroundColor: Brand.white,
     borderRadius: BorderRadius.lg,
+    position: "relative",
     ...Shadow.card,
   },
-  avatarContainer: {
-    alignItems: 'center',
+  avatarWrap: {
+    alignItems: "center",
   },
   avatar: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
+    width: 88,
+    height: 88,
+    borderRadius: 44,
     backgroundColor: Brand.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     borderWidth: 3,
     borderColor: Brand.primaryLight,
   },
   avatarInitial: {
-    fontSize: 40,
-    fontWeight: '800',
+    fontSize: 36,
+    fontWeight: 700,
     color: Brand.white,
   },
-  emailText: {
-    marginTop: Spacing.two,
-    color: Brand.textSecondary,
-    fontSize: 14,
-  },
-  profileCard: {
-    backgroundColor: Brand.white,
-    padding: Spacing.three,
-    borderRadius: BorderRadius.lg,
-    ...Shadow.card,
-  },
-  fieldRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: Spacing.two,
-    borderBottomWidth: 1,
-    borderBottomColor: Brand.border,
-  },
-  fieldLabel: {
-    fontSize: 14,
-    color: Brand.textSecondary,
-    fontWeight: '600',
-  },
-  fieldValue: {
-    fontSize: 14,
-    fontWeight: '700',
+  nameText: {
+    fontSize: FontSize.md,
+    fontWeight: 700,
     color: Brand.text,
+    marginTop: Spacing.three,
   },
   editBtn: {
-    backgroundColor: Brand.primary,
-    padding: 14,
-    borderRadius: BorderRadius.full,
+    position: "absolute",
+    top: Spacing.three,
+    right: Spacing.three,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Brand.primaryLight,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  infoCard: {
+    backgroundColor: Brand.white,
+    borderRadius: BorderRadius.lg,
+    ...Shadow.card,
+    overflow: "hidden",
+  },
+  infoRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: Spacing.four,
+    paddingVertical: 14,
+  },
+  infoLabel: {
+    fontWeight: 600,
+    color: Brand.textSecondary,
+  },
+  infoValue: {
+    fontSize: FontSize.base,
+    fontWeight: 600,
+    color: Brand.text,
+  },
+  divider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: Brand.borderLight,
+    marginHorizontal: Spacing.four,
+  },
+  sectionCard: {
+    backgroundColor: Brand.white,
+    borderRadius: BorderRadius.lg,
+    ...Shadow.card,
+    overflow: "hidden",
+  },
+  sectionTitle: {
+    fontWeight: 700,
+    fontSize: FontSize.base,
+    color: Brand.text,
+    paddingHorizontal: Spacing.four,
+    paddingTop: Spacing.four,
+    paddingBottom: Spacing.two,
+  },
+  jobRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: Spacing.four,
+    paddingVertical: 14,
+  },
+  jobRowBorder: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: Brand.borderLight,
+  },
+  jobTitle: {
+    fontSize: FontSize.base,
+    fontWeight: 600,
+    color: Brand.text,
+  },
+  settingRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    ...Shadow.button,
+    paddingHorizontal: Spacing.four,
+    paddingVertical: 14,
   },
-  editBtnText: {
-    color: Brand.white,
-    fontSize: 16,
-    fontWeight: '800',
+  settingLabel: {
+    fontWeight: 600,
+    color: Brand.text,
+    fontSize: FontSize.base,
   },
-})
+  settingValue: {
+    fontWeight: 600,
+    color: Brand.textSecondary,
+    fontSize: FontSize.sm,
+  },
+  deleteAccountBtn: {
+    backgroundColor: Brand.dangerLight,
+    paddingVertical: 14,
+    borderRadius: BorderRadius.md,
+    alignItems: 'center',
+    marginTop: Spacing.four,
+  },
+  deleteAccountText: {
+    color: Brand.danger,
+    fontWeight: 700,
+    fontSize: FontSize.base,
+  },
+});

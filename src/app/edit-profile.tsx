@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react'
-import { Pressable, StyleSheet, TextInput, ScrollView, View, Image } from 'react-native'
+import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, StyleSheet, TextInput, ScrollView, View, Image } from 'react-native'
 import { router } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import * as ImagePicker from 'expo-image-picker'
 import * as FileSystem from 'expo-file-system/legacy'
 
 import { ThemedText } from '@/components/themed-text'
+import { Ionicons } from '@expo/vector-icons'
+import LottieView from 'lottie-react-native'
 import { PickerModal } from '@/components/picker-modal'
-import { BorderRadius, Brand, Shadow, Spacing } from '@/constants/theme'
+import { BorderRadius, Brand, Shadow, Spacing, FontSize } from '@/constants/theme'
 import { REGIONS } from '@/lib/regions'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
@@ -16,6 +18,7 @@ export default function EditProfileScreen() {
   const { user } = useAuth()
   const [displayName, setDisplayName] = useState('')
   const [phone, setPhone] = useState('')
+  const [bio, setBio] = useState('')
   const [city, setCity] = useState('')
   const [region, setRegion] = useState('')
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
@@ -38,6 +41,7 @@ export default function EditProfileScreen() {
       if (data) {
         const u = data as any
         setDisplayName(u.display_name || '')
+        setBio(u.bio || '')
         setPhone(u.phone || '')
         setCity(u.city || '')
         setRegion(u.region || '')
@@ -88,7 +92,7 @@ export default function EditProfileScreen() {
     if (!user) return
     setSaving(true)
     setSaved(false)
-    const updates: any = { display_name: displayName || null, phone: phone || null, city: city || null, region: region || null }
+    const updates: any = { display_name: displayName || null, phone: phone || null, bio: bio || null, city: city || null, region: region || null }
     if (avatarUrl) updates.avatar_url = avatarUrl
     const { error } = await supabase.from('users').update(updates).eq('id', user.id)
     if (!error) { setSaved(true); setTimeout(() => router.back(), 800) }
@@ -99,27 +103,31 @@ export default function EditProfileScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: Brand.bg }}>
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <ThemedText>Loading...</ThemedText>
-        </View>
-      </SafeAreaView>
+      <View style={{ flex: 1, backgroundColor: Brand.bg }}>
+        <LottieView
+          source={require('@/assets/images/crew-loader.json')}
+          style={{ width: '100%', height: '100%' }}
+          autoPlay
+          loop
+        />
+      </View>
     )
   }
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: Brand.bg }}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
       <View style={{ flex: 1 }}>
         <View style={styles.header}>
-          <Pressable onPress={() => router.back()}>
-            <ThemedText style={{ color: Brand.primary, fontWeight: '700', fontSize: 15 }}>Cancel</ThemedText>
+          <Pressable onPress={() => router.back()} style={styles.backBtn}>
+            <Ionicons name="close" size={22} color={Brand.primary} />
           </Pressable>
           <ThemedText style={styles.headerTitle}>Edit Profile</ThemedText>
           <View style={{ width: 50 }} />
         </View>
 
-        <ScrollView contentContainerStyle={styles.content}>
-          {error && <ThemedText style={styles.error}>{error}</ThemedText>}
+        <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
+          {error && <ThemedText type="small" style={{ color: Brand.danger, textAlign: 'center', marginBottom: Spacing.three }}>{error}</ThemedText>}
 
           <Pressable onPress={handlePickImage} style={styles.avatarContainer} disabled={imageUploading}>
             {(localAvatarUri || avatarUrl) ? (
@@ -129,48 +137,54 @@ export default function EditProfileScreen() {
                 <ThemedText style={styles.avatarInitial}>{initial}</ThemedText>
               </View>
             )}
-            <ThemedText style={styles.avatarLabel}>
+            <ThemedText type="caption" style={{ color: Brand.primary, fontWeight: 600, marginTop: Spacing.two }}>
               {imageUploading ? 'Uploading...' : 'Tap to change photo'}
             </ThemedText>
           </Pressable>
 
           <View style={styles.formGroup}>
-            <ThemedText style={styles.label}>Display Name</ThemedText>
+            <ThemedText type="caption" style={styles.label}>Display Name</ThemedText>
             <TextInput style={styles.input} placeholder="Your name" placeholderTextColor={Brand.placeholder} value={displayName} onChangeText={setDisplayName} />
           </View>
 
           <View style={styles.formGroup}>
-            <ThemedText style={styles.label}>Phone</ThemedText>
+            <ThemedText type="caption" style={styles.label}>Bio</ThemedText>
+            <TextInput style={[styles.input, { minHeight: 80, textAlignVertical: 'top' }]} placeholder="Tell people about yourself..." placeholderTextColor={Brand.placeholder} value={bio} onChangeText={setBio} multiline />
+          </View>
+
+          <View style={styles.formGroup}>
+            <ThemedText type="caption" style={styles.label}>Phone</ThemedText>
             <TextInput style={styles.input} placeholder="Phone number" placeholderTextColor={Brand.placeholder} value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
           </View>
 
           <View style={styles.formGroup}>
-            <ThemedText style={styles.label}>Region</ThemedText>
+            <ThemedText type="caption" style={styles.label}>Region</ThemedText>
             <Pressable style={styles.pickerBtn} onPress={() => setShowRegionPicker(true)}>
-              <ThemedText style={!region ? { color: Brand.placeholder } : { color: Brand.text }}>
-                {region || 'Select region'}
-              </ThemedText>
+              <ThemedText type="small" style={!region ? { color: Brand.placeholder } : {}}>{region || 'Select region'}</ThemedText>
             </Pressable>
             <PickerModal visible={showRegionPicker} title="Select Region" options={regionList} selected={region} onSelect={setRegion} onClose={() => setShowRegionPicker(false)} />
           </View>
 
           <View style={styles.formGroup}>
-            <ThemedText style={styles.label}>City</ThemedText>
+            <ThemedText type="caption" style={styles.label}>City</ThemedText>
             <Pressable style={styles.pickerBtn} onPress={() => setShowCityPicker(true)}>
-              <ThemedText style={!city ? { color: Brand.placeholder } : { color: Brand.text }}>
-                {city || 'Select city'}
-              </ThemedText>
+              <ThemedText type="small" style={!city ? { color: Brand.placeholder } : {}}>{city || 'Select city'}</ThemedText>
             </Pressable>
             <PickerModal visible={showCityPicker} title="Select City" options={cityList} selected={city} onSelect={setCity} onClose={() => setShowCityPicker(false)} />
           </View>
 
-          {saved && <ThemedText style={{ color: Brand.success, textAlign: 'center', marginTop: Spacing.two, fontWeight: '700', fontSize: 15 }}>Saved!</ThemedText>}
+          {saved && <ThemedText type="small" style={{ color: Brand.success, textAlign: 'center', fontWeight: 700 }}>Saved!</ThemedText>}
 
-          <Pressable style={[styles.saveBtn, saving && { opacity: 0.6 }]} onPress={handleSave} disabled={saving}>
-            <ThemedText style={styles.saveText}>{saving ? 'Saving...' : 'Save'}</ThemedText>
+          <Pressable style={({pressed}) => [styles.saveBtn, { opacity: saving ? 0.6 : pressed ? 0.7 : 1 }]} onPress={handleSave} disabled={saving}>
+            {saving ? (
+              <ActivityIndicator size="small" color={Brand.white} />
+            ) : (
+              <ThemedText style={styles.saveBtnText}>Save</ThemedText>
+            )}
           </Pressable>
         </ScrollView>
       </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   )
 }
@@ -181,25 +195,32 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: Spacing.four,
-    paddingVertical: Spacing.two,
+    paddingVertical: Spacing.four,
+  },
+  backBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Brand.primaryLight,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '800',
+    fontSize: FontSize.md,
+    fontWeight: 700,
     color: Brand.text,
   },
   content: {
     padding: Spacing.four,
-    gap: Spacing.one,
   },
   avatarContainer: {
     alignItems: 'center',
-    paddingVertical: Spacing.four,
+    paddingVertical: Spacing.five,
   },
   avatar: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
+    width: 88,
+    height: 88,
+    borderRadius: 44,
     backgroundColor: Brand.primary,
     justifyContent: 'center',
     alignItems: 'center',
@@ -207,62 +228,47 @@ const styles = StyleSheet.create({
     borderColor: Brand.primaryLight,
   },
   avatarInitial: {
-    fontSize: 40,
-    fontWeight: '800',
+    fontSize: 36,
+    fontWeight: 700,
     color: Brand.white,
   },
-  avatarLabel: {
-    fontSize: 14,
-    color: Brand.primary,
-    fontWeight: '600',
-    marginTop: Spacing.two,
-  },
   formGroup: {
-    marginTop: Spacing.three,
+    marginTop: Spacing.four,
   },
   label: {
-    fontSize: 13,
-    fontWeight: '700',
+    fontWeight: 600,
     color: Brand.textSecondary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
     marginBottom: 6,
   },
   input: {
     borderWidth: 1,
-    borderColor: Brand.border,
-    borderRadius: BorderRadius.md,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 15,
+    borderColor: Brand.borderLight,
+    borderRadius: BorderRadius.sm,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: FontSize.base,
     backgroundColor: Brand.white,
     color: Brand.text,
   },
   pickerBtn: {
     borderWidth: 1,
-    borderColor: Brand.border,
-    borderRadius: BorderRadius.md,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    borderColor: Brand.borderLight,
+    borderRadius: BorderRadius.sm,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
     backgroundColor: Brand.white,
-  },
-  error: {
-    color: Brand.danger,
-    textAlign: 'center',
-    marginBottom: Spacing.two,
-    fontSize: 13,
   },
   saveBtn: {
     backgroundColor: Brand.primary,
-    paddingVertical: 16,
-    borderRadius: BorderRadius.full,
+    paddingVertical: 14,
+    borderRadius: BorderRadius.md,
     alignItems: 'center',
-    marginTop: Spacing.four,
-    ...Shadow.button,
+    marginTop: Spacing.six,
+    ...Shadow.elevated,
   },
-  saveText: {
+  saveBtnText: {
     color: Brand.white,
-    fontSize: 16,
-    fontWeight: '800',
+    fontSize: FontSize.base,
+    fontWeight: 700,
   },
 })
