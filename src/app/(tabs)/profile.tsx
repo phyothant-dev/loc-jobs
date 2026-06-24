@@ -5,6 +5,7 @@ import { Alert, Image, Pressable, ScrollView, StyleSheet, View } from "react-nat
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { ThemedText } from "@/components/themed-text";
+import { ReviewCard } from "@/components/review-card";
 import { StarRating } from "@/components/star-rating";
 import { Skeleton } from '@/components/skeleton'
 import {
@@ -34,6 +35,8 @@ export default function ProfileScreen() {
   const [savedJobs, setSavedJobs] = useState<any[]>([]);
   const [avgRating, setAvgRating] = useState(0);
   const [ratingCount, setRatingCount] = useState(0);
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [loadingReviews, setLoadingReviews] = useState(true);
 
   const loadProfile = useCallback(async () => {
     if (!user) return;
@@ -114,8 +117,28 @@ export default function ProfileScreen() {
         setAvgRating(0);
         setRatingCount(0);
       }
+
+      const { data: reviewRows } = await supabase
+        .from('reviews')
+        .select('*, reviewer:users!reviewer_id(display_name, avatar_url)')
+        .eq('reviewee_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(3);
+      if (reviewRows) {
+        setReviews((reviewRows as any[]).map((r) => ({
+          id: r.id,
+          reviewer_id: r.reviewer_id,
+          reviewer_name: (r as any).reviewer?.display_name || 'Anonymous',
+          reviewer_avatar: (r as any).reviewer?.avatar_url || null,
+          rating: r.rating,
+          comment: r.comment,
+          created_at: r.created_at,
+        })));
+      }
+      setLoadingReviews(false);
     } catch (error) {
       console.error('Failed to load profile', error);
+      setLoadingReviews(false);
     } finally {
       setLoading(false);
     }
@@ -274,6 +297,24 @@ export default function ProfileScreen() {
                   </ThemedText>
                 </View>
               </View>
+
+              {reviews.length > 0 && (
+                <View style={styles.sectionCard}>
+                  <ThemedText style={styles.sectionTitle}>{t('profile.reviews')}</ThemedText>
+                  <View style={{ gap: Spacing.two, paddingHorizontal: Spacing.four, paddingBottom: Spacing.four }}>
+                    {reviews.map((r) => (
+                      <ReviewCard key={r.id} review={r} isOwn={r.reviewer_id === user?.id} onUpdated={loadProfile} />
+                    ))}
+                  </View>
+                  <Pressable
+                    style={styles.seeAllRow}
+                    onPress={() => router.push(`/reviews/${user?.id}` as any)}
+                  >
+                    <ThemedText style={styles.seeAllText}>{t('profile.seeAllReviews')}</ThemedText>
+                    <Ionicons name="chevron-forward" size={16} color={Brand.primary} />
+                  </Pressable>
+                </View>
+              )}
 
               {completedJobs.length > 0 && (
                 <View style={styles.sectionCard}>
@@ -540,5 +581,19 @@ const styles = StyleSheet.create({
     color: Brand.danger,
     fontWeight: 700,
     fontSize: FontSize.base,
+  },
+  seeAllRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    gap: 4,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: Brand.borderLight,
+  },
+  seeAllText: {
+    color: Brand.primary,
+    fontWeight: 700,
+    fontSize: FontSize.sm,
   },
 });

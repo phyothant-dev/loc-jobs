@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { Skeleton } from '@/components/skeleton'
 
 import { ThemedText } from '@/components/themed-text'
+import { ReviewCard } from '@/components/review-card'
 import { StarRating } from '@/components/star-rating'
 import { BorderRadius, Brand, Shadow, Spacing, FontSize } from '@/constants/theme'
 import { supabase } from '@/lib/supabase'
@@ -27,6 +28,7 @@ export default function UserProfileScreen() {
   const [loading, setLoading] = useState(true)
   const [avgRating, setAvgRating] = useState(0)
   const [ratingCount, setRatingCount] = useState(0)
+  const [reviews, setReviews] = useState<any[]>([])
 
   const loadProfile = useCallback(async () => {
     if (!id) return
@@ -55,6 +57,24 @@ export default function UserProfileScreen() {
       } else {
         setAvgRating(0)
         setRatingCount(0)
+      }
+
+      const { data: reviewRows } = await supabase
+        .from('reviews')
+        .select('*, reviewer:users!reviewer_id(display_name, avatar_url)')
+        .eq('reviewee_id', id)
+        .order('created_at', { ascending: false })
+        .limit(3)
+      if (reviewRows) {
+        setReviews((reviewRows as any[]).map((r) => ({
+          id: r.id,
+          reviewer_id: r.reviewer_id,
+          reviewer_name: (r as any).reviewer?.display_name || 'Anonymous',
+          reviewer_avatar: (r as any).reviewer?.avatar_url || null,
+          rating: r.rating,
+          comment: r.comment,
+          created_at: r.created_at,
+        })))
       }
     } catch (error) {
       console.error('Failed to load profile', error)
@@ -181,6 +201,24 @@ export default function UserProfileScreen() {
               </View>
             </View>
 
+            {reviews.length > 0 && (
+              <View style={styles.sectionCard}>
+                <ThemedText style={styles.sectionTitle}>{t('userProfile.reviews')}</ThemedText>
+                <View style={{ gap: Spacing.two, paddingHorizontal: Spacing.four, paddingBottom: Spacing.four }}>
+                  {reviews.map((r) => (
+                    <ReviewCard key={r.id} review={r} isOwn={r.reviewer_id === user?.id} onUpdated={loadProfile} />
+                  ))}
+                </View>
+                <Pressable
+                  style={styles.seeAllRow}
+                  onPress={() => router.push(`/reviews/${id}` as any)}
+                >
+                  <ThemedText style={styles.seeAllText}>{t('userProfile.seeAllReviews')}</ThemedText>
+                  <Ionicons name="chevron-forward" size={16} color={Brand.primary} />
+                </Pressable>
+              </View>
+            )}
+
             {!isMe && (
               <Pressable style={styles.msgBtn} onPress={() => router.push('/(tabs)/chat')}>
                 <ThemedText style={styles.msgBtnText}>{t('userProfile.sendMessage')}</ThemedText>
@@ -289,5 +327,33 @@ const styles = StyleSheet.create({
     color: Brand.white,
     fontSize: FontSize.base,
     fontWeight: 700,
+  },
+  sectionCard: {
+    backgroundColor: Brand.white,
+    borderRadius: BorderRadius.lg,
+    ...Shadow.card,
+    overflow: 'hidden',
+  },
+  sectionTitle: {
+    fontWeight: 700,
+    fontSize: FontSize.base,
+    color: Brand.text,
+    paddingHorizontal: Spacing.four,
+    paddingTop: Spacing.four,
+    paddingBottom: Spacing.two,
+  },
+  seeAllRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    gap: 4,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: Brand.borderLight,
+  },
+  seeAllText: {
+    color: Brand.primary,
+    fontWeight: 700,
+    fontSize: FontSize.sm,
   },
 })

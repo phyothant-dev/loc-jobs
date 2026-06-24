@@ -21,6 +21,12 @@ export interface Database {
         Update: UpdateApplication
         Relationships: []
       }
+      reviews: {
+        Row: Review
+        Insert: InsertReview
+        Update: UpdateReview
+        Relationships: []
+      }
     }
     Views: {},
     Functions: {},
@@ -150,4 +156,27 @@ export interface InsertApplication {
 
 export interface UpdateApplication {
   status?: ApplicationStatus
+}
+
+export interface Review {
+  id: string
+  job_id: string
+  reviewer_id: string
+  reviewee_id: string
+  rating: number
+  comment: string | null
+  created_at: string
+}
+
+export interface InsertReview {
+  job_id: string
+  reviewer_id: string
+  reviewee_id: string
+  rating: number
+  comment?: string | null
+}
+
+export interface UpdateReview {
+  rating?: number
+  comment?: string | null
 }

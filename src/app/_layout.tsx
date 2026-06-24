@@ -78,8 +78,9 @@ export default function RootLayout() {
               <Stack.Screen name="edit-profile" options={{ presentation: 'modal' }} />
               <Stack.Screen name="job/[id]" />
               <Stack.Screen name="chat/[jobId]/[otherUserId]" />
-              <Stack.Screen name="notifications" />
-              <Stack.Screen name="user/[id]" />
+            <Stack.Screen name="notifications" />
+            <Stack.Screen name="reviews/[userId]" />
+            <Stack.Screen name="user/[id]" />
             </Stack>
           </AuthProvider>
         )}
