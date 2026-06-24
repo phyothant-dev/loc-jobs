@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import LottieView from "lottie-react-native";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import MapView, { Marker } from "react-native-maps";
 import { Skeleton } from "@/components/skeleton";
 import {
     ActivityIndicator,
@@ -635,19 +636,37 @@ export default function JobDetailScreen() {
             Location
           </ThemedText>
           {hasLocation ? (
-            <ThemedText style={styles.infoLine}>
-              {job.city ? `${job.city}, ` : ""}
-              {job.region || ""}
-            </ThemedText>
+            <>
+              <ThemedText style={styles.infoLine}>
+                {job.city ? `${job.city}, ` : ""}
+                {job.region || ""}
+              </ThemedText>
+              <MapView
+                style={styles.map}
+                initialRegion={{
+                  latitude: job.lat,
+                  longitude: job.lng,
+                  latitudeDelta: 0.01,
+                  longitudeDelta: 0.01,
+                }}
+                scrollEnabled={false}
+                zoomEnabled={false}
+                rotateEnabled={false}
+                pitchEnabled={false}
+              >
+                <Marker
+                  coordinate={{ latitude: job.lat, longitude: job.lng }}
+                  title={job.title}
+                />
+              </MapView>
+              <Pressable style={styles.directionsBtn} onPress={handleDirections}>
+                <ThemedText style={styles.directionsBtnText}>
+                  {t('jobDetail.getDirections')}
+                </ThemedText>
+              </Pressable>
+            </>
           ) : (
             <ThemedText style={styles.infoLine}>Remote</ThemedText>
-          )}
-          {hasLocation && (
-            <Pressable style={styles.directionsBtn} onPress={handleDirections}>
-			<ThemedText style={styles.directionsBtnText}>
-				{t('jobDetail.getDirections')}
-			</ThemedText>
-            </Pressable>
           )}
         </View>
 
@@ -1048,6 +1067,13 @@ const styles = StyleSheet.create({
     width: 200,
     height: 150,
     borderRadius: BorderRadius.md,
+  },
+  map: {
+    width: "100%",
+    height: 160,
+    borderRadius: BorderRadius.md,
+    overflow: "hidden",
+    marginTop: Spacing.two,
   },
   directionsBtn: {
     backgroundColor: Brand.primaryLight,
