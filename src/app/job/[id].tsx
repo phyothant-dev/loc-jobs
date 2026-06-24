@@ -663,7 +663,7 @@ export default function JobDetailScreen() {
             Uploader
           </ThemedText>
           <Pressable
-            onPress={() => router.push(`/user/${job.uploader_id}`)}
+            onPress={() => router.push(job.uploader_id === user?.id ? '/(tabs)/profile' : `/user/${job.uploader_id}`)}
             style={{
               flexDirection: "row",
               alignItems: "center",
@@ -786,7 +786,7 @@ export default function JobDetailScreen() {
                             </ThemedText>
                           </View>
                         )}
-                        <Pressable onPress={() => router.push(`/user/${a.id}`)}>
+                        <Pressable onPress={() => router.push(a.id === user?.id ? '/(tabs)/profile' : `/user/${a.id}`)}>
                           <ThemedText
                             style={[styles.infoLine, { color: Brand.primary }]}
                           >

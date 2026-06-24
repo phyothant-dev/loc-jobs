@@ -79,7 +79,9 @@ export default function RootLayout() {
               <Stack.Screen name="job/[id]" />
               <Stack.Screen name="chat/[jobId]/[otherUserId]" />
             <Stack.Screen name="notifications" />
+            <Stack.Screen name="onboarding" />
             <Stack.Screen name="reviews/[userId]" />
+            <Stack.Screen name="search-users" />
             <Stack.Screen name="user/[id]" />
             </Stack>
           </AuthProvider>

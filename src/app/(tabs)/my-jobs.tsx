@@ -421,121 +421,61 @@ export default function MyJobsScreen() {
                                 type="caption"
                                 style={{ color: Brand.textSecondary }}
                               >
-                                Applicants ({searcherInfo[item.id].length}):
+                                {t('myJobs.applicantsWithCount', { count: searcherInfo[item.id].length })}
                               </ThemedText>
-                              {searcherInfo[item.id].map((s, i) => {
-                                const asc =
-                                  APP_STATUS_STYLE[s.status] ||
-                                  APP_STATUS_STYLE.pending;
+                              {(["pending", "accepted", "rejected"] as const).map((statusGroup) => {
+                                const group = searcherInfo[item.id].filter((s) => s.status === statusGroup)
+                                if (group.length === 0) return null
                                 return (
-                                  <View key={i} style={{ marginTop: 6 }}>
-                                    <View
-                                      style={{
-                                        flexDirection: "row",
-                                        alignItems: "center",
-                                        justifyContent: "space-between",
-                                      }}
-                                    >
-                                      <View style={{ flex: 1 }}>
-                                        <View
-                                          style={{
-                                            flexDirection: "row",
-                                            alignItems: "center",
-                                            gap: 6,
-                                          }}
-                                        >
-                                          <Pressable
-                                            onPress={() =>
-                                              router.push(`/user/${s.id}`)
-                                            }
-                                          >
-                                            <ThemedText
-                                              type="small"
-                                              style={{ color: Brand.primary }}
-                                            >
-                                              {s.name}
-                                            </ThemedText>
-                                          </Pressable>
-                                          <View
-                                            style={[
-                                              styles.miniBadge,
-                                              { backgroundColor: asc.bg },
-                                            ]}
-                                          >
-                                            <ThemedText
-                                              type="caption"
-                                              style={{
-                                                fontWeight: 700,
-                                                color: asc.color,
-                                              }}
-                                            >
-                                              {s.status
-                                                .charAt(0)
-                                                .toUpperCase() +
-                                                s.status.slice(1)}
-                                            </ThemedText>
+                                  <View key={statusGroup} style={{ marginTop: 8 }}>
+                                    <View style={styles.kanbanHeader}>
+                                      <View style={[styles.kanbanDot, { backgroundColor: APP_STATUS_STYLE[statusGroup].color }]} />
+                                      <ThemedText type="caption" style={{ fontWeight: 700, color: Brand.text, textTransform: 'capitalize' }}>
+                                        {statusGroup} ({group.length})
+                                      </ThemedText>
+                                    </View>
+                                    {group.map((s, i) => {
+                                      const asc = APP_STATUS_STYLE[s.status] || APP_STATUS_STYLE.pending
+                                      return (
+                                        <View key={i} style={{ marginTop: 6, paddingLeft: Spacing.three }}>
+                                          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                                            <View style={{ flex: 1 }}>
+                                              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                                                <Pressable onPress={() => router.push(s.id === user?.id ? '/(tabs)/profile' : `/user/${s.id}`)}>
+                                                  <ThemedText type="small" style={{ color: Brand.primary }}>
+                                                    {s.name}
+                                                  </ThemedText>
+                                                </Pressable>
+                                              </View>
+                                              {s.reject_reason && s.status === "rejected" && (
+                                                <ThemedText type="caption" style={{ color: Brand.danger, marginTop: 2, marginLeft: 4 }}>
+                                                  {t('myJobs.reasonPrefix')}{s.reject_reason}
+                                                </ThemedText>
+                                              )}
+                                            </View>
+                                            <View style={{ flexDirection: "row", gap: 4 }}>
+                                              {s.status === "pending" && (
+                                                <>
+                                                  <Pressable onPress={() => handleAccept(item.id, s.id)} style={styles.acceptBtn}>
+                                                    <ThemedText style={styles.acceptBtnText}>{t('myJobs.accept')}</ThemedText>
+                                                  </Pressable>
+                                                  <Pressable onPress={() => handleReject(item.id, s.id)} style={styles.rejectBtn}>
+                                                    <ThemedText style={styles.rejectBtnText}>{t('myJobs.reject')}</ThemedText>
+                                                  </Pressable>
+                                                </>
+                                              )}
+                                              {s.status !== "pending" && (
+                                                <Pressable onPress={() => router.push(`/chat/${item.id}/${s.id}`)} style={styles.chatBtn}>
+                                                  <ThemedText style={styles.chatBtnText}>{t('myJobs.chat')}</ThemedText>
+                                                </Pressable>
+                                              )}
+                                            </View>
                                           </View>
                                         </View>
-                                        {s.reject_reason && s.status === "rejected" && (
-                                          <ThemedText
-                                            type="caption"
-                                            style={{ color: Brand.danger, marginTop: 2, marginLeft: 4 }}
-                                          >
-                                            {t('myJobs.reasonPrefix')}{s.reject_reason}
-                                          </ThemedText>
-                                        )}
-                                      </View>
-                                      <View
-                                        style={{ flexDirection: "row", gap: 4 }}
-                                      >
-                                        {s.status === "pending" && (
-                                          <>
-                                            <Pressable
-                                              onPress={() =>
-                                                handleAccept(item.id, s.id)
-                                              }
-                                              style={styles.acceptBtn}
-                                            >
-                                              <ThemedText
-                                                style={styles.acceptBtnText}
-                                              >
-                                                {t('myJobs.accept')}
-                                              </ThemedText>
-                                            </Pressable>
-                                            <Pressable
-                                              onPress={() =>
-                                                handleReject(item.id, s.id)
-                                              }
-                                              style={styles.rejectBtn}
-                                            >
-                                              <ThemedText
-                                                style={styles.rejectBtnText}
-                                              >
-                                                {t('myJobs.reject')}
-                                              </ThemedText>
-                                            </Pressable>
-                                          </>
-                                        )}
-                                        {s.status !== "pending" && (
-                                          <Pressable
-                                            onPress={() =>
-                                              router.push(
-                                                `/chat/${item.id}/${s.id}`,
-                                              )
-                                            }
-                                            style={styles.chatBtn}
-                                          >
-                                            <ThemedText
-                                              style={styles.chatBtnText}
-                                            >
-                                                {t('myJobs.message')}
-                                              </ThemedText>
-                                          </Pressable>
-                                        )}
-                                      </View>
-                                    </View>
+                                      )
+                                    })}
                                   </View>
-                                );
+                                )
                               })}
                             </View>
                           )}
@@ -784,5 +724,16 @@ const styles = StyleSheet.create({
     color: Brand.danger,
     fontWeight: 700,
     fontSize: FontSize.xs,
+  },
+  kanbanHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 4,
+  },
+  kanbanDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
 });

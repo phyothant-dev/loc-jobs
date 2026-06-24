@@ -115,6 +115,9 @@ const en = {
     selectRegion: 'Select Region',
     priceRange: 'Min — Max MMK',
     noSavedJobsEmpty: 'No saved jobs',
+    saveSearch: 'Save Current Search',
+    saveSearchName: 'Search name...',
+    deleteSavedSearch: 'Delete saved search?',
   },
   chat: {
     title: 'Chat',
@@ -338,6 +341,14 @@ const en = {
     newMessage: 'New message',
     applicationUpdate: 'Application update',
     jobUpdate: 'Job update',
+  },
+  userSearch: {
+    title: 'Find Users',
+    placeholder: 'Search by name or city...',
+    noResults: 'No users found',
+    noLocation: 'No location',
+    jobs: 'Jobs',
+    seeAllJobs: 'See all jobs',
   },
   time: {
     now: 'now',

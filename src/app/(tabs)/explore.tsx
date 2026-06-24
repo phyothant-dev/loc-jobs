@@ -1,21 +1,24 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+    Alert,
     Dimensions,
     FlatList,
+    Modal,
     Pressable,
     ScrollView,
     StyleSheet,
+    Text,
     TextInput,
     View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { PickerModal } from "@/components/picker-modal";
-import { Skeleton } from '@/components/skeleton'
+import { Skeleton } from "@/components/skeleton";
 import { ThemedText } from "@/components/themed-text";
-import LottieView from 'lottie-react-native';
 import {
     BorderRadius,
     BottomTabInset,
@@ -24,11 +27,16 @@ import {
     Shadow,
     Spacing,
 } from "@/constants/theme";
-import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLocale } from "@/contexts/LocaleContext";
-import { CATEGORIES, EMPLOYMENT_TYPES, EMPLOYMENT_TYPE_LABELS, SALARY_PERIOD_LABELS } from "@/lib/categories";
+import {
+    CATEGORIES,
+    EMPLOYMENT_TYPES,
+    EMPLOYMENT_TYPE_LABELS,
+    SALARY_PERIOD_LABELS,
+} from "@/lib/categories";
 import { REGIONS } from "@/lib/regions";
+import { supabase } from "@/lib/supabase";
 
 interface Job {
   id: string;
@@ -83,9 +91,11 @@ export default function AllJobsScreen() {
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
   const [selectedWorkType, setSelectedWorkType] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [selectedEmploymentType, setSelectedEmploymentType] = useState<string | null>(null);
-  const [minPrice, setMinPrice] = useState('');
-  const [maxPrice, setMaxPrice] = useState('');
+  const [selectedEmploymentType, setSelectedEmploymentType] = useState<
+    string | null
+  >(null);
+  const [minPrice, setMinPrice] = useState("");
+  const [maxPrice, setMaxPrice] = useState("");
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -93,24 +103,89 @@ export default function AllJobsScreen() {
   const [showEmployTypePicker, setShowEmployTypePicker] = useState(false);
   const [showRegionPicker, setShowRegionPicker] = useState(false);
   const [savedJobIds, setSavedJobIds] = useState<Set<string>>(new Set());
+  const [savedSearches, setSavedSearches] = useState<{ id: string; name: string; filters: Record<string, any> }[]>([]);
+  const [showSaveSearchModal, setShowSaveSearchModal] = useState(false);
+  const [saveSearchName, setSaveSearchName] = useState("");
+
+  const loadSavedSearches = useCallback(async () => {
+    try {
+      const val = await AsyncStorage.getItem('saved_searches')
+      if (val) setSavedSearches(JSON.parse(val))
+    } catch {}
+  }, [])
+
+  const saveCurrentSearch = async () => {
+    const name = saveSearchName.trim()
+    if (!name) return
+    const filters: Record<string, any> = {
+      selectedCity,
+      selectedRegion,
+      selectedWorkType,
+      selectedCategory,
+      selectedEmploymentType,
+      minPrice,
+      maxPrice,
+      search,
+    }
+    const entry = { id: Date.now().toString(), name, filters }
+    const updated = [...savedSearches, entry]
+    setSavedSearches(updated)
+    await AsyncStorage.setItem('saved_searches', JSON.stringify(updated))
+    setShowSaveSearchModal(false)
+    setSaveSearchName("")
+  }
+
+  const applySavedSearch = (entry: typeof savedSearches[0]) => {
+    setSelectedCity(entry.filters.selectedCity ?? null)
+    setSelectedRegion(entry.filters.selectedRegion ?? null)
+    setSelectedWorkType(entry.filters.selectedWorkType ?? null)
+    setSelectedCategory(entry.filters.selectedCategory ?? null)
+    setSelectedEmploymentType(entry.filters.selectedEmploymentType ?? null)
+    setMinPrice(entry.filters.minPrice ?? "")
+    setMaxPrice(entry.filters.maxPrice ?? "")
+    setSearch(entry.filters.search ?? "")
+  }
+
+  const deleteSavedSearch = async (id: string) => {
+    const updated = savedSearches.filter((s) => s.id !== id)
+    setSavedSearches(updated)
+    await AsyncStorage.setItem('saved_searches', JSON.stringify(updated))
+  }
 
   const loadSavedJobs = async () => {
-    if (!user) return
-    const { data } = await supabase.from('saved_jobs').select('job_id').eq('user_id', user.id)
-    setSavedJobIds(new Set((data ?? []).map((r: any) => r.job_id)))
-  }
+    if (!user) return;
+    const { data } = await supabase
+      .from("saved_jobs")
+      .select("job_id")
+      .eq("user_id", user.id);
+    setSavedJobIds(new Set((data ?? []).map((r: any) => r.job_id)));
+  };
 
   const toggleSave = async (jobId: string) => {
-    if (!user) return
-    const isSaved = savedJobIds.has(jobId)
+    if (!user) return;
+    const isSaved = savedJobIds.has(jobId);
     if (isSaved) {
-      setSavedJobIds((prev) => { const next = new Set(prev); next.delete(jobId); return next })
-      await supabase.from('saved_jobs').delete().eq('user_id', user.id).eq('job_id', jobId)
+      setSavedJobIds((prev) => {
+        const next = new Set(prev);
+        next.delete(jobId);
+        return next;
+      });
+      await supabase
+        .from("saved_jobs")
+        .delete()
+        .eq("user_id", user.id)
+        .eq("job_id", jobId);
     } else {
-      setSavedJobIds((prev) => { const next = new Set(prev); next.add(jobId); return next })
-      await supabase.from('saved_jobs').insert({ user_id: user.id, job_id: jobId })
+      setSavedJobIds((prev) => {
+        const next = new Set(prev);
+        next.add(jobId);
+        return next;
+      });
+      await supabase
+        .from("saved_jobs")
+        .insert({ user_id: user.id, job_id: jobId });
     }
-  }
+  };
 
   const fetchJobs = async () => {
     const { data } = await supabase
@@ -132,6 +207,7 @@ export default function AllJobsScreen() {
     (async () => {
       await fetchJobs();
       await loadSavedJobs();
+      await loadSavedSearches();
       setLoading(false);
     })();
   }, []);
@@ -140,6 +216,7 @@ export default function AllJobsScreen() {
     setRefreshing(true);
     await fetchJobs();
     await loadSavedJobs();
+    await loadSavedSearches();
     setRefreshing(false);
   };
 
@@ -170,15 +247,35 @@ export default function AllJobsScreen() {
     const matchRegion = !selectedRegion || j.region === selectedRegion;
     const matchWorkType = !selectedWorkType || j.work_type === selectedWorkType;
     const matchCategory = !selectedCategory || j.category === selectedCategory;
-    const matchMinPrice = !minPrice || (j.price != null && j.price >= parseInt(minPrice, 10));
-    const matchMaxPrice = !maxPrice || (j.price != null && j.price <= parseInt(maxPrice, 10));
+    const matchMinPrice =
+      !minPrice || (j.price != null && j.price >= parseInt(minPrice, 10));
+    const matchMaxPrice =
+      !maxPrice || (j.price != null && j.price <= parseInt(maxPrice, 10));
     const matchSearch =
       !search || j.title.toLowerCase().includes(search.toLowerCase());
-    const matchEmployType = !selectedEmploymentType || j.employment_type === selectedEmploymentType;
-    return matchCity && matchRegion && matchWorkType && matchCategory && matchMinPrice && matchMaxPrice && matchSearch && matchEmployType;
+    const matchEmployType =
+      !selectedEmploymentType || j.employment_type === selectedEmploymentType;
+    return (
+      matchCity &&
+      matchRegion &&
+      matchWorkType &&
+      matchCategory &&
+      matchMinPrice &&
+      matchMaxPrice &&
+      matchSearch &&
+      matchEmployType
+    );
   });
 
-  const hasAnyFilter = selectedCity || selectedRegion || selectedWorkType || selectedCategory || selectedEmploymentType || minPrice || maxPrice || search;
+  const hasAnyFilter =
+    selectedCity ||
+    selectedRegion ||
+    selectedWorkType ||
+    selectedCategory ||
+    selectedEmploymentType ||
+    minPrice ||
+    maxPrice ||
+    search;
 
   const groupedByType = useMemo(() => {
     const groups: Record<string, Job[]> = {};
@@ -196,74 +293,125 @@ export default function AllJobsScreen() {
     >
       <PickerModal
         visible={showWorkTypePicker}
-        title={t('explore.selectType')}
+        title={t("explore.selectType")}
         options={[
-          t('explore.allTypes'),
+          t("explore.allTypes"),
           ...WORK_TYPES.map((w) => w.charAt(0).toUpperCase() + w.slice(1)),
         ]}
         selected={
           selectedWorkType
             ? selectedWorkType.charAt(0).toUpperCase() +
               selectedWorkType.slice(1)
-            : t('explore.allTypes')
+            : t("explore.allTypes")
         }
         onSelect={(val) =>
-          setSelectedWorkType(val === t('explore.allTypes') ? null : val.toLowerCase())
+          setSelectedWorkType(
+            val === t("explore.allTypes") ? null : val.toLowerCase(),
+          )
         }
         onClose={() => setShowWorkTypePicker(false)}
       />
 
       <PickerModal
         visible={showEmployTypePicker}
-        title={t('explore.employmentType')}
-        options={[t('common.all'), ...EMPLOYMENT_TYPES.map((et) => EMPLOYMENT_TYPE_LABELS[et])]}
-        selected={selectedEmploymentType ? EMPLOYMENT_TYPE_LABELS[selectedEmploymentType] : t('common.all')}
+        title={t("explore.employmentType")}
+        options={[
+          t("common.all"),
+          ...EMPLOYMENT_TYPES.map((et) => EMPLOYMENT_TYPE_LABELS[et]),
+        ]}
+        selected={
+          selectedEmploymentType
+            ? EMPLOYMENT_TYPE_LABELS[selectedEmploymentType]
+            : t("common.all")
+        }
         onSelect={(val) => {
-          if (val === t('common.all')) { setSelectedEmploymentType(null); return }
-          const key = Object.entries(EMPLOYMENT_TYPE_LABELS).find(([, v]) => v === val)?.[0] || null
-          setSelectedEmploymentType(key)
+          if (val === t("common.all")) {
+            setSelectedEmploymentType(null);
+            return;
+          }
+          const key =
+            Object.entries(EMPLOYMENT_TYPE_LABELS).find(
+              ([, v]) => v === val,
+            )?.[0] || null;
+          setSelectedEmploymentType(key);
         }}
         onClose={() => setShowEmployTypePicker(false)}
       />
 
       <PickerModal
         visible={showRegionPicker}
-        title={t('explore.selectRegion')}
-        options={[t('explore.allRegions'), ...allRegions]}
-        selected={selectedRegion || t('explore.allRegions')}
+        title={t("explore.selectRegion")}
+        options={[t("explore.allRegions"), ...allRegions]}
+        selected={selectedRegion || t("explore.allRegions")}
         onSelect={(val) =>
-          setSelectedRegion(val === t('explore.allRegions') ? null : val)
+          setSelectedRegion(val === t("explore.allRegions") ? null : val)
         }
         onClose={() => setShowRegionPicker(false)}
       />
 
+      <Modal visible={showSaveSearchModal} transparent animationType="fade">
+        <Pressable style={styles.modalOverlay} onPress={() => setShowSaveSearchModal(false)}>
+          <Pressable style={styles.saveModalContent} onPress={() => {}}>
+            <ThemedText style={styles.saveModalTitle}>{t('explore.saveSearch')}</ThemedText>
+            <TextInput
+              style={styles.saveModalInput}
+              placeholder={t('explore.saveSearchName')}
+              placeholderTextColor={Brand.placeholder}
+              value={saveSearchName}
+              onChangeText={setSaveSearchName}
+              autoFocus
+            />
+            <View style={{ flexDirection: 'row', gap: Spacing.three, marginTop: Spacing.four }}>
+              <Pressable style={styles.cancelBtn} onPress={() => setShowSaveSearchModal(false)}>
+                <ThemedText style={styles.cancelBtnText}>{t('common.cancel')}</ThemedText>
+              </Pressable>
+              <Pressable style={styles.saveBtnStyle} onPress={saveCurrentSearch}>
+                <ThemedText style={styles.saveBtnStyleText}>{t('common.save')}</ThemedText>
+              </Pressable>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
       {loading ? (
-        <View style={{ flex: 1, backgroundColor: Brand.bg, paddingHorizontal: SCREEN_PADDING }}>
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: Brand.bg,
+            paddingHorizontal: SCREEN_PADDING,
+          }}
+        >
           <View style={styles.grid}>
             {Array.from({ length: 4 }).map((_, i) => (
               <View key={i} style={styles.card}>
-                <Skeleton width="100%" height={140} borderRadius={BorderRadius.md} />
+                <Skeleton
+                  width="100%"
+                  height={140}
+                  borderRadius={BorderRadius.md}
+                />
                 <View style={{ marginTop: Spacing.three }}>
                   <Skeleton width="70%" height={16} />
                 </View>
                 <View style={{ marginTop: 4 }}>
                   <Skeleton width="50%" height={14} />
                 </View>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 }}>
-                  <Skeleton width={60} height={18} borderRadius={BorderRadius.sm} />
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 6,
+                    marginTop: 8,
+                  }}
+                >
+                  <Skeleton
+                    width={60}
+                    height={18}
+                    borderRadius={BorderRadius.sm}
+                  />
                   <Skeleton width={100} height={14} />
                 </View>
               </View>
             ))}
-          </View>
-        </View>
-      ) : filtered.length === 0 ? (
-        <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-          <View style={{ alignItems: "center", paddingVertical: Spacing.five }}>
-            <Ionicons name="search-outline" size={48} color={Brand.textSecondary} />
-            <ThemedText type="small" style={{ color: Brand.textSecondary }}>
-              {t('explore.noJobs')}
-            </ThemedText>
           </View>
         </View>
       ) : (
@@ -281,23 +429,44 @@ export default function AllJobsScreen() {
           ListHeaderComponent={
             <View>
               <View style={styles.header}>
-                <ThemedText style={styles.headerTitle}>{t('explore.title')}</ThemedText>
-                <Pressable
-                  onPress={() => {
-                    setSelectedCity(null);
-                    setSelectedRegion(null);
-                    setSelectedWorkType(null);
-                    setSelectedCategory(null);
-                    setSelectedEmploymentType(null);
-                    setMinPrice('');
-                    setMaxPrice('');
-                    setSearch("");
-                  }}
-                >
-                  <ThemedText type="smallBold" style={{ color: hasAnyFilter ? Brand.primary : Brand.textSecondary }}>
-                    {t('explore.reset')}
-                  </ThemedText>
-                </Pressable>
+                <ThemedText style={styles.headerTitle}>
+                  {t("explore.title")}
+                </ThemedText>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.two }}>
+                  <Pressable
+                    onPress={() => {
+                      setSelectedCity(null);
+                      setSelectedRegion(null);
+                      setSelectedWorkType(null);
+                      setSelectedCategory(null);
+                      setSelectedEmploymentType(null);
+                      setMinPrice("");
+                      setMaxPrice("");
+                      setSearch("");
+                    }}
+                  >
+                    <ThemedText
+                      type="smallBold"
+                      style={{
+                        color: hasAnyFilter ? Brand.primary : Brand.textSecondary,
+                      }}
+                    >
+                      {t("explore.reset")}
+                    </ThemedText>
+                  </Pressable>
+                  <Pressable
+                    style={styles.userSearchBtn}
+                    onPress={() => router.push('/search-users' as any)}
+                  >
+                    <Ionicons name="people-outline" size={20} color={Brand.primary} />
+                  </Pressable>
+                  <Pressable
+                    style={styles.userSearchBtn}
+                    onPress={() => setShowSaveSearchModal(true)}
+                  >
+                    <Ionicons name="bookmark-outline" size={20} color={Brand.primary} />
+                  </Pressable>
+                </View>
               </View>
 
               <View style={styles.searchContainer}>
@@ -310,13 +479,38 @@ export default function AllJobsScreen() {
                   />
                   <TextInput
                     style={styles.searchInput}
-                        placeholder={t('explore.search')}
+                    placeholder={t("explore.search")}
                     placeholderTextColor={Brand.placeholder}
                     value={search}
                     onChangeText={setSearch}
                   />
                 </View>
               </View>
+
+              {savedSearches.length > 0 && (
+                <View style={{ marginBottom: Spacing.three }}>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+                    <View style={{ flexDirection: 'row', gap: Spacing.two, paddingHorizontal: SCREEN_PADDING }}>
+                      {savedSearches.map((s) => (
+                        <Pressable
+                          key={s.id}
+                          style={styles.savedSearchChip}
+                          onPress={() => applySavedSearch(s)}
+                          onLongPress={() => {
+                            Alert.alert(t('common.delete'), t('explore.deleteSavedSearch'), [
+                              { text: t('common.cancel'), style: 'cancel' },
+                              { text: t('common.delete'), style: 'destructive', onPress: () => deleteSavedSearch(s.id) },
+                            ])
+                          }}
+                        >
+                          <Ionicons name="bookmark" size={12} color={Brand.primary} />
+                          <ThemedText type="caption" style={{ color: Brand.primary, fontWeight: 700 }}>{s.name}</ThemedText>
+                        </Pressable>
+                      ))}
+                    </View>
+                  </ScrollView>
+                </View>
+              )}
 
               <View style={styles.filtersSection}>
                 <View style={styles.filterRow}>
@@ -325,7 +519,7 @@ export default function AllJobsScreen() {
                       type="caption"
                       style={{ marginBottom: 6, fontWeight: 600 }}
                     >
-                      {t('explore.type')}
+                      {t("explore.type")}
                     </ThemedText>
                     <Pressable
                       style={styles.dropdown}
@@ -342,7 +536,7 @@ export default function AllJobsScreen() {
                         {selectedWorkType
                           ? selectedWorkType.charAt(0).toUpperCase() +
                             selectedWorkType.slice(1)
-                          : t('explore.allTypes')}
+                          : t("explore.allTypes")}
                       </ThemedText>
                     </Pressable>
                   </View>
@@ -351,7 +545,7 @@ export default function AllJobsScreen() {
                       type="caption"
                       style={{ marginBottom: 6, fontWeight: 600 }}
                     >
-                      {t('explore.employmentType')}
+                      {t("explore.employmentType")}
                     </ThemedText>
                     <Pressable
                       style={styles.dropdown}
@@ -367,7 +561,7 @@ export default function AllJobsScreen() {
                       >
                         {selectedEmploymentType
                           ? EMPLOYMENT_TYPE_LABELS[selectedEmploymentType]
-                          : t('explore.allEmployment')}
+                          : t("explore.allEmployment")}
                       </ThemedText>
                     </Pressable>
                   </View>
@@ -378,7 +572,7 @@ export default function AllJobsScreen() {
                       type="caption"
                       style={{ marginBottom: 6, fontWeight: 600 }}
                     >
-                      {t('explore.region')}
+                      {t("explore.region")}
                     </ThemedText>
                     <Pressable
                       style={styles.dropdown}
@@ -392,19 +586,23 @@ export default function AllJobsScreen() {
                             : { color: Brand.text, fontWeight: 700 }
                         }
                       >
-                          {selectedRegion || t('explore.allRegions')}
+                        {selectedRegion || t("explore.allRegions")}
                       </ThemedText>
                     </Pressable>
                   </View>
                 </View>
                 <View style={styles.citySection}>
-                    <ThemedText
-                      type="caption"
-                      style={{ marginBottom: 6, fontWeight: 600 }}
-                    >
-                      {t('explore.city')}
-                    </ThemedText>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+                  <ThemedText
+                    type="caption"
+                    style={{ marginBottom: 6, fontWeight: 600 }}
+                  >
+                    {t("explore.city")}
+                  </ThemedText>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    keyboardShouldPersistTaps="handled"
+                  >
                     <View style={styles.cityRow}>
                       <Pressable
                         style={[
@@ -415,7 +613,9 @@ export default function AllJobsScreen() {
                       >
                         <ThemedText
                           type="small"
-                          style={[!selectedCity ? styles.cityChipTextActive : {}]}
+                          style={[
+                            !selectedCity ? styles.cityChipTextActive : {},
+                          ]}
                         >
                           All
                         </ThemedText>
@@ -434,7 +634,9 @@ export default function AllJobsScreen() {
                           <ThemedText
                             type="small"
                             style={[
-                              selectedCity === city ? styles.cityChipTextActive : {},
+                              selectedCity === city
+                                ? styles.cityChipTextActive
+                                : {},
                             ]}
                           >
                             {city}
@@ -445,13 +647,17 @@ export default function AllJobsScreen() {
                   </ScrollView>
                 </View>
                 <View style={styles.citySection}>
-                    <ThemedText
-                      type="caption"
-                      style={{ marginBottom: 6, fontWeight: 600 }}
-                    >
-                      {t('explore.category')}
-                    </ThemedText>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+                  <ThemedText
+                    type="caption"
+                    style={{ marginBottom: 6, fontWeight: 600 }}
+                  >
+                    {t("explore.category")}
+                  </ThemedText>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    keyboardShouldPersistTaps="handled"
+                  >
                     <View style={styles.cityRow}>
                       <Pressable
                         style={[
@@ -462,9 +668,11 @@ export default function AllJobsScreen() {
                       >
                         <ThemedText
                           type="small"
-                          style={[!selectedCategory ? styles.cityChipTextActive : {}]}
+                          style={[
+                            !selectedCategory ? styles.cityChipTextActive : {},
+                          ]}
                         >
-                          {t('common.all')}
+                          {t("common.all")}
                         </ThemedText>
                       </Pressable>
                       {CATEGORIES.map((cat) => (
@@ -475,13 +683,17 @@ export default function AllJobsScreen() {
                             selectedCategory === cat && styles.cityChipActive,
                           ]}
                           onPress={() =>
-                            setSelectedCategory(selectedCategory === cat ? null : cat)
+                            setSelectedCategory(
+                              selectedCategory === cat ? null : cat,
+                            )
                           }
                         >
                           <ThemedText
                             type="small"
                             style={[
-                              selectedCategory === cat ? styles.cityChipTextActive : {},
+                              selectedCategory === cat
+                                ? styles.cityChipTextActive
+                                : {},
                             ]}
                           >
                             {cat}
@@ -494,22 +706,32 @@ export default function AllJobsScreen() {
                 <View style={styles.priceRow}>
                   <TextInput
                     style={styles.priceInput}
-                    placeholder={t('explore.min')}
+                    placeholder={t("explore.min")}
                     placeholderTextColor={Brand.placeholder}
                     value={minPrice}
                     onChangeText={setMinPrice}
                     keyboardType="number-pad"
                   />
-                  <ThemedText type="small" style={{ color: Brand.textSecondary, paddingHorizontal: 4 }}>—</ThemedText>
+                  <ThemedText
+                    type="small"
+                    style={{ color: Brand.textSecondary, paddingHorizontal: 4 }}
+                  >
+                    —
+                  </ThemedText>
                   <TextInput
                     style={styles.priceInput}
-                    placeholder={t('explore.max')}
+                    placeholder={t("explore.max")}
                     placeholderTextColor={Brand.placeholder}
                     value={maxPrice}
                     onChangeText={setMaxPrice}
                     keyboardType="number-pad"
                   />
-                  <ThemedText type="small" style={{ color: Brand.textSecondary, marginLeft: 4 }}>MMK</ThemedText>
+                  <ThemedText
+                    type="small"
+                    style={{ color: Brand.textSecondary, marginLeft: 4 }}
+                  >
+                    MMK
+                  </ThemedText>
                 </View>
               </View>
             </View>
@@ -548,28 +770,33 @@ export default function AllJobsScreen() {
                           hitSlop={8}
                         >
                           <Ionicons
-                            name={savedJobIds.has(job.id) ? "heart" : "heart-outline"}
+                            name={
+                              savedJobIds.has(job.id)
+                                ? "heart"
+                                : "heart-outline"
+                            }
                             size={18}
-                            color={savedJobIds.has(job.id) ? Brand.danger : Brand.textSecondary}
+                            color={
+                              savedJobIds.has(job.id)
+                                ? Brand.danger
+                                : Brand.textSecondary
+                            }
                           />
                         </Pressable>
                         <View
-                          style={[
-                            styles.workTypeTag,
-                            { backgroundColor: bg },
-                          ]}
+                          style={[styles.workTypeTag, { backgroundColor: bg }]}
                         />
                         {job.category && (
                           <View style={styles.categoryBadge}>
-                            <ThemedText type="caption" style={styles.categoryBadgeText}>
+                            <ThemedText
+                              type="caption"
+                              style={styles.categoryBadgeText}
+                            >
                               {job.category}
                             </ThemedText>
                           </View>
                         )}
-                        <ThemedText
-                          style={styles.cardTitle}
-                          numberOfLines={2}
-                        >
+                        <ThemedText style={styles.cardTitle} numberOfLines={2}>
                           {job.title}
                         </ThemedText>
                         <View style={styles.cardLocation}>
@@ -579,35 +806,55 @@ export default function AllJobsScreen() {
                           </ThemedText>
                         </View>
                         {job.employment_type && (
-                          <View style={{ backgroundColor: Brand.primaryLight, paddingHorizontal: 6, paddingVertical: 1, borderRadius: BorderRadius.sm, alignSelf: 'flex-start', marginTop: 4 }}>
-                            <ThemedText type="caption" style={{ color: Brand.primary, fontWeight: 600 }}>{EMPLOYMENT_TYPE_LABELS[job.employment_type]}</ThemedText>
-                          </View>
-                        )}
-                        <View style={styles.cardMetaRow}>
-                          <View style={styles.cardPrice}>
-                            <Ionicons name="cash-outline" size={14} color={Brand.primary} />
+                          <View
+                            style={{
+                              backgroundColor: Brand.primaryLight,
+                              paddingHorizontal: 6,
+                              paddingVertical: 1,
+                              borderRadius: BorderRadius.sm,
+                              alignSelf: "flex-start",
+                              marginTop: 4,
+                            }}
+                          >
                             <ThemedText
                               type="caption"
                               style={{ color: Brand.primary, fontWeight: 600 }}
                             >
-                              {job.employment_type ? (
-                                job.salary_min != null && job.salary_max != null
-                                  ? `${job.salary_min.toLocaleString()} — ${job.salary_max.toLocaleString()} ${SALARY_PERIOD_LABELS[job.salary_period || 'month']}`
+                              {EMPLOYMENT_TYPE_LABELS[job.employment_type]}
+                            </ThemedText>
+                          </View>
+                        )}
+                        <View style={styles.cardMetaRow}>
+                          <View style={styles.cardPrice}>
+                            <ThemedText
+                              type="caption"
+                              style={{ color: Brand.primary, fontWeight: 600 }}
+                            >
+                              {job.employment_type
+                                ? job.salary_min != null &&
+                                  job.salary_max != null
+                                  ? `${job.salary_min.toLocaleString()} — ${job.salary_max.toLocaleString()} ${SALARY_PERIOD_LABELS[job.salary_period || "month"]}`
                                   : job.salary_min != null
-                                    ? `From ${job.salary_min.toLocaleString()} ${SALARY_PERIOD_LABELS[job.salary_period || 'month']}`
+                                    ? `From ${job.salary_min.toLocaleString()} ${SALARY_PERIOD_LABELS[job.salary_period || "month"]}`
                                     : job.salary_max != null
-                                      ? `Up to ${job.salary_max.toLocaleString()} ${SALARY_PERIOD_LABELS[job.salary_period || 'month']}`
-                                      : EMPLOYMENT_TYPE_LABELS[job.employment_type]
-                              ) : (
-                                job.price != null
+                                      ? `Up to ${job.salary_max.toLocaleString()} ${SALARY_PERIOD_LABELS[job.salary_period || "month"]}`
+                                      : EMPLOYMENT_TYPE_LABELS[
+                                          job.employment_type
+                                        ]
+                                : job.price != null
                                   ? `${job.price.toLocaleString()} MMK`
-                                  : EMPLOYMENT_TYPE_LABELS[job.employment_type || 'full_time']
-                              )}
+                                  : EMPLOYMENT_TYPE_LABELS[
+                                      job.employment_type || "full_time"
+                                    ]}
                             </ThemedText>
                           </View>
                           <View style={styles.cardStatus}>
-                            <ThemedText type="caption" style={{ color: s.color }}>
-                              {job.status.charAt(0).toUpperCase() + job.status.slice(1)}
+                            <ThemedText
+                              type="caption"
+                              style={{ color: s.color }}
+                            >
+                              {job.status.charAt(0).toUpperCase() +
+                                job.status.slice(1)}
                             </ThemedText>
                           </View>
                         </View>
@@ -618,6 +865,14 @@ export default function AllJobsScreen() {
               </View>
             );
           }}
+          ListEmptyComponent={
+            <View style={{ paddingVertical: Spacing.six, alignItems: 'center' }}>
+              <Ionicons name="search-outline" size={48} color={Brand.textSecondary} />
+              <ThemedText type="small" style={{ color: Brand.textSecondary }}>
+                {t("explore.noJobs")}
+              </ThemedText>
+            </View>
+          }
         />
       )}
     </SafeAreaView>
@@ -639,6 +894,14 @@ const styles = StyleSheet.create({
     color: Brand.text,
     padding: Spacing.one,
     letterSpacing: -0.5,
+  },
+  userSearchBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Brand.primaryLight,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   searchContainer: {
     marginBottom: Spacing.three,
@@ -732,7 +995,7 @@ const styles = StyleSheet.create({
     ...Shadow.card,
   },
   saveBtn: {
-    position: 'absolute',
+    position: "absolute",
     top: Spacing.two,
     right: Spacing.two,
     zIndex: 1,
@@ -769,7 +1032,7 @@ const styles = StyleSheet.create({
     textTransform: "capitalize",
   },
   categoryBadge: {
-    alignSelf: 'flex-start',
+    alignSelf: "flex-start",
     backgroundColor: Brand.primaryLight,
     paddingHorizontal: 6,
     paddingVertical: 1,
@@ -782,15 +1045,15 @@ const styles = StyleSheet.create({
     fontWeight: 600,
   },
   priceRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: Spacing.two,
     marginBottom: Spacing.three,
   },
   cardMetaRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginTop: Spacing.two,
   },
   priceInput: {
@@ -802,5 +1065,63 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     fontSize: FontSize.sm,
     color: Brand.text,
+  },
+  savedSearchChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: Brand.primaryLight,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: BorderRadius.full,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    padding: Spacing.five,
+  },
+  saveModalContent: {
+    backgroundColor: Brand.white,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.five,
+  },
+  saveModalTitle: {
+    fontSize: FontSize.md,
+    fontWeight: 700,
+    color: Brand.text,
+    textAlign: 'center',
+    marginBottom: Spacing.three,
+  },
+  saveModalInput: {
+    backgroundColor: Brand.bg,
+    borderRadius: BorderRadius.sm,
+    padding: Spacing.three,
+    fontSize: FontSize.base,
+    color: Brand.text,
+  },
+  cancelBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: BorderRadius.sm,
+    backgroundColor: Brand.bg,
+    alignItems: 'center',
+  },
+  cancelBtnText: {
+    color: Brand.textSecondary,
+    fontWeight: 700,
+    fontSize: FontSize.base,
+  },
+  saveBtnStyle: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: BorderRadius.sm,
+    backgroundColor: Brand.primary,
+    alignItems: 'center',
+  },
+  saveBtnStyleText: {
+    color: Brand.white,
+    fontWeight: 700,
+    fontSize: FontSize.base,
   },
 });

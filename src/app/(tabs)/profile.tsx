@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
-import { Alert, Image, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Alert, Image, Pressable, ScrollView, StyleSheet, Switch, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { ThemedText } from "@/components/themed-text";
@@ -37,6 +37,8 @@ export default function ProfileScreen() {
   const [ratingCount, setRatingCount] = useState(0);
   const [reviews, setReviews] = useState<any[]>([]);
   const [loadingReviews, setLoadingReviews] = useState(true);
+  const [expandedCompleted, setExpandedCompleted] = useState(false);
+  const [expandedSaved, setExpandedSaved] = useState(false);
 
   const loadProfile = useCallback(async () => {
     if (!user) return;
@@ -319,9 +321,9 @@ export default function ProfileScreen() {
               {completedJobs.length > 0 && (
                 <View style={styles.sectionCard}>
                   <ThemedText style={styles.sectionTitle}>{t('profile.completedJobs', { count: completedJobs.length })}</ThemedText>
-                  {completedJobs.map((job, i) => (
+                  {(expandedCompleted ? completedJobs : completedJobs.slice(0, 3)).map((job, i) => (
                     <Pressable key={job.id} onPress={() => router.push(`/job/${job.id}`)}>
-                      <View style={[styles.jobRow, i < completedJobs.length - 1 && styles.jobRowBorder]}>
+                      <View style={[styles.jobRow, i < (expandedCompleted ? completedJobs.length : Math.min(completedJobs.length, 3)) - 1 && styles.jobRowBorder]}>
                         <View style={{ flex: 1 }}>
                           <ThemedText style={styles.jobTitle}>{job.title}</ThemedText>
                           {job.price ? <ThemedText type="caption" style={{ color: Brand.textSecondary }}>{job.price.toLocaleString()} MMK</ThemedText> : null}
@@ -330,15 +332,20 @@ export default function ProfileScreen() {
                       </View>
                     </Pressable>
                   ))}
+                  {!expandedCompleted && completedJobs.length > 3 && (
+                    <Pressable onPress={() => setExpandedCompleted(true)} style={styles.seeAllRow}>
+                      <ThemedText style={styles.seeAllText}>+{completedJobs.length - 3} {t('userSearch.jobs')}</ThemedText>
+                    </Pressable>
+                  )}
                 </View>
               )}
 
               {savedJobs.length > 0 && (
                 <View style={styles.sectionCard}>
                   <ThemedText style={styles.sectionTitle}>{t('profile.savedJobs', { count: savedJobs.length })}</ThemedText>
-                  {savedJobs.map((job, i) => (
+                  {(expandedSaved ? savedJobs : savedJobs.slice(0, 3)).map((job, i) => (
                     <Pressable key={job.id} onPress={() => router.push(`/job/${job.id}`)}>
-                      <View style={[styles.jobRow, i < savedJobs.length - 1 && styles.jobRowBorder]}>
+                      <View style={[styles.jobRow, i < (expandedSaved ? savedJobs.length : Math.min(savedJobs.length, 3)) - 1 && styles.jobRowBorder]}>
                         <View style={{ flex: 1 }}>
                           <ThemedText style={styles.jobTitle}>{job.title}</ThemedText>
                           {job.price ? <ThemedText type="caption" style={{ color: Brand.textSecondary }}>{job.price.toLocaleString()} MMK</ThemedText> : null}
@@ -347,27 +354,29 @@ export default function ProfileScreen() {
                       </View>
                     </Pressable>
                   ))}
+                  {!expandedSaved && savedJobs.length > 3 && (
+                    <Pressable onPress={() => setExpandedSaved(true)} style={styles.seeAllRow}>
+                      <ThemedText style={styles.seeAllText}>+{savedJobs.length - 3} {t('userSearch.jobs')}</ThemedText>
+                    </Pressable>
+                  )}
                 </View>
               )}
 
-              <View style={styles.sectionCard}>
-                <ThemedText style={styles.sectionTitle}>{t('profile.settings')}</ThemedText>
-                <Pressable
-                  style={styles.settingRow}
-                  onPress={() =>
-                    Alert.alert(t('profile.language'), '', [
-                      { text: t('profile.english'), onPress: () => setLocale('en') },
-                      { text: t('profile.burmese'), onPress: () => setLocale('my') },
-                      { text: t('common.cancel'), style: 'cancel' },
-                    ])
-                  }
-                >
-                  <ThemedText style={styles.settingLabel}>{t('profile.language')}</ThemedText>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                    <ThemedText style={styles.settingValue}>{locale === 'en' ? t('profile.english') : t('profile.burmese')}</ThemedText>
-                    <Ionicons name="chevron-forward" size={16} color={Brand.textSecondary} />
+                <View style={styles.sectionCard}>
+                  <ThemedText style={styles.sectionTitle}>{t('profile.settings')}</ThemedText>
+                  <View style={styles.settingRow}>
+                    <ThemedText style={styles.settingLabel}>{t('profile.language')}</ThemedText>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                      <ThemedText type="caption" style={{ color: locale === 'en' ? Brand.primary : Brand.textSecondary, fontWeight: 700 }}>EN</ThemedText>
+                      <Switch
+                        value={locale === 'my'}
+                        onValueChange={(v) => setLocale(v ? 'my' : 'en')}
+                        trackColor={{ false: Brand.borderLight, true: Brand.primaryLight }}
+                        thumbColor={locale === 'my' ? Brand.primary : Brand.textSecondary}
+                      />
+                      <ThemedText type="caption" style={{ color: locale === 'my' ? Brand.primary : Brand.textSecondary, fontWeight: 700 }}>MY</ThemedText>
+                    </View>
                   </View>
-                </Pressable>
                 <View style={styles.settingDivider} />
                 <Pressable
                   style={styles.settingRow}

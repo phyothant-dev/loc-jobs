@@ -117,6 +117,9 @@ const my: TranslationKeys = {
     selectRegion: 'ဒေသရွေးချယ်ရန်',
     priceRange: 'အနည်းဆုံး — အများဆုံး MMK',
     noSavedJobsEmpty: 'သိမ်းထားသောအလုပ်မရှိပါ',
+    saveSearch: 'လက်ရှိရှာဖွေမှုကိုသိမ်းရန်',
+    saveSearchName: 'ရှာဖွေမှုအမည်...',
+    deleteSavedSearch: 'သိမ်းထားသောရှာဖွေမှုကိုဖျက်မည်လား?',
   },
   chat: {
     title: 'စကားပြော',
@@ -340,6 +343,14 @@ const my: TranslationKeys = {
     newMessage: 'မက်ဆေ့ချ်အသစ်',
     applicationUpdate: 'လျှောက်လွှာအခြေအနေပြောင်းလဲမှု',
     jobUpdate: 'အလုပ်အခြေအနေပြောင်းလဲမှု',
+  },
+  userSearch: {
+    title: 'အသုံးပြုသူရှာရန်',
+    placeholder: 'အမည် သို့မဟုတ် မြို့ဖြင့်ရှာပါ...',
+    noResults: 'အသုံးပြုသူမတွေ့ပါ',
+    noLocation: 'တည်နေရာမရှိပါ',
+    jobs: 'အလုပ်များ',
+    seeAllJobs: 'အလုပ်အားလုံးကြည့်ရန်',
   },
   time: {
     now: 'ယခု',

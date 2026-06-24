@@ -227,7 +227,7 @@ export default function ChatDetailScreen() {
         <Pressable onPress={() => router.back()} style={styles.backBtn}>
           <Ionicons name="chevron-back" size={22} color={Brand.primary} />
         </Pressable>
-        <Pressable onPress={() => router.push(`/user/${otherUserId}`)} style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+        <Pressable onPress={() => router.push(otherUserId === user?.id ? '/(tabs)/profile' : `/user/${otherUserId}`)} style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
           {otherAvatarUrl ? (
             <Image source={{ uri: otherAvatarUrl }} style={styles.headerAvatar} />
           ) : (

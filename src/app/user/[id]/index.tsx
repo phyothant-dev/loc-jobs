@@ -29,6 +29,7 @@ export default function UserProfileScreen() {
   const [avgRating, setAvgRating] = useState(0)
   const [ratingCount, setRatingCount] = useState(0)
   const [reviews, setReviews] = useState<any[]>([])
+  const [jobs, setJobs] = useState<any[]>([])
 
   const loadProfile = useCallback(async () => {
     if (!id) return
@@ -76,6 +77,16 @@ export default function UserProfileScreen() {
           created_at: r.created_at,
         })))
       }
+
+      const { data: jobRows } = await supabase
+        .from('jobs')
+        .select('id, title, price, city, employment_type, created_at')
+        .eq('uploader_id', id)
+        .eq('deleted', false)
+        .in('status', ['open', 'full'])
+        .order('created_at', { ascending: false })
+        .limit(5)
+      setJobs((jobRows ?? []) as any[])
     } catch (error) {
       console.error('Failed to load profile', error)
     } finally {
@@ -96,7 +107,7 @@ export default function UserProfileScreen() {
             <Pressable onPress={() => router.back()} style={styles.backBtn}>
               <Ionicons name="chevron-back" size={22} color={Brand.primary} />
             </Pressable>
-            <ThemedText style={styles.headerTitle}>{t('userProfile.reviews')}</ThemedText>
+            <ThemedText style={styles.headerTitle}>{displayName || t('common.anonymous')}</ThemedText>
             <View style={{ width: 40 }} />
           </View>
           <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
@@ -139,6 +150,26 @@ export default function UserProfileScreen() {
                 </View>
               </View>
             </View>
+
+            <View style={{ gap: Spacing.two }}>
+              <Skeleton width={60} height={14} style={{ marginLeft: Spacing.four }} />
+              <View style={styles.infoCard}>
+                <View style={[styles.infoRow, { gap: Spacing.two }]}>
+                  <Skeleton width="60%" height={14} />
+                  <Skeleton width={80} height={14} />
+                </View>
+                <View style={styles.divider} />
+                <View style={[styles.infoRow, { gap: Spacing.two }]}>
+                  <Skeleton width="50%" height={14} />
+                  <Skeleton width={80} height={14} />
+                </View>
+                <View style={styles.divider} />
+                <View style={[styles.infoRow, { gap: Spacing.two }]}>
+                  <Skeleton width="40%" height={14} />
+                  <Skeleton width={80} height={14} />
+                </View>
+              </View>
+            </View>
           </ScrollView>
         </View>
       ) : (
@@ -147,7 +178,7 @@ export default function UserProfileScreen() {
             <Pressable onPress={() => router.back()} style={styles.backBtn}>
               <Ionicons name="chevron-back" size={22} color={Brand.primary} />
             </Pressable>
-            <ThemedText style={styles.headerTitle}>{t('userProfile.reviews')}</ThemedText>
+            <ThemedText style={styles.headerTitle}>{displayName || t('common.anonymous')}</ThemedText>
             <View style={{ width: 40 }} />
           </View>
 
@@ -201,9 +232,45 @@ export default function UserProfileScreen() {
               </View>
             </View>
 
+            {jobs.length > 0 && (
+              <View style={styles.sectionCard}>
+                <ThemedText style={styles.sectionTitle}>
+                  {t('userSearch.jobs')} ({jobs.length})
+                </ThemedText>
+                <View style={{ paddingHorizontal: Spacing.four, gap: 0 }}>
+                  {jobs.slice(0, 3).map((job, idx) => (
+                    <Pressable
+                      key={job.id}
+                      style={[styles.jobRow, idx === Math.min(jobs.length, 3) - 1 && { borderBottomWidth: 0 }]}
+                      onPress={() => router.push(`/job/${job.id}` as any)}
+                    >
+                      <View style={{ flex: 1 }}>
+                        <ThemedText style={styles.jobTitle} numberOfLines={1}>{job.title}</ThemedText>
+                        <ThemedText type="caption" style={{ color: Brand.textSecondary }}>
+                          {job.city || ''}{job.city && job.price ? ' · ' : ''}{job.price ? `${job.price.toLocaleString()} MMK` : ''}
+                        </ThemedText>
+                      </View>
+                      <Ionicons name="chevron-forward" size={16} color={Brand.textSecondary} />
+                    </Pressable>
+                  ))}
+                </View>
+                {jobs.length > 3 && (
+                  <Pressable
+                    style={styles.seeAllRow}
+                    onPress={() => router.push(`/user/${id}/jobs` as any)}
+                  >
+                    <ThemedText style={styles.seeAllText}>
+                      {t('userSearch.seeAllJobs')}
+                    </ThemedText>
+                    <Ionicons name="chevron-forward" size={16} color={Brand.primary} />
+                  </Pressable>
+                )}
+              </View>
+            )}
+
             {reviews.length > 0 && (
               <View style={styles.sectionCard}>
-                <ThemedText style={styles.sectionTitle}>{t('userProfile.reviews')}</ThemedText>
+                <ThemedText style={styles.sectionTitle}>{displayName || t('common.anonymous')}</ThemedText>
                 <View style={{ gap: Spacing.two, paddingHorizontal: Spacing.four, paddingBottom: Spacing.four }}>
                   {reviews.map((r) => (
                     <ReviewCard key={r.id} review={r} isOwn={r.reviewer_id === user?.id} onUpdated={loadProfile} />
@@ -355,5 +422,18 @@ const styles = StyleSheet.create({
     color: Brand.primary,
     fontWeight: 700,
     fontSize: FontSize.sm,
+  },
+  jobRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    gap: Spacing.two,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: Brand.borderLight,
+  },
+  jobTitle: {
+    fontWeight: 700,
+    fontSize: FontSize.base,
+    color: Brand.text,
   },
 })
