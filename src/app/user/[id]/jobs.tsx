@@ -8,6 +8,7 @@ import { ThemedText } from '@/components/themed-text'
 import { BorderRadius, Brand, FontSize, Shadow, Spacing } from '@/constants/theme'
 import { supabase } from '@/lib/supabase'
 import { useLocale } from '@/contexts/LocaleContext'
+import { useBrand } from "@/contexts/ThemeContext";
 
 interface JobItem {
   id: string
@@ -19,6 +20,8 @@ interface JobItem {
 }
 
 export default function UserJobsScreen() {
+  const Brand = useBrand();
+
   const { t } = useLocale()
   const { id } = useLocalSearchParams<{ id: string }>()
   const [userName, setUserName] = useState('')
@@ -61,7 +64,7 @@ export default function UserJobsScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: Brand.bg }} edges={['top']}>
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.backBtn}>
+        <Pressable onPress={() => router.back()} style={[styles.backBtn, { backgroundColor: Brand.primaryLight }]}>
           <Ionicons name="chevron-back" size={22} color={Brand.primary} />
         </Pressable>
         <ThemedText style={styles.headerTitle} numberOfLines={1}>{userName || t('common.anonymous')}</ThemedText>
@@ -74,8 +77,8 @@ export default function UserJobsScreen() {
         contentContainerStyle={{ padding: Spacing.four, gap: Spacing.three, paddingBottom: 100 }}
         ListHeaderComponent={
           !loading ? (
-            <View style={styles.profileCard}>
-              <View style={styles.avatar}>
+            <View style={[styles.profileCard, { backgroundColor: Brand.white }]}>
+              <View style={[styles.avatar, { backgroundColor: Brand.primaryLight }]}>
                 {avatarUrl ? (
                   <Image source={{ uri: avatarUrl }} style={styles.avatarImg} />
                 ) : (
@@ -101,7 +104,7 @@ export default function UserJobsScreen() {
         }
         renderItem={({ item }) => (
           <Pressable
-            style={styles.jobCard}
+            style={[styles.jobCard, { backgroundColor: Brand.white }]}
             onPress={() => router.push(`/job/${item.id}` as any)}
           >
             <View style={{ flex: 1 }}>
@@ -142,7 +145,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: Brand.primaryLight,
+
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -150,7 +153,7 @@ const styles = StyleSheet.create({
     fontSize: FontSize.xl,
     lineHeight: 40,
     fontWeight: 700,
-    color: Brand.text,
+
     letterSpacing: -0.5,
     flex: 1,
     textAlign: 'center',
@@ -158,7 +161,7 @@ const styles = StyleSheet.create({
   profileCard: {
     alignItems: 'center',
     paddingVertical: Spacing.five,
-    backgroundColor: Brand.white,
+
     borderRadius: BorderRadius.lg,
     ...Shadow.card,
     marginBottom: Spacing.three,
@@ -168,7 +171,7 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: Brand.primaryLight,
+
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
@@ -179,19 +182,18 @@ const styles = StyleSheet.create({
     borderRadius: 32,
   },
   avatarText: {
-    color: Brand.primary,
     fontWeight: 700,
     fontSize: FontSize.lg,
   },
   name: {
     fontWeight: 700,
     fontSize: FontSize.md,
-    color: Brand.text,
+
   },
   jobCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Brand.white,
+
     borderRadius: BorderRadius.lg,
     padding: Spacing.four,
     ...Shadow.card,
@@ -200,7 +202,7 @@ const styles = StyleSheet.create({
   jobTitle: {
     fontWeight: 700,
     fontSize: FontSize.base,
-    color: Brand.text,
+
   },
   chip: {
     flexDirection: 'row',
@@ -210,6 +212,6 @@ const styles = StyleSheet.create({
   price: {
     fontWeight: 700,
     fontSize: FontSize.sm,
-    color: Brand.primary,
+
   },
 })

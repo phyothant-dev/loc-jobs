@@ -10,10 +10,13 @@ import { BorderRadius, Brand, Shadow, Spacing, FontSize } from '@/constants/them
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { useLocale } from '@/contexts/LocaleContext'
+import { useBrand } from "@/contexts/ThemeContext";
 
 type SortMode = 'newest' | 'oldest' | 'highest' | 'lowest'
 
 export default function ReviewsScreen() {
+  const Brand = useBrand();
+
   const { user } = useAuth()
   const { t } = useLocale()
   const { userId } = useLocalSearchParams<{ userId: string }>()
@@ -67,11 +70,11 @@ export default function ReviewsScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: Brand.bg }} edges={['top']}>
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.backBtn}>
+        <Pressable onPress={() => router.back()} style={[styles.backBtn, { backgroundColor: Brand.primaryLight }]}>
           <Ionicons name="chevron-back" size={22} color={Brand.primary} />
         </Pressable>
         <ThemedText style={styles.headerTitle}>{t('jobDetail.allReviews')}</ThemedText>
-        <Pressable style={styles.sortBtn} onPress={() => setShowSortPicker(!showSortPicker)}>
+        <Pressable style={[styles.sortBtn, { backgroundColor: Brand.primaryLight }]} onPress={() => setShowSortPicker(!showSortPicker)}>
           <Ionicons name="funnel-outline" size={18} color={Brand.primary} />
         </Pressable>
       </View>
@@ -81,7 +84,7 @@ export default function ReviewsScreen() {
           {sortOptions.map((opt) => (
             <Pressable
               key={opt.key}
-              style={[styles.sortOption, sort === opt.key && styles.sortOptionActive]}
+              style={[styles.sortOption, sort === opt.key && styles.sortOptionActive, { backgroundColor: Brand.white, borderColor: Brand.borderLight }, { backgroundColor: Brand.primary, borderColor: Brand.primary }]}
               onPress={() => { setSort(opt.key); setShowSortPicker(false) }}
             >
               <ThemedText style={[styles.sortOptionText, sort === opt.key && styles.sortOptionTextActive]}>
@@ -95,12 +98,12 @@ export default function ReviewsScreen() {
       {loading ? (
         <View style={{ flex: 1, padding: Spacing.four }}>
           {[1, 2, 3].map((i) => (
-            <View key={i} style={styles.skeletonCard}>
+            <View key={i} style={[styles.skeletonCard, { backgroundColor: Brand.white }]}>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <View style={styles.skeletonAvatar} />
+                <View style={[styles.skeletonAvatar, { backgroundColor: Brand.borderLight }]} />
                 <View style={{ marginLeft: Spacing.three, gap: 4 }}>
-                  <View style={styles.skeletonLine} />
-                  <View style={[styles.skeletonLine, { width: 80 }]} />
+                  <View style={[styles.skeletonLine, { backgroundColor: Brand.borderLight }]} />
+                  <View style={[styles.skeletonLine, { width: 80 }, { backgroundColor: Brand.borderLight }]} />
                 </View>
               </View>
             </View>
@@ -139,7 +142,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: Brand.primaryLight,
+
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -147,14 +150,14 @@ const styles = StyleSheet.create({
     fontSize: FontSize.xl,
     lineHeight: 40,
     fontWeight: 700,
-    color: Brand.text,
+
     letterSpacing: -0.5,
   },
   sortBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: Brand.primaryLight,
+
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -169,24 +172,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 7,
     borderRadius: BorderRadius.full,
-    backgroundColor: Brand.white,
+
     borderWidth: 1,
-    borderColor: Brand.borderLight,
+    backgroundColor: Brand.primary,
   },
   sortOptionActive: {
-    backgroundColor: Brand.primary,
-    borderColor: Brand.primary,
   },
   sortOptionText: {
     fontSize: FontSize.sm,
     fontWeight: 600,
-    color: Brand.textSecondary,
+
   },
   sortOptionTextActive: {
-    color: Brand.white,
   },
   skeletonCard: {
-    backgroundColor: Brand.white,
     borderRadius: BorderRadius.lg,
     padding: Spacing.four,
     ...Shadow.card,
@@ -196,12 +195,12 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: Brand.borderLight,
+
   },
   skeletonLine: {
     height: 12,
     width: 120,
-    backgroundColor: Brand.borderLight,
+
     borderRadius: 6,
   },
 })

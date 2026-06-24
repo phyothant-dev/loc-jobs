@@ -12,8 +12,11 @@ import { BorderRadius, Brand, Shadow, Spacing, FontSize } from '@/constants/them
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { useLocale } from '@/contexts/LocaleContext'
+import { useBrand } from "@/contexts/ThemeContext";
 
 export default function UserProfileScreen() {
+  const Brand = useBrand();
+
   const { user } = useAuth()
   const { t } = useLocale()
   const { id } = useLocalSearchParams<{ id: string }>()
@@ -104,34 +107,34 @@ export default function UserProfileScreen() {
       {loading ? (
         <View style={{ flex: 1, backgroundColor: Brand.bg }}>
           <View style={styles.header}>
-            <Pressable onPress={() => router.back()} style={styles.backBtn}>
+            <Pressable onPress={() => router.back()} style={[styles.backBtn, { backgroundColor: Brand.primaryLight }]}>
               <Ionicons name="chevron-back" size={22} color={Brand.primary} />
             </Pressable>
             <ThemedText style={styles.headerTitle}>{displayName || t('common.anonymous')}</ThemedText>
             <View style={{ width: 40 }} />
           </View>
           <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-            <View style={styles.avatarCard}>
+            <View style={[styles.avatarCard, { backgroundColor: Brand.white }]}>
               <Skeleton width={88} height={88} borderRadius={44} />
               <Skeleton width="50%" height={18} style={{ marginTop: Spacing.three }} />
               <Skeleton width={100} height={14} style={{ marginTop: Spacing.half }} />
             </View>
 
-            <View style={styles.infoCard}>
+            <View style={[styles.infoCard, { backgroundColor: Brand.white }]}>
               <View style={styles.infoRow}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.two }}>
                   <Ionicons name="call-outline" size={16} color={Brand.borderLight} />
                   <Skeleton width="40%" height={14} />
                 </View>
               </View>
-              <View style={styles.divider} />
+              <View style={[styles.divider, { backgroundColor: Brand.borderLight }]} />
               <View style={styles.infoRow}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.two }}>
                   <Ionicons name="location-outline" size={16} color={Brand.borderLight} />
                   <Skeleton width="30%" height={14} />
                 </View>
               </View>
-              <View style={styles.divider} />
+              <View style={[styles.divider, { backgroundColor: Brand.borderLight }]} />
               <View style={styles.infoRow}>
                 <Skeleton width="50%" height={14} />
               </View>
@@ -139,7 +142,7 @@ export default function UserProfileScreen() {
 
             <View style={{ gap: Spacing.two }}>
               <Skeleton width={80} height={14} style={{ marginLeft: Spacing.four }} />
-              <View style={styles.infoCard}>
+              <View style={[styles.infoCard, { backgroundColor: Brand.white }]}>
                 <View style={[styles.infoRow, { gap: Spacing.two }]}>
                   <Skeleton width={36} height={36} borderRadius={18} />
                   <Skeleton width="30%" height={14} style={{ flex: 1 }} />
@@ -153,17 +156,17 @@ export default function UserProfileScreen() {
 
             <View style={{ gap: Spacing.two }}>
               <Skeleton width={60} height={14} style={{ marginLeft: Spacing.four }} />
-              <View style={styles.infoCard}>
+              <View style={[styles.infoCard, { backgroundColor: Brand.white }]}>
                 <View style={[styles.infoRow, { gap: Spacing.two }]}>
                   <Skeleton width="60%" height={14} />
                   <Skeleton width={80} height={14} />
                 </View>
-                <View style={styles.divider} />
+                <View style={[styles.divider, { backgroundColor: Brand.borderLight }]} />
                 <View style={[styles.infoRow, { gap: Spacing.two }]}>
                   <Skeleton width="50%" height={14} />
                   <Skeleton width={80} height={14} />
                 </View>
-                <View style={styles.divider} />
+                <View style={[styles.divider, { backgroundColor: Brand.borderLight }]} />
                 <View style={[styles.infoRow, { gap: Spacing.two }]}>
                   <Skeleton width="40%" height={14} />
                   <Skeleton width={80} height={14} />
@@ -175,7 +178,7 @@ export default function UserProfileScreen() {
       ) : (
         <>
           <View style={styles.header}>
-            <Pressable onPress={() => router.back()} style={styles.backBtn}>
+            <Pressable onPress={() => router.back()} style={[styles.backBtn, { backgroundColor: Brand.primaryLight }]}>
               <Ionicons name="chevron-back" size={22} color={Brand.primary} />
             </Pressable>
             <ThemedText style={styles.headerTitle}>{displayName || t('common.anonymous')}</ThemedText>
@@ -183,12 +186,12 @@ export default function UserProfileScreen() {
           </View>
 
           <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-            <View style={styles.avatarCard}>
+            <View style={[styles.avatarCard, { backgroundColor: Brand.white }]}>
               <View style={styles.avatarWrap}>
                 {avatarUrl ? (
-                  <Image source={{ uri: avatarUrl }} style={styles.avatar} />
+                  <Image source={{ uri: avatarUrl }} style={[styles.avatar, { backgroundColor: Brand.primary, borderColor: Brand.primaryLight }]} />
                 ) : (
-                  <View style={styles.avatar}>
+                  <View style={[styles.avatar, { backgroundColor: Brand.primary, borderColor: Brand.primaryLight }]}>
                     <ThemedText style={styles.avatarInitial}>{initial}</ThemedText>
                   </View>
                 )}
@@ -215,17 +218,17 @@ export default function UserProfileScreen() {
               )}
             </View>
 
-            <View style={styles.infoCard}>
+            <View style={[styles.infoCard, { backgroundColor: Brand.white }]}>
               <View style={styles.infoRow}>
                 <ThemedText type="caption" style={styles.infoLabel}>{t('userProfile.phone')}</ThemedText>
                 <ThemedText style={styles.infoValue}>{phone || t('userProfile.emDash')}</ThemedText>
               </View>
-              <View style={styles.divider} />
+              <View style={[styles.divider, { backgroundColor: Brand.borderLight }]} />
               <View style={styles.infoRow}>
                 <ThemedText type="caption" style={styles.infoLabel}>{t('userProfile.city')}</ThemedText>
                 <ThemedText style={styles.infoValue}>{city || t('userProfile.emDash')}</ThemedText>
               </View>
-              <View style={styles.divider} />
+              <View style={[styles.divider, { backgroundColor: Brand.borderLight }]} />
               <View style={styles.infoRow}>
                 <ThemedText type="caption" style={styles.infoLabel}>{t('userProfile.region')}</ThemedText>
                 <ThemedText style={styles.infoValue}>{region || t('userProfile.emDash')}</ThemedText>
@@ -233,7 +236,7 @@ export default function UserProfileScreen() {
             </View>
 
             {jobs.length > 0 && (
-              <View style={styles.sectionCard}>
+              <View style={[styles.sectionCard, { backgroundColor: Brand.white }]}>
                 <ThemedText style={styles.sectionTitle}>
                   {t('userSearch.jobs')} ({jobs.length})
                 </ThemedText>
@@ -241,7 +244,7 @@ export default function UserProfileScreen() {
                   {jobs.slice(0, 3).map((job, idx) => (
                     <Pressable
                       key={job.id}
-                      style={[styles.jobRow, idx === Math.min(jobs.length, 3) - 1 && { borderBottomWidth: 0 }]}
+                      style={[styles.jobRow, idx === Math.min(jobs.length, 3) - 1 && { borderBottomWidth: 0 }, { borderBottomColor: Brand.borderLight }]}
                       onPress={() => router.push(`/job/${job.id}` as any)}
                     >
                       <View style={{ flex: 1 }}>
@@ -256,7 +259,7 @@ export default function UserProfileScreen() {
                 </View>
                 {jobs.length > 3 && (
                   <Pressable
-                    style={styles.seeAllRow}
+                    style={[styles.seeAllRow, { borderTopColor: Brand.borderLight }]}
                     onPress={() => router.push(`/user/${id}/jobs` as any)}
                   >
                     <ThemedText style={styles.seeAllText}>
@@ -269,7 +272,7 @@ export default function UserProfileScreen() {
             )}
 
             {reviews.length > 0 && (
-              <View style={styles.sectionCard}>
+              <View style={[styles.sectionCard, { backgroundColor: Brand.white }]}>
                 <ThemedText style={styles.sectionTitle}>{displayName || t('common.anonymous')}</ThemedText>
                 <View style={{ gap: Spacing.two, paddingHorizontal: Spacing.four, paddingBottom: Spacing.four }}>
                   {reviews.map((r) => (
@@ -277,7 +280,7 @@ export default function UserProfileScreen() {
                   ))}
                 </View>
                 <Pressable
-                  style={styles.seeAllRow}
+                  style={[styles.seeAllRow, { borderTopColor: Brand.borderLight }]}
                   onPress={() => router.push(`/reviews/${id}` as any)}
                 >
                   <ThemedText style={styles.seeAllText}>{t('userProfile.seeAllReviews')}</ThemedText>
@@ -287,7 +290,7 @@ export default function UserProfileScreen() {
             )}
 
             {!isMe && (
-              <Pressable style={styles.msgBtn} onPress={() => router.push('/(tabs)/chat')}>
+              <Pressable style={[styles.msgBtn, { backgroundColor: Brand.primary }]} onPress={() => router.push('/(tabs)/chat')}>
                 <ThemedText style={styles.msgBtnText}>{t('userProfile.sendMessage')}</ThemedText>
               </Pressable>
             )}
@@ -310,7 +313,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: Brand.primaryLight,
+
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -318,7 +321,7 @@ const styles = StyleSheet.create({
     fontSize: FontSize.xl,
     lineHeight: 40,
     fontWeight: 700,
-    color: Brand.text,
+
     letterSpacing: -0.5,
   },
   content: {
@@ -328,7 +331,7 @@ const styles = StyleSheet.create({
   avatarCard: {
     alignItems: 'center',
     paddingVertical: Spacing.five,
-    backgroundColor: Brand.white,
+
     borderRadius: BorderRadius.lg,
     ...Shadow.card,
   },
@@ -339,25 +342,24 @@ const styles = StyleSheet.create({
     width: 88,
     height: 88,
     borderRadius: 44,
-    backgroundColor: Brand.primary,
+
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 3,
-    borderColor: Brand.primaryLight,
+
   },
   avatarInitial: {
     fontSize: 36,
     fontWeight: 700,
-    color: Brand.white,
+
   },
   name: {
     fontSize: FontSize.lg,
     fontWeight: 700,
-    color: Brand.text,
+
     marginTop: Spacing.three,
   },
   infoCard: {
-    backgroundColor: Brand.white,
     borderRadius: BorderRadius.lg,
     ...Shadow.card,
     overflow: 'hidden',
@@ -371,32 +373,29 @@ const styles = StyleSheet.create({
   },
   infoLabel: {
     fontWeight: 600,
-    color: Brand.textSecondary,
+
   },
   infoValue: {
     fontSize: FontSize.base,
     fontWeight: 600,
-    color: Brand.text,
+
   },
   divider: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: Brand.borderLight,
+
     marginHorizontal: Spacing.four,
   },
   msgBtn: {
-    backgroundColor: Brand.primary,
     paddingVertical: 14,
     borderRadius: BorderRadius.md,
     alignItems: 'center',
     ...Shadow.elevated,
   },
   msgBtnText: {
-    color: Brand.white,
     fontSize: FontSize.base,
     fontWeight: 700,
   },
   sectionCard: {
-    backgroundColor: Brand.white,
     borderRadius: BorderRadius.lg,
     ...Shadow.card,
     overflow: 'hidden',
@@ -404,7 +403,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontWeight: 700,
     fontSize: FontSize.base,
-    color: Brand.text,
+
     paddingHorizontal: Spacing.four,
     paddingTop: Spacing.four,
     paddingBottom: Spacing.two,
@@ -416,10 +415,9 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     gap: 4,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: Brand.borderLight,
+
   },
   seeAllText: {
-    color: Brand.primary,
     fontWeight: 700,
     fontSize: FontSize.sm,
   },
@@ -429,11 +427,11 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     gap: Spacing.two,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Brand.borderLight,
+
   },
   jobTitle: {
     fontWeight: 700,
     fontSize: FontSize.base,
-    color: Brand.text,
+
   },
 })

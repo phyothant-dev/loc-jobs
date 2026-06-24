@@ -20,7 +20,21 @@ export const Brand = {
   textSecondary: '#A09388',
   textTertiary: '#C4B5A6',
   overlay: 'rgba(0,0,0,0.35)',
-} as const;
+};
+
+export const DarkBrand = {
+  white: '#252540',
+  bg: '#12121C',
+  card: '#1E1E32',
+  border: '#2D2D44',
+  borderLight: '#26263A',
+  placeholder: '#5A5A72',
+  text: '#EAEAEA',
+  textSecondary: '#9A9AB0',
+  textTertiary: '#5A5A72',
+  overlay: 'rgba(0,0,0,0.6)',
+  dangerLight: '#3A1A1A',
+};
 
 export const FontSize = {
   xs: 11,

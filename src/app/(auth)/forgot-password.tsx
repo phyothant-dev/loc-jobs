@@ -9,8 +9,11 @@ import { Toast } from "@/components/toast";
 import { BorderRadius, Brand, Spacing } from "@/constants/theme";
 import { useLocale } from "@/contexts/LocaleContext";
 import { supabase } from "@/lib/supabase";
+import { useBrand } from "@/contexts/ThemeContext";
 
 export default function ForgotPasswordScreen() {
+  const Brand = useBrand();
+
   const { t } = useLocale()
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
@@ -62,7 +65,7 @@ export default function ForgotPasswordScreen() {
           ) : (
             <>
               <View style={styles.formContainer}>
-                <View style={[styles.fieldGroup]}>
+                <View style={[styles.fieldGroup, { backgroundColor: Brand.borderLight }]}>
                   <TextInput
                     ref={emailRef}
                     style={styles.input}
@@ -76,7 +79,7 @@ export default function ForgotPasswordScreen() {
                     onSubmitEditing={handleReset}
                   />
                 </View>
-                <Pressable style={({pressed}) => [styles.primaryBtn, loading && { opacity: 0.6 }, pressed && { opacity: 0.8 }]} onPress={handleReset} disabled={loading}>
+                <Pressable style={({pressed}) => [styles.primaryBtn, loading && { opacity: 0.6 }, pressed && { opacity: 0.8 }, { backgroundColor: Brand.primary }]} onPress={handleReset} disabled={loading}>
                   {loading ? (
                     <ActivityIndicator size="small" color={Brand.white} />
                   ) : (

@@ -13,8 +13,11 @@ import { BorderRadius, Brand, Shadow, Spacing, FontSize } from '@/constants/them
 import { REGIONS } from '@/lib/regions'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
+import { useBrand } from "@/contexts/ThemeContext";
 
 export default function EditProfileScreen() {
+  const Brand = useBrand();
+
   const { user } = useAuth()
   const [displayName, setDisplayName] = useState('')
   const [phone, setPhone] = useState('')
@@ -119,7 +122,7 @@ export default function EditProfileScreen() {
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
       <View style={{ flex: 1 }}>
         <View style={styles.header}>
-          <Pressable onPress={() => router.back()} style={styles.backBtn}>
+          <Pressable onPress={() => router.back()} style={[styles.backBtn, { backgroundColor: Brand.primaryLight }]}>
             <Ionicons name="close" size={22} color={Brand.primary} />
           </Pressable>
           <ThemedText style={styles.headerTitle}>Edit Profile</ThemedText>
@@ -131,9 +134,9 @@ export default function EditProfileScreen() {
 
           <Pressable onPress={handlePickImage} style={styles.avatarContainer} disabled={imageUploading}>
             {(localAvatarUri || avatarUrl) ? (
-              <Image source={{ uri: localAvatarUri || avatarUrl! }} style={styles.avatar} />
+              <Image source={{ uri: localAvatarUri || avatarUrl! }} style={[styles.avatar, { backgroundColor: Brand.primary, borderColor: Brand.primaryLight }]} />
             ) : (
-              <View style={styles.avatar}>
+              <View style={[styles.avatar, { backgroundColor: Brand.primary, borderColor: Brand.primaryLight }]}>
                 <ThemedText style={styles.avatarInitial}>{initial}</ThemedText>
               </View>
             )}
@@ -144,22 +147,22 @@ export default function EditProfileScreen() {
 
           <View style={styles.formGroup}>
             <ThemedText type="caption" style={styles.label}>Display Name</ThemedText>
-            <TextInput style={styles.input} placeholder="Your name" placeholderTextColor={Brand.placeholder} value={displayName} onChangeText={setDisplayName} />
+            <TextInput style={[styles.input, { backgroundColor: Brand.white, borderColor: Brand.borderLight, color: Brand.text }]} placeholder="Your name" placeholderTextColor={Brand.placeholder} value={displayName} onChangeText={setDisplayName} />
           </View>
 
           <View style={styles.formGroup}>
             <ThemedText type="caption" style={styles.label}>Bio</ThemedText>
-            <TextInput style={[styles.input, { minHeight: 80, textAlignVertical: 'top' }]} placeholder="Tell people about yourself..." placeholderTextColor={Brand.placeholder} value={bio} onChangeText={setBio} multiline />
+            <TextInput style={[styles.input, { minHeight: 80, textAlignVertical: 'top' }, { backgroundColor: Brand.white, borderColor: Brand.borderLight, color: Brand.text }]} placeholder="Tell people about yourself..." placeholderTextColor={Brand.placeholder} value={bio} onChangeText={setBio} multiline />
           </View>
 
           <View style={styles.formGroup}>
             <ThemedText type="caption" style={styles.label}>Phone</ThemedText>
-            <TextInput style={styles.input} placeholder="Phone number" placeholderTextColor={Brand.placeholder} value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
+            <TextInput style={[styles.input, { backgroundColor: Brand.white, borderColor: Brand.borderLight, color: Brand.text }]} placeholder="Phone number" placeholderTextColor={Brand.placeholder} value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
           </View>
 
           <View style={styles.formGroup}>
             <ThemedText type="caption" style={styles.label}>Region</ThemedText>
-            <Pressable style={styles.pickerBtn} onPress={() => setShowRegionPicker(true)}>
+            <Pressable style={[styles.pickerBtn, { backgroundColor: Brand.white, borderColor: Brand.borderLight }]} onPress={() => setShowRegionPicker(true)}>
               <ThemedText type="small" style={!region ? { color: Brand.placeholder } : {}}>{region || 'Select region'}</ThemedText>
             </Pressable>
             <PickerModal visible={showRegionPicker} title="Select Region" options={regionList} selected={region} onSelect={setRegion} onClose={() => setShowRegionPicker(false)} />
@@ -167,7 +170,7 @@ export default function EditProfileScreen() {
 
           <View style={styles.formGroup}>
             <ThemedText type="caption" style={styles.label}>City</ThemedText>
-            <Pressable style={styles.pickerBtn} onPress={() => setShowCityPicker(true)}>
+            <Pressable style={[styles.pickerBtn, { backgroundColor: Brand.white, borderColor: Brand.borderLight }]} onPress={() => setShowCityPicker(true)}>
               <ThemedText type="small" style={!city ? { color: Brand.placeholder } : {}}>{city || 'Select city'}</ThemedText>
             </Pressable>
             <PickerModal visible={showCityPicker} title="Select City" options={cityList} selected={city} onSelect={setCity} onClose={() => setShowCityPicker(false)} />
@@ -175,7 +178,7 @@ export default function EditProfileScreen() {
 
           {saved && <ThemedText type="small" style={{ color: Brand.success, textAlign: 'center', fontWeight: 700 }}>Saved!</ThemedText>}
 
-          <Pressable style={({pressed}) => [styles.saveBtn, { opacity: saving ? 0.6 : pressed ? 0.7 : 1 }]} onPress={handleSave} disabled={saving}>
+          <Pressable style={({pressed}) => [styles.saveBtn, { opacity: saving ? 0.6 : pressed ? 0.7 : 1 }, { backgroundColor: Brand.primary }]} onPress={handleSave} disabled={saving}>
             {saving ? (
               <ActivityIndicator size="small" color={Brand.white} />
             ) : (
@@ -201,7 +204,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: Brand.primaryLight,
+
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -209,7 +212,7 @@ const styles = StyleSheet.create({
     fontSize: FontSize.md,
     lineHeight: 28,
     fontWeight: 700,
-    color: Brand.text,
+
   },
   content: {
     padding: Spacing.four,
@@ -222,45 +225,44 @@ const styles = StyleSheet.create({
     width: 88,
     height: 88,
     borderRadius: 44,
-    backgroundColor: Brand.primary,
+
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 3,
-    borderColor: Brand.primaryLight,
+
   },
   avatarInitial: {
     fontSize: 36,
     fontWeight: 700,
-    color: Brand.white,
+
   },
   formGroup: {
     marginTop: Spacing.four,
   },
   label: {
     fontWeight: 600,
-    color: Brand.textSecondary,
+
     marginBottom: 6,
   },
   input: {
     borderWidth: 1,
-    borderColor: Brand.borderLight,
+
     borderRadius: BorderRadius.sm,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: FontSize.base,
-    backgroundColor: Brand.white,
-    color: Brand.text,
+
+
   },
   pickerBtn: {
     borderWidth: 1,
-    borderColor: Brand.borderLight,
+
     borderRadius: BorderRadius.sm,
     paddingHorizontal: 14,
     paddingVertical: 12,
-    backgroundColor: Brand.white,
+    backgroundColor: Brand.primary,
   },
   saveBtn: {
-    backgroundColor: Brand.primary,
     paddingVertical: 14,
     borderRadius: BorderRadius.md,
     alignItems: 'center',
@@ -268,7 +270,6 @@ const styles = StyleSheet.create({
     ...Shadow.elevated,
   },
   saveBtnText: {
-    color: Brand.white,
     fontSize: FontSize.base,
     fontWeight: 700,
   },

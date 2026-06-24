@@ -7,6 +7,7 @@ import { ThemedText } from '@/components/themed-text'
 import { BorderRadius, Brand, Shadow, Spacing, FontSize } from '@/constants/theme'
 import { supabase } from '@/lib/supabase'
 import { useLocale } from '@/contexts/LocaleContext'
+import { useBrand } from "@/contexts/ThemeContext";
 
 interface ReviewItem {
   id: string
@@ -37,6 +38,8 @@ function relativeTime(dateStr: string, t?: (key: string) => string) {
 }
 
 export function ReviewCard({ review, isOwn, onUpdated }: ReviewCardProps) {
+  const Brand = useBrand();
+
   const { t } = useLocale()
   const [editOpen, setEditOpen] = useState(false)
   const [editRating, setEditRating] = useState(review.rating)
@@ -71,9 +74,9 @@ export function ReviewCard({ review, isOwn, onUpdated }: ReviewCardProps) {
   const initial = (review.reviewer_name || '?')[0].toUpperCase()
 
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, { backgroundColor: Brand.white }]}>
       <View style={styles.header}>
-        <View style={styles.avatar}>
+        <View style={[styles.avatar, { backgroundColor: Brand.primaryLight }]}>
           {review.reviewer_avatar ? (
             <Image source={{ uri: review.reviewer_avatar }} style={styles.avatarImg} />
           ) : (
@@ -110,13 +113,13 @@ export function ReviewCard({ review, isOwn, onUpdated }: ReviewCardProps) {
 
       <Modal visible={editOpen} transparent animationType="fade">
         <Pressable style={styles.modalOverlay} onPress={() => setEditOpen(false)}>
-          <Pressable style={styles.modalContent} onPress={() => {}}>
+          <Pressable style={[styles.modalContent, { backgroundColor: Brand.white }]} onPress={() => {}}>
             <ThemedText style={styles.modalTitle}>{t('jobDetail.editReview')}</ThemedText>
             <View style={{ alignItems: 'center', marginVertical: Spacing.three }}>
               <StarRating rating={editRating} size={36} interactive onChange={setEditRating} />
             </View>
             <TextInput
-              style={styles.commentInput}
+              style={[styles.commentInput, { backgroundColor: Brand.bg }]}
               placeholder={t('jobDetail.writeReview')}
               placeholderTextColor={Brand.textSecondary}
               value={editComment}
@@ -125,10 +128,10 @@ export function ReviewCard({ review, isOwn, onUpdated }: ReviewCardProps) {
               maxLength={500}
             />
             <View style={styles.modalButtons}>
-              <Pressable style={styles.cancelBtn} onPress={() => setEditOpen(false)}>
+              <Pressable style={[styles.cancelBtn, { backgroundColor: Brand.bg }]} onPress={() => setEditOpen(false)}>
                 <ThemedText style={styles.cancelText}>{t('common.cancel')}</ThemedText>
               </Pressable>
-              <Pressable style={styles.submitBtn} onPress={handleEdit} disabled={submitting}>
+              <Pressable style={[styles.submitBtn, { backgroundColor: Brand.primary }]} onPress={handleEdit} disabled={submitting}>
                 <ThemedText style={styles.submitText}>{t('common.save')}</ThemedText>
               </Pressable>
             </View>
@@ -138,10 +141,8 @@ export function ReviewCard({ review, isOwn, onUpdated }: ReviewCardProps) {
     </View>
   )
 }
-
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: Brand.white,
     borderRadius: BorderRadius.lg,
     padding: Spacing.four,
     ...Shadow.card,
@@ -154,7 +155,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: Brand.primaryLight,
+
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
@@ -165,7 +166,6 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   avatarText: {
-    color: Brand.primary,
     fontWeight: 700,
     fontSize: FontSize.base,
   },
@@ -177,7 +177,7 @@ const styles = StyleSheet.create({
   name: {
     fontWeight: 700,
     fontSize: FontSize.base,
-    color: Brand.text,
+
   },
   headerRight: {
     alignItems: 'flex-end',
@@ -195,23 +195,21 @@ const styles = StyleSheet.create({
     padding: Spacing.five,
   },
   modalContent: {
-    backgroundColor: Brand.white,
     borderRadius: BorderRadius.lg,
     padding: Spacing.five,
   },
   modalTitle: {
     fontSize: FontSize.md,
     fontWeight: 700,
-    color: Brand.text,
+
     textAlign: 'center',
     marginBottom: Spacing.three,
   },
   commentInput: {
-    backgroundColor: Brand.bg,
     borderRadius: BorderRadius.sm,
     padding: Spacing.three,
     fontSize: FontSize.base,
-    color: Brand.text,
+
     minHeight: 80,
     textAlignVertical: 'top',
   },
@@ -224,11 +222,10 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 12,
     borderRadius: BorderRadius.sm,
-    backgroundColor: Brand.bg,
+
     alignItems: 'center',
   },
   cancelText: {
-    color: Brand.textSecondary,
     fontWeight: 700,
     fontSize: FontSize.base,
   },
@@ -236,11 +233,10 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 12,
     borderRadius: BorderRadius.sm,
-    backgroundColor: Brand.primary,
+
     alignItems: 'center',
   },
   submitText: {
-    color: Brand.white,
     fontWeight: 700,
     fontSize: FontSize.base,
   },

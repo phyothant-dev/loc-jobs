@@ -21,6 +21,7 @@ import { CATEGORIES, EMPLOYMENT_TYPE_LABELS, SALARY_PERIOD_LABELS } from "@/lib/
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLocale } from "@/contexts/LocaleContext";
+import { useBrand } from "@/contexts/ThemeContext";
 
 interface Job {
   id: string;
@@ -88,6 +89,8 @@ function openDirections(lat: number, lng: number) {
 }
 
 export default function NearbyJobsScreen() {
+  const Brand = useBrand();
+
   const { user } = useAuth();
   const { t } = useLocale();
   const insets = useSafeAreaInsets();
@@ -245,7 +248,7 @@ export default function NearbyJobsScreen() {
       )}
 
       {loading ? (
-        <View style={styles.loadingOverlay}>
+        <View style={[styles.loadingOverlay, { backgroundColor: Brand.bg }]}>
           <LottieView
             source={require('@/assets/images/crew-loader.json')}
             style={{ width: '100%', height: '100%' }}
@@ -259,12 +262,12 @@ export default function NearbyJobsScreen() {
           index={0}
           snapPoints={snapPoints}
           enablePanDownToClose={false}
-          backgroundStyle={styles.sheetBg}
-          handleIndicatorStyle={styles.sheetHandle}
+                  backgroundStyle={[styles.sheetBg, { backgroundColor: Brand.white }]}
+          handleIndicatorStyle={[styles.sheetHandle, { backgroundColor: Brand.border }]}
         >
           <View style={styles.sheetHeader}>
             <View style={styles.sheetCountRow}>
-              <View style={styles.sheetDot} />
+              <View style={[styles.sheetDot, { backgroundColor: Brand.primary }]} />
               <ThemedText type="caption">
                 {onsite.length} {t('nearby.jobs')} · {jobs.length - onsite.length} {t('workTypes.remote').toLowerCase()}
               </ThemedText>
@@ -279,14 +282,14 @@ export default function NearbyJobsScreen() {
             )}
             ListHeaderComponent={
               <View>
-                <View style={styles.radiusRow}>
+                <View style={[styles.radiusRow, { borderBottomColor: Brand.border }]}>
                   <ThemedText type="caption" style={{ fontWeight: 600 }}>
                     {t('nearby.withinRadius', { radius: radiusKm })}
                   </ThemedText>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.two }}>
                     <Pressable
                       onPress={() => setRadiusKm((r) => Math.max(1, r - 5))}
-                      style={styles.radiusBtn}
+                      style={[styles.radiusBtn, { backgroundColor: Brand.primaryLight }]}
                     >
                       <Ionicons name="remove" size={16} color={Brand.primary} />
                     </Pressable>
@@ -295,13 +298,13 @@ export default function NearbyJobsScreen() {
                     </ThemedText>
                     <Pressable
                       onPress={() => setRadiusKm((r) => Math.min(200, r + 5))}
-                      style={styles.radiusBtn}
+                      style={[styles.radiusBtn, { backgroundColor: Brand.primaryLight }]}
                     >
                       <Ionicons name="add" size={16} color={Brand.primary} />
                     </Pressable>
                   </View>
                 </View>
-                <View style={styles.filterRow}>
+                <View style={[styles.filterRow, { borderBottomColor: Brand.border }]}>
                   <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                     <View style={styles.chipRow}>
                       {CATEGORIES.map((cat) => (
@@ -309,7 +312,9 @@ export default function NearbyJobsScreen() {
                         key={cat}
                         style={[
                           styles.chip,
-                          filterCategory === cat && styles.chipActive,
+                          filterCategory === cat
+                            ? { backgroundColor: Brand.primary, borderColor: Brand.primary }
+                            : { backgroundColor: Brand.bg, borderColor: Brand.border },
                         ]}
                         onPress={() =>
                           setFilterCategory(filterCategory === cat ? null : cat)
@@ -317,9 +322,7 @@ export default function NearbyJobsScreen() {
                       >
                         <ThemedText
                           type="small"
-                          style={[
-                            filterCategory === cat ? styles.chipTextActive : {},
-                          ]}
+                          style={filterCategory === cat ? { color: '#FFFFFF', fontWeight: '700' } : {}}
                         >
                           {cat}
                         </ThemedText>
@@ -354,7 +357,7 @@ export default function NearbyJobsScreen() {
               const s = STATUS_STYLE[item.status] || STATUS_STYLE.open;
               return (
                 <Pressable onPress={() => router.push(`/job/${item.id}`)}>
-                  <View style={styles.jobCard}>
+                  <View style={[styles.jobCard, { backgroundColor: Brand.white }]}>
                     <Pressable
                       style={styles.saveBtn}
                       onPress={() => toggleSave(item.id)}
@@ -380,7 +383,7 @@ export default function NearbyJobsScreen() {
                         </ThemedText>
                       </View>
                       {item.category && (
-                        <View style={styles.categoryBadge}>
+                        <View style={[styles.categoryBadge, { backgroundColor: Brand.primaryLight }]}>
                           <ThemedText type="caption" style={styles.categoryBadgeText}>
                             {item.category}
                           </ThemedText>
@@ -409,7 +412,7 @@ export default function NearbyJobsScreen() {
                         {relativeTime(item.created_at, t)}
                       </ThemedText>
                     </View>
-                    <View style={styles.jobCardFooter}>
+                    <View style={[styles.jobCardFooter, { borderTopColor: Brand.border }]}>
                       {item.price && !item.employment_type && (
                         <ThemedText type="price">
                           {item.price.toLocaleString()} MMK
@@ -430,7 +433,7 @@ export default function NearbyJobsScreen() {
                       )}
                       {coords && (
                         <Pressable
-                          style={styles.dirBtn}
+                          style={[styles.dirBtn, { backgroundColor: Brand.bg }]}
                           onPress={() =>
                             openDirections(coords.latitude, coords.longitude)
                           }
@@ -453,20 +456,20 @@ export default function NearbyJobsScreen() {
         style={[styles.topBar, { top: insets.top + 12 }]}
         pointerEvents="box-none"
       >
-        <View style={styles.logoPill}>
-          <ThemedText style={styles.logo}>LocJobs</ThemedText>
+        <View style={[styles.logoPill, { backgroundColor: Brand.white }]}>
+          <ThemedText style={[styles.logo, { color: Brand.primary }]}>LocJobs</ThemedText>
         </View>
         <View style={styles.topRight}>
-          <Pressable onPress={() => router.push('/notifications')} style={styles.bellBtn}>
+          <Pressable onPress={() => router.push('/notifications')} style={[styles.bellBtn, { backgroundColor: Brand.white }]}>
             <Ionicons name="notifications-outline" size={22} color={Brand.primary} />
             {unreadCount > 0 && (
-              <View style={styles.bellBadge}>
+              <View style={[styles.bellBadge, { backgroundColor: Brand.danger }]}>
                 <ThemedText style={styles.bellBadgeText}>{unreadCount > 9 ? '9+' : unreadCount}</ThemedText>
               </View>
             )}
           </Pressable>
           {region && (
-            <Pressable style={styles.locateHeaderBtn} onPress={() => mapRef.current?.animateToRegion({
+            <Pressable style={[styles.locateHeaderBtn, { backgroundColor: Brand.white }]} onPress={() => mapRef.current?.animateToRegion({
               latitude: location?.lat ?? 0,
               longitude: location?.lng ?? 0,
               latitudeDelta: 0.03,
@@ -477,9 +480,9 @@ export default function NearbyJobsScreen() {
           )}
           <Pressable onPress={() => router.push('/profile')}>
             {avatarUrl ? (
-              <Image source={{ uri: avatarUrl }} style={styles.avatar} />
+              <Image source={{ uri: avatarUrl }} style={[styles.avatar, { borderColor: Brand.white }]} />
             ) : (
-              <View style={styles.avatarPlaceholder}>
+              <View style={[styles.avatarPlaceholder, { backgroundColor: Brand.primaryLight, borderColor: Brand.white }]}>
                 <ThemedText style={styles.avatarInitial}>
                   {(user?.email?.charAt(0) || '?').toUpperCase()}
                 </ThemedText>
@@ -507,13 +510,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingVertical: 10,
     borderRadius: 14,
-    backgroundColor: Brand.white,
+
     ...Shadow.elevated,
   },
   logo: {
     fontSize: 22,
     fontWeight: "800",
-    color: Brand.primary,
+
   },
   topRight: {
     flexDirection: "row",
@@ -524,7 +527,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: Brand.white,
+
     justifyContent: "center",
     alignItems: "center",
     ...Shadow.elevated,
@@ -536,13 +539,12 @@ const styles = StyleSheet.create({
     minWidth: 18,
     height: 18,
     borderRadius: 9,
-    backgroundColor: Brand.danger,
+
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 4,
   },
   bellBadgeText: {
-    color: Brand.white,
     fontSize: 10,
     fontWeight: '700',
   },
@@ -550,7 +552,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: Brand.white,
+
     justifyContent: "center",
     alignItems: "center",
     ...Shadow.elevated,
@@ -560,20 +562,19 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 20,
     borderWidth: 2,
-    borderColor: Brand.white,
+
   },
   avatarPlaceholder: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: Brand.primaryLight,
+
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 2,
-    borderColor: Brand.white,
+
   },
   avatarInitial: {
-    color: Brand.primary,
     fontWeight: "700",
     fontSize: FontSize.sm,
   },
@@ -585,11 +586,9 @@ const styles = StyleSheet.create({
     zIndex: 50,
   },
   sheetBg: {
-    backgroundColor: Brand.bg,
     borderRadius: 20,
   },
   sheetHandle: {
-    backgroundColor: Brand.border,
     width: 40,
   },
   sheetHeader: {
@@ -606,10 +605,9 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: Brand.primary,
+
   },
   jobCard: {
-    backgroundColor: Brand.white,
     borderRadius: BorderRadius.lg,
     padding: Spacing.four,
     ...Shadow.card,
@@ -630,11 +628,10 @@ const styles = StyleSheet.create({
     fontSize: FontSize.base,
     lineHeight: 24,
     fontWeight: "700",
-    color: Brand.text,
+
     flex: 1,
   },
   jobDesc: {
-    color: Brand.textSecondary,
     marginTop: 6,
   },
   jobMetaRow: {
@@ -649,16 +646,14 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: Brand.border,
+
   },
   dirBtn: {
-    backgroundColor: Brand.bg,
     paddingHorizontal: 14,
     paddingVertical: 7,
     borderRadius: BorderRadius.sm,
   },
   dirBtnText: {
-    color: Brand.primary,
     fontSize: FontSize.xs,
     fontWeight: 700,
   },
@@ -675,21 +670,20 @@ const styles = StyleSheet.create({
   },
   categoryBadge: {
     alignSelf: 'flex-start',
-    backgroundColor: Brand.primaryLight,
+
     paddingHorizontal: 6,
     paddingVertical: 1,
     borderRadius: BorderRadius.sm,
     marginTop: 4,
   },
   categoryBadgeText: {
-    color: Brand.primary,
     fontSize: FontSize.xs,
     fontWeight: 600,
   },
   filterRow: {
     paddingBottom: Spacing.three,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Brand.border,
+
     marginBottom: Spacing.three,
   },
   chipRow: {
@@ -701,16 +695,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: BorderRadius.full,
-    backgroundColor: Brand.bg,
+
     borderWidth: 1,
-    borderColor: Brand.border,
+
   },
   chipActive: {
-    backgroundColor: Brand.primary,
-    borderColor: Brand.primary,
   },
   chipTextActive: {
-    color: Brand.white,
     fontWeight: 700,
   },
   radiusRow: {
@@ -722,7 +713,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.four,
     paddingBottom: Spacing.three,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Brand.border,
+
     marginBottom: Spacing.three,
     marginHorizontal: Spacing.four,
   },
@@ -730,7 +721,7 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: Brand.primaryLight,
+
     justifyContent: 'center',
     alignItems: 'center',
   },

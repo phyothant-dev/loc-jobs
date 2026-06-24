@@ -11,6 +11,7 @@ import { ThemedText } from '@/components/themed-text'
 import { BorderRadius, Brand, Shadow, Spacing, FontSize } from '@/constants/theme'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
+import { useBrand } from "@/contexts/ThemeContext";
 
 interface Message {
   id: string
@@ -45,6 +46,8 @@ function shouldShowDateSeparator(messages: Message[], index: number) {
 }
 
 export default function ChatDetailScreen() {
+  const Brand = useBrand();
+
   const { user } = useAuth()
   const { jobId, otherUserId } = useLocalSearchParams<{ jobId: string; otherUserId: string }>()
   const [messages, setMessages] = useState<Message[]>([])
@@ -223,15 +226,15 @@ export default function ChatDetailScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: Brand.bg }} edges={['top']}>
-      <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.backBtn}>
+      <View style={[styles.header, { backgroundColor: Brand.white, borderBottomColor: Brand.border }]}>
+        <Pressable onPress={() => router.back()} style={[styles.backBtn, { backgroundColor: Brand.primaryLight }]}>
           <Ionicons name="chevron-back" size={22} color={Brand.primary} />
         </Pressable>
         <Pressable onPress={() => router.push(otherUserId === user?.id ? '/(tabs)/profile' : `/user/${otherUserId}`)} style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
           {otherAvatarUrl ? (
             <Image source={{ uri: otherAvatarUrl }} style={styles.headerAvatar} />
           ) : (
-            <View style={styles.headerAvatarPlaceholder}>
+            <View style={[styles.headerAvatarPlaceholder, { backgroundColor: Brand.primaryLight }]}>
               <ThemedText style={styles.headerAvatarText}>
                 {(otherName.charAt(0) || '?').toUpperCase()}
               </ThemedText>
@@ -260,16 +263,16 @@ export default function ChatDetailScreen() {
                 <View>
                   {showDateSep && (
                     <View style={styles.dateSeparator}>
-                      <View style={styles.dateSepLine} />
+                      <View style={[styles.dateSepLine, { backgroundColor: Brand.borderLight }]} />
                       <ThemedText style={styles.dateSepText}>
                         {formatDateSeparator(item.created_at)}
                       </ThemedText>
-                      <View style={styles.dateSepLine} />
+                      <View style={[styles.dateSepLine, { backgroundColor: Brand.borderLight }]} />
                     </View>
                   )}
                   {item.deleted ? (
                     <View style={[styles.bubbleRow, isMine ? styles.bubbleRowMine : styles.bubbleRowOther]}>
-                      <View style={[styles.bubble, styles.bubbleDeleted]}>
+                      <View style={[styles.bubble, styles.bubbleDeleted, { backgroundColor: Brand.borderLight }]}>
                         <ThemedText style={styles.bubbleDeletedText}>Message deleted</ThemedText>
                       </View>
                     </View>
@@ -279,7 +282,7 @@ export default function ChatDetailScreen() {
                       delayLongPress={400}
                     >
                       <View style={[styles.bubbleRow, isMine ? styles.bubbleRowMine : styles.bubbleRowOther]}>
-                        <View style={[styles.bubble, isMine ? styles.bubbleMine : styles.bubbleOther]}>
+                        <View style={isMine ? [styles.bubble, styles.bubbleMine, { backgroundColor: Brand.primary }] : [styles.bubble, styles.bubbleOther, { backgroundColor: Brand.white }]}>
                           {item.image_url ? (
                             <Pressable onPress={() => setPreviewImage(item.image_url)}>
                               <Image source={{ uri: item.image_url }} style={styles.bubbleImage} resizeMode="cover" />
@@ -317,18 +320,18 @@ export default function ChatDetailScreen() {
             }
           />
           {scrolledUp && (
-            <Pressable style={styles.scrollToBottom} onPress={() => { flatRef.current?.scrollToEnd({ animated: true }); setScrolledUp(false) }}>
+            <Pressable style={[styles.scrollToBottom, { backgroundColor: Brand.primary }]} onPress={() => { flatRef.current?.scrollToEnd({ animated: true }); setScrolledUp(false) }}>
               <Ionicons name="chevron-down" size={22} color={Brand.white} />
             </Pressable>
           )}
         </View>
 
         <View style={styles.inputBar}>
-          <Pressable style={styles.imageBtn} onPress={handlePickImage} disabled={imageUploading}>
+          <Pressable style={[styles.imageBtn, { backgroundColor: Brand.primaryLight }]} onPress={handlePickImage} disabled={imageUploading}>
             <ThemedText style={styles.imageBtnText}>{imageUploading ? '...' : '+'}</ThemedText>
           </Pressable>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { backgroundColor: Brand.bg, borderColor: Brand.borderLight }]}
             placeholder="Type a message..."
             placeholderTextColor={Brand.placeholder}
             value={input}
@@ -336,18 +339,18 @@ export default function ChatDetailScreen() {
             multiline
             maxLength={1000}
           />
-          <Pressable style={[styles.sendBtn, (!input.trim() || sending) && { opacity: 0.4 }]} onPress={handleSend} disabled={!input.trim() || sending}>
+          <Pressable style={[styles.sendBtn, (!input.trim() || sending) && { opacity: 0.4 }, { backgroundColor: Brand.primary }]} onPress={handleSend} disabled={!input.trim() || sending}>
             <Ionicons name="send" size={20} color={Brand.white} />
           </Pressable>
         </View>
       </KeyboardAvoidingView>
 
       <Modal visible={!!editingMessage} transparent animationType="fade" onRequestClose={() => setEditingMessage(null)}>
-        <Pressable style={styles.editOverlay} onPress={() => setEditingMessage(null)}>
-          <Pressable style={styles.editModal} onPress={() => {}}>
+        <Pressable style={[styles.editOverlay, { backgroundColor: Brand.overlay }]} onPress={() => setEditingMessage(null)}>
+          <Pressable style={[styles.editModal, { backgroundColor: Brand.bg }]} onPress={() => {}}>
             <ThemedText style={styles.editTitle}>Edit Message</ThemedText>
             <TextInput
-              style={styles.editInput}
+              style={[styles.editInput, { backgroundColor: Brand.bg, borderColor: Brand.borderLight }]}
               value={editText}
               onChangeText={setEditText}
               multiline
@@ -356,10 +359,10 @@ export default function ChatDetailScreen() {
               placeholderTextColor={Brand.placeholder}
             />
             <View style={styles.editActions}>
-              <Pressable style={styles.editCancelBtn} onPress={() => setEditingMessage(null)}>
+              <Pressable style={[styles.editCancelBtn, { backgroundColor: Brand.bg }]} onPress={() => setEditingMessage(null)}>
                 <ThemedText style={styles.editCancelText}>Cancel</ThemedText>
               </Pressable>
-              <Pressable style={[styles.editSaveBtn, !editText.trim() && { opacity: 0.4 }]} onPress={handleSaveEdit} disabled={!editText.trim()}>
+              <Pressable style={[styles.editSaveBtn, !editText.trim() && { opacity: 0.4 }, { backgroundColor: Brand.primary }]} onPress={handleSaveEdit} disabled={!editText.trim()}>
                 <ThemedText style={styles.editSaveText}>Save</ThemedText>
               </Pressable>
             </View>
@@ -385,14 +388,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.four,
     paddingVertical: Spacing.four,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Brand.border,
-    backgroundColor: Brand.white,
+
+
   },
   backBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: Brand.primaryLight,
+
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: Spacing.three,
@@ -406,19 +409,18 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: Brand.primaryLight,
+
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerAvatarText: {
-    color: Brand.primary,
     fontWeight: 700,
     fontSize: FontSize.sm,
   },
   headerName: {
     fontWeight: 700,
     fontSize: FontSize.base,
-    color: Brand.text,
+
   },
   dateSeparator: {
     flexDirection: 'row',
@@ -429,11 +431,11 @@ const styles = StyleSheet.create({
   dateSepLine: {
     flex: 1,
     height: StyleSheet.hairlineWidth,
-    backgroundColor: Brand.borderLight,
+
   },
   dateSepText: {
     fontSize: FontSize.sm,
-    color: Brand.textSecondary,
+
     fontWeight: 600,
   },
   bubbleRow: {
@@ -453,21 +455,18 @@ const styles = StyleSheet.create({
     borderRadius: 18,
   },
   bubbleMine: {
-    backgroundColor: Brand.primary,
     borderBottomRightRadius: 4,
   },
   bubbleOther: {
-    backgroundColor: Brand.white,
     borderBottomLeftRadius: 4,
     ...Shadow.card,
   },
   bubbleDeleted: {
-    backgroundColor: Brand.borderLight,
     borderBottomRightRadius: 4,
   },
   bubbleDeletedText: {
     fontSize: FontSize.sm,
-    color: Brand.textSecondary,
+
     fontStyle: 'italic',
   },
   bubbleText: {
@@ -475,10 +474,8 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   bubbleTextMine: {
-    color: Brand.white,
   },
   bubbleTextOther: {
-    color: Brand.text,
   },
   bubbleTime: {
     fontSize: 10,
@@ -495,7 +492,6 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   bubbleTimeOther: {
-    color: Brand.textSecondary,
   },
   inputBar: {
     flexDirection: 'row',
@@ -512,13 +508,12 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: Brand.primaryLight,
+
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 2,
   },
   imageBtnText: {
-    color: Brand.primary,
     fontSize: FontSize.lg,
     fontWeight: 700,
     lineHeight: 22,
@@ -526,33 +521,33 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     borderWidth: 1,
-    borderColor: Brand.borderLight,
+
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 10,
     fontSize: FontSize.base,
     maxHeight: 100,
-    backgroundColor: Brand.bg,
-    color: Brand.text,
+
+
   },
   sendBtn: {
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: Brand.primary,
+
     justifyContent: 'center',
     alignItems: 'center',
   },
   editOverlay: {
     flex: 1,
-    backgroundColor: Brand.overlay,
+
     justifyContent: 'center',
     alignItems: 'center',
     padding: Spacing.four,
   },
   editModal: {
     width: '100%',
-    backgroundColor: Brand.bg,
+
     borderRadius: BorderRadius.lg,
     padding: Spacing.four,
     ...Shadow.elevated,
@@ -560,18 +555,18 @@ const styles = StyleSheet.create({
   editTitle: {
     fontSize: FontSize.md,
     fontWeight: 700,
-    color: Brand.text,
+
     marginBottom: Spacing.three,
   },
   editInput: {
     borderWidth: 1,
-    borderColor: Brand.borderLight,
+
     borderRadius: BorderRadius.md,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: FontSize.base,
-    color: Brand.text,
-    backgroundColor: Brand.bg,
+
+
     maxHeight: 120,
     minHeight: 80,
     textAlignVertical: 'top',
@@ -586,10 +581,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: BorderRadius.sm,
-    backgroundColor: Brand.bg,
+
   },
   editCancelText: {
-    color: Brand.textSecondary,
     fontWeight: 600,
     fontSize: FontSize.base,
   },
@@ -597,10 +591,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: BorderRadius.sm,
-    backgroundColor: Brand.primary,
+
   },
   editSaveText: {
-    color: Brand.white,
     fontWeight: 700,
     fontSize: FontSize.base,
   },
@@ -611,7 +604,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: Brand.primary,
+
     justifyContent: 'center',
     alignItems: 'center',
     ...Shadow.elevated,

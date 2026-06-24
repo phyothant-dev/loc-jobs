@@ -23,8 +23,11 @@ import {
 } from "@/constants/theme";
 import { useLocale } from "@/contexts/LocaleContext";
 import { supabase } from "@/lib/supabase";
+import { useBrand } from "@/contexts/ThemeContext";
 
 export default function RegisterScreen() {
+  const Brand = useBrand();
+
   const { t } = useLocale()
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -167,8 +170,8 @@ export default function RegisterScreen() {
         keyboardShouldPersistTaps="handled"
       >
         {/* Atmospheric blobs */}
-        <View style={styles.blob1} />
-        <View style={styles.blob2} />
+        <View style={[styles.blob1, { backgroundColor: Brand.primaryLight }]} />
+        <View style={[styles.blob2, { backgroundColor: Brand.successLight }]} />
 
         <View style={styles.container}>
           {/* Brand Identity */}
@@ -187,7 +190,7 @@ export default function RegisterScreen() {
           </View>
 
           {/* Main Card */}
-          <View style={styles.card}>
+          <View style={[styles.card, { backgroundColor: Brand.white, borderColor: Brand.border }]}>
             <View style={{ marginBottom: Spacing.four }}>
               <ThemedText style={styles.cardTitle}>{t('auth.signUpTitle')}</ThemedText>
               <ThemedText
@@ -252,7 +255,7 @@ export default function RegisterScreen() {
               onPress={() => setAgreeTerms(!agreeTerms)}
             >
               <View
-                style={[styles.checkbox, agreeTerms && styles.checkboxActive]}
+                style={[styles.checkbox, agreeTerms && styles.checkboxActive, { borderColor: Brand.border }, { backgroundColor: Brand.primary, borderColor: Brand.primary }]}
               >
                 {agreeTerms && (
                   <ThemedText style={styles.checkmark}>✓</ThemedText>
@@ -275,7 +278,7 @@ export default function RegisterScreen() {
 
             {/* Primary Action */}
             <Pressable
-              style={[styles.primaryBtn, loading && { opacity: 0.6 }]}
+              style={[styles.primaryBtn, loading && { opacity: 0.6 }, { backgroundColor: Brand.primary }]}
               onPress={handleRegister}
               disabled={loading}
             >
@@ -313,9 +316,9 @@ export default function RegisterScreen() {
               Trusted by leading local employers
             </ThemedText>
             <View style={styles.trustRow}>
-              <View style={styles.trustBar} />
-              <View style={[styles.trustBar, { width: 60 }]} />
-              <View style={[styles.trustBar, { width: 80 }]} />
+              <View style={[styles.trustBar, { backgroundColor: Brand.borderLight }]} />
+              <View style={[styles.trustBar, { width: 60 }, { backgroundColor: Brand.borderLight }]} />
+              <View style={[styles.trustBar, { width: 80 }, { backgroundColor: Brand.borderLight }]} />
             </View>
           </View>
 

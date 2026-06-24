@@ -1,5 +1,6 @@
 import { Platform, StyleSheet, Text, type TextProps } from 'react-native';
-import { Brand, FontFamily } from '@/constants/theme';
+import { FontFamily } from '@/constants/theme';
+import { useBrand } from '@/contexts/ThemeContext';
 import { useLocale } from '@/contexts/LocaleContext';
 
 export type ThemedTextProps = TextProps & {
@@ -20,6 +21,7 @@ function useWeightFont(weight: 'semi' | 'bold' | 'extra'): string | undefined {
 }
 
 export function ThemedText({ style, type = 'default', ...rest }: ThemedTextProps) {
+  const Brand = useBrand();
   const isMyanmar = useIsMyanmar();
   const baseFont = useWeightFont('semi');
   const boldFont = useWeightFont('bold');
@@ -37,10 +39,17 @@ export function ThemedText({ style, type = 'default', ...rest }: ThemedTextProps
     }
   }
 
+  const typeColor = type === 'caption' ? { color: Brand.textSecondary }
+    : type === 'title' || type === 'subtitle' ? { color: Brand.text }
+    : type === 'linkPrimary' ? { color: Brand.primary }
+    : type === 'price' ? { color: Brand.primary }
+    : null;
+
   return (
     <Text
       style={[
         { color: Brand.text },
+        typeColor,
         fontStyle,
         type === 'default' && styles.default,
         type === 'title' && styles.title,
@@ -81,19 +90,16 @@ const styles = StyleSheet.create({
     fontSize: 11,
     lineHeight: 15,
     letterSpacing: 0.3,
-    color: Brand.textSecondary,
   },
   title: {
     fontSize: 30,
     lineHeight: 34,
     letterSpacing: -0.8,
-    color: Brand.text,
   },
   subtitle: {
     fontSize: 20,
     lineHeight: 26,
     letterSpacing: -0.5,
-    color: Brand.text,
   },
   link: {
     fontSize: 14,
@@ -102,11 +108,9 @@ const styles = StyleSheet.create({
   linkPrimary: {
     fontSize: 14,
     lineHeight: 20,
-    color: Brand.primary,
   },
   price: {
     fontSize: 16,
-    color: Brand.primary,
     letterSpacing: -0.5,
   },
   code: {

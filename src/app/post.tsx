@@ -31,10 +31,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import { CATEGORIES, EMPLOYMENT_TYPES, SALARY_PERIODS, EMPLOYMENT_TYPE_LABELS, SALARY_PERIOD_LABELS } from "@/lib/categories";
 import { REGIONS } from "@/lib/regions";
 import { supabase } from "@/lib/supabase";
+import { useBrand } from "@/contexts/ThemeContext";
 
 const WORK_TYPES = ["onsite", "remote", "hybrid"] as const;
 
 export default function PostJobScreen() {
+  const Brand = useBrand();
+
   const { user } = useAuth();
   const { id } = useLocalSearchParams<{ id: string }>();
   const isEditing = !!id;
@@ -231,13 +234,13 @@ export default function PostJobScreen() {
             style={{
               fontSize: FontSize.lg,
               fontWeight: 700,
-              color: Brand.success,
+
               marginBottom: Spacing.three,
             }}
           >
             {isEditing ? "Updated!" : "Job Posted!"}
           </ThemedText>
-          <Pressable style={styles.submitBtn} onPress={() => router.back()}>
+          <Pressable style={[styles.submitBtn, { backgroundColor: Brand.primary }]} onPress={() => router.back()}>
             <ThemedText style={styles.submitBtnText}>Go Back</ThemedText>
           </Pressable>
         </View>
@@ -250,7 +253,7 @@ export default function PostJobScreen() {
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
       <View style={{ flex: 1 }}>
         <View style={styles.header}>
-          <Pressable onPress={() => router.back()} style={styles.backBtn}>
+          <Pressable onPress={() => router.back()} style={[styles.backBtn, { backgroundColor: Brand.primaryLight }]}>
             <Ionicons name="chevron-down" size={24} color={Brand.primary} />
           </Pressable>
           <ThemedText style={styles.headerTitle}>
@@ -264,7 +267,6 @@ export default function PostJobScreen() {
             <ThemedText
               type="small"
               style={{
-                color: Brand.danger,
                 textAlign: "center",
                 marginBottom: Spacing.three,
               }}
@@ -278,7 +280,7 @@ export default function PostJobScreen() {
               Title *
             </ThemedText>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { backgroundColor: Brand.white, borderColor: Brand.borderLight }]}
               placeholder="Job title"
               placeholderTextColor={Brand.placeholder}
               value={title}
@@ -291,7 +293,7 @@ export default function PostJobScreen() {
               Description
             </ThemedText>
             <TextInput
-              style={[styles.input, { height: 100, textAlignVertical: "top" }]}
+              style={[styles.input, { height: 100, textAlignVertical: "top" }, { backgroundColor: Brand.white, borderColor: Brand.borderLight }]}
               placeholder="Describe the job..."
               placeholderTextColor={Brand.placeholder}
               value={description}
@@ -305,7 +307,7 @@ export default function PostJobScreen() {
               Price (MMK)
             </ThemedText>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { backgroundColor: Brand.white, borderColor: Brand.borderLight }]}
               placeholder="e.g. 50000"
               placeholderTextColor={Brand.placeholder}
               value={price}
@@ -320,7 +322,7 @@ export default function PostJobScreen() {
             </ThemedText>
             <View style={styles.slotsRow}>
               <Pressable
-                style={[styles.slotBtn, vacancies <= 1 && { opacity: 0.3 }]}
+                style={[styles.slotBtn, vacancies <= 1 && { opacity: 0.3 }, { backgroundColor: Brand.primaryLight }]}
                 onPress={() => setVacancies(Math.max(1, vacancies - 1))}
                 disabled={vacancies <= 1}
               >
@@ -328,7 +330,7 @@ export default function PostJobScreen() {
               </Pressable>
               <ThemedText style={styles.slotValue}>{vacancies}</ThemedText>
               <Pressable
-                style={[styles.slotBtn, vacancies >= 50 && { opacity: 0.3 }]}
+                style={[styles.slotBtn, vacancies >= 50 && { opacity: 0.3 }, { backgroundColor: Brand.primaryLight }]}
                 onPress={() => setVacancies(Math.min(50, vacancies + 1))}
                 disabled={vacancies >= 50}
               >
@@ -345,7 +347,7 @@ export default function PostJobScreen() {
               {WORK_TYPES.map((wt) => (
                 <Pressable
                   key={wt}
-                  style={[styles.pill, workType === wt && styles.pillActive]}
+                  style={[styles.pill, workType === wt && styles.pillActive, { backgroundColor: Brand.white, borderColor: Brand.borderLight }, { backgroundColor: Brand.primary, borderColor: Brand.primary }]}
                   onPress={() => setWorkType(wt)}
                 >
                   <ThemedText
@@ -367,7 +369,7 @@ export default function PostJobScreen() {
               Category
             </ThemedText>
             <Pressable
-              style={styles.pickerBtn}
+              style={[styles.pickerBtn, { backgroundColor: Brand.white, borderColor: Brand.borderLight }]}
               onPress={() => setShowCategoryPicker(true)}
             >
               <ThemedText
@@ -392,7 +394,7 @@ export default function PostJobScreen() {
               Employment Type
             </ThemedText>
             <Pressable
-              style={styles.pickerBtn}
+              style={[styles.pickerBtn, { backgroundColor: Brand.white, borderColor: Brand.borderLight }]}
               onPress={() => setShowEmployTypePicker(true)}
             >
               <ThemedText
@@ -422,7 +424,7 @@ export default function PostJobScreen() {
                 Salary Min (MMK)
               </ThemedText>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { backgroundColor: Brand.white, borderColor: Brand.borderLight }]}
                 placeholder="e.g. 300000"
                 placeholderTextColor={Brand.placeholder}
                 value={salaryMin}
@@ -435,7 +437,7 @@ export default function PostJobScreen() {
                 Salary Max (MMK)
               </ThemedText>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { backgroundColor: Brand.white, borderColor: Brand.borderLight }]}
                 placeholder="e.g. 800000"
                 placeholderTextColor={Brand.placeholder}
                 value={salaryMax}
@@ -450,7 +452,7 @@ export default function PostJobScreen() {
               Salary Period
             </ThemedText>
             <Pressable
-              style={styles.pickerBtn}
+              style={[styles.pickerBtn, { backgroundColor: Brand.white, borderColor: Brand.borderLight }]}
               onPress={() => setShowSalaryPeriodPicker(true)}
             >
               <ThemedText
@@ -481,7 +483,7 @@ export default function PostJobScreen() {
                   Region
                 </ThemedText>
                 <Pressable
-                  style={styles.pickerBtn}
+                  style={[styles.pickerBtn, { backgroundColor: Brand.white, borderColor: Brand.borderLight }]}
                   onPress={() => setShowRegionPicker(true)}
                 >
                   <ThemedText
@@ -509,7 +511,7 @@ export default function PostJobScreen() {
                   City
                 </ThemedText>
                 <Pressable
-                  style={styles.pickerBtn}
+                  style={[styles.pickerBtn, { backgroundColor: Brand.white, borderColor: Brand.borderLight }]}
                   onPress={() => setShowCityPicker(true)}
                 >
                   <ThemedText
@@ -548,7 +550,7 @@ export default function PostJobScreen() {
                 </View>
                 {useExactLocation && (
                   <Pressable
-                    style={styles.locationBtn}
+                    style={[styles.locationBtn, { backgroundColor: Brand.primaryLight }]}
                     onPress={handleUseCurrentLocation}
                   >
                     <ThemedText style={styles.locationBtnText}>
@@ -572,7 +574,7 @@ export default function PostJobScreen() {
             <ThemedText type="caption" style={styles.label}>
               Images
             </ThemedText>
-            <Pressable style={styles.addImageBtn} onPress={handlePickImages}>
+            <Pressable style={[styles.addImageBtn, { borderColor: Brand.primary }]} onPress={handlePickImages}>
               <ThemedText style={styles.addImageBtnText}>
                 + Add Images
               </ThemedText>
@@ -589,8 +591,7 @@ export default function PostJobScreen() {
           <Pressable
             style={({pressed}) => [
               styles.submitBtn,
-              { opacity: submitting ? 0.6 : pressed ? 0.7 : 1 },
-            ]}
+              { opacity: submitting ? 0.6 : pressed ? 0.7 : 1 },, { backgroundColor: Brand.primary }]}
             onPress={handleSubmit}
             disabled={submitting || !title.trim()}
           >
@@ -621,7 +622,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: Brand.primaryLight,
+
     justifyContent: "center",
     alignItems: "center",
   },
@@ -629,7 +630,7 @@ const styles = StyleSheet.create({
     fontSize: FontSize.md,
     lineHeight: 28,
     fontWeight: 700,
-    color: Brand.text,
+
   },
   content: {
     padding: Spacing.four,
@@ -639,26 +640,26 @@ const styles = StyleSheet.create({
   },
   label: {
     fontWeight: 600,
-    color: Brand.textSecondary,
+
     marginBottom: 6,
   },
   input: {
     borderWidth: 1,
-    borderColor: Brand.borderLight,
+
     borderRadius: BorderRadius.sm,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: FontSize.base,
-    backgroundColor: Brand.white,
-    color: Brand.text,
+
+
   },
   pickerBtn: {
     borderWidth: 1,
-    borderColor: Brand.borderLight,
+
     borderRadius: BorderRadius.sm,
     paddingHorizontal: 14,
     paddingVertical: 12,
-    backgroundColor: Brand.white,
+
   },
   formRow: {
     flexDirection: "row",
@@ -675,12 +676,11 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: Brand.primaryLight,
+
     justifyContent: "center",
     alignItems: "center",
   },
   slotBtnText: {
-    color: Brand.primary,
     fontSize: 24,
     fontWeight: 700,
   },
@@ -689,7 +689,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     padding: Spacing.two,
     fontWeight: 700,
-    color: Brand.text,
+
     minWidth: 40,
     textAlign: "center",
   },
@@ -702,21 +702,18 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: BorderRadius.sm,
     borderWidth: 1,
-    borderColor: Brand.borderLight,
+
     alignItems: "center",
     backgroundColor: Brand.white,
   },
   pillActive: {
-    backgroundColor: Brand.primary,
-    borderColor: Brand.primary,
   },
   pillText: {
     fontWeight: 600,
-    color: Brand.textSecondary,
+
     textTransform: "capitalize",
   },
   pillTextActive: {
-    color: Brand.white,
   },
   switchRow: {
     flexDirection: "row",
@@ -724,27 +721,24 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   locationBtn: {
-    backgroundColor: Brand.primaryLight,
     paddingVertical: 10,
     borderRadius: BorderRadius.sm,
     alignItems: "center",
     marginTop: Spacing.two,
   },
   locationBtnText: {
-    color: Brand.primary,
     fontWeight: 700,
     fontSize: FontSize.sm,
   },
   addImageBtn: {
     borderWidth: 1,
-    borderColor: Brand.primary,
+
     borderRadius: BorderRadius.sm,
     paddingVertical: 10,
     alignItems: "center",
     borderStyle: "dashed",
   },
   addImageBtnText: {
-    color: Brand.primary,
     fontWeight: 600,
     fontSize: FontSize.base,
   },
@@ -760,7 +754,6 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.sm,
   },
   submitBtn: {
-    backgroundColor: Brand.primary,
     paddingVertical: 14,
     borderRadius: BorderRadius.md,
     alignItems: "center",
@@ -768,7 +761,6 @@ const styles = StyleSheet.create({
     ...Shadow.elevated,
   },
   submitBtnText: {
-    color: Brand.white,
     fontSize: FontSize.base,
     fontWeight: 700,
   },

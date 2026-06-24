@@ -313,6 +313,7 @@ const en = {
     rating_one: 'rating',
     rating_other: 'ratings',
     language: 'Language',
+    darkMode: 'Dark Mode',
     english: 'English',
     burmese: 'Myanmar (Burmese)',
     signOut: 'Sign Out',

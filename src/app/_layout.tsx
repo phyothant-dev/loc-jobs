@@ -8,6 +8,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 
 import { AuthProvider, useAuth } from '@/contexts/AuthContext'
 import { LocaleProvider } from '@/contexts/LocaleContext'
+import { ThemeProvider } from '@/contexts/ThemeContext'
 import { Brand } from '@/constants/theme'
 import OnboardingScreen from './onboarding'
 
@@ -65,6 +66,7 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }} onLayout={onLayoutRootView}>
+      <ThemeProvider>
       <LocaleProvider>
         {showOnboarding ? (
           <OnboardingScreen onDone={() => setShowOnboarding(false)} />
@@ -87,6 +89,7 @@ export default function RootLayout() {
           </AuthProvider>
         )}
       </LocaleProvider>
+      </ThemeProvider>
     </GestureHandlerRootView>
   )
 }

@@ -9,8 +9,11 @@ import { Toast } from "@/components/toast";
 import { BorderRadius, Brand, Spacing } from "@/constants/theme";
 import { useLocale } from "@/contexts/LocaleContext";
 import { supabase } from "@/lib/supabase";
+import { useBrand } from "@/contexts/ThemeContext";
 
 export default function ResetPasswordScreen() {
+  const Brand = useBrand();
+
   const { t } = useLocale()
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -52,7 +55,7 @@ export default function ResetPasswordScreen() {
           </View>
 
           <View style={styles.formContainer}>
-            <View style={styles.fieldGroup}>
+            <View style={[styles.fieldGroup, { backgroundColor: Brand.borderLight }]}>
               <TextInput
                 ref={passwordRef}
                 style={styles.input}
@@ -69,7 +72,7 @@ export default function ResetPasswordScreen() {
                 <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={20} color={Brand.textSecondary} />
               </Pressable>
             </View>
-            <View style={styles.fieldGroup}>
+            <View style={[styles.fieldGroup, { backgroundColor: Brand.borderLight }]}>
               <TextInput
                 ref={confirmRef}
                 style={styles.input}
@@ -83,7 +86,7 @@ export default function ResetPasswordScreen() {
                 onSubmitEditing={handleReset}
               />
             </View>
-            <Pressable style={({pressed}) => [styles.primaryBtn, loading && { opacity: 0.6 }, pressed && { opacity: 0.8 }]} onPress={handleReset} disabled={loading}>
+            <Pressable style={({pressed}) => [styles.primaryBtn, loading && { opacity: 0.6 }, pressed && { opacity: 0.8 }, { backgroundColor: Brand.primary }]} onPress={handleReset} disabled={loading}>
               {loading ? (
                 <ActivityIndicator size="small" color={Brand.white} />
               ) : (

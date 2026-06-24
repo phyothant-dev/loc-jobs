@@ -34,6 +34,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useLocale } from "@/contexts/LocaleContext";
 import { supabase } from "@/lib/supabase";
 import { EMPLOYMENT_TYPE_LABELS, SALARY_PERIOD_LABELS } from "@/lib/categories";
+import { useBrand } from "@/contexts/ThemeContext";
 import * as Location from "expo-location";
 
 interface Applicant {
@@ -53,6 +54,8 @@ const STATUS_COLOR: Record<string, { color: string; bg: string }> = {
 };
 
 export default function JobDetailScreen() {
+  const Brand = useBrand();
+
   const { user } = useAuth();
   const { t } = useLocale();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -427,7 +430,7 @@ export default function JobDetailScreen() {
 			<ThemedText type="small" style={{ color: Brand.textSecondary }}>
 				{t('jobDetail.jobNotFound')}
 			</ThemedText>
-          <Pressable onPress={() => router.back()} style={styles.backBtn}>
+          <Pressable onPress={() => router.back()} style={[styles.backBtn, { backgroundColor: Brand.primaryLight }]}>
             <Ionicons name="chevron-back" size={22} color={Brand.primary} />
           </Pressable>
         </View>
@@ -441,19 +444,19 @@ export default function JobDetailScreen() {
       edges={["top"]}
     >
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.backBtn}>
+        <Pressable onPress={() => router.back()} style={[styles.backBtn, { backgroundColor: Brand.primaryLight }]}>
           <Ionicons name="chevron-back" size={22} color={Brand.primary} />
         </Pressable>
         <View style={{ flexDirection: 'row', gap: Spacing.two, alignItems: 'center' }}>
           <Pressable
-            style={styles.flagBtn}
+            style={[styles.flagBtn, { backgroundColor: Brand.borderLight }]}
             onPress={handleReport}
             hitSlop={8}
           >
             <Ionicons name="flag-outline" size={18} color={Brand.textSecondary} />
           </Pressable>
           <Pressable
-            style={styles.shareBtn}
+            style={[styles.shareBtn, { backgroundColor: Brand.primaryLight }]}
             onPress={handleShare}
             hitSlop={8}
           >
@@ -462,13 +465,13 @@ export default function JobDetailScreen() {
           {isUploader && (
             <>
               <Pressable
-                style={styles.editBtn}
+                style={[styles.editBtn, { backgroundColor: Brand.primaryLight }]}
                 onPress={() => router.push(`/post?id=${job.id}` as any)}
               >
                 <Ionicons name="pencil" size={18} color={Brand.primary} />
               </Pressable>
               <Pressable
-                style={styles.deleteBtn}
+                style={[styles.deleteBtn, { backgroundColor: Brand.dangerLight }]}
                 onPress={() => {
                   Alert.alert(
                     t('jobDetail.deleteJob'),
@@ -488,7 +491,7 @@ export default function JobDetailScreen() {
             </>
           )}
           <Pressable
-            style={styles.headerSaveBtn}
+            style={[styles.headerSaveBtn, { backgroundColor: Brand.primaryLight }]}
             onPress={() => toggleSave(job.id)}
             hitSlop={8}
           >
@@ -607,12 +610,12 @@ export default function JobDetailScreen() {
         )}
 
         {job.description && (
-          <View style={styles.card}>
+          <View style={[styles.card, { backgroundColor: Brand.white }]}>
             <ThemedText
               type="caption"
               style={{
                 fontWeight: 600,
-                color: Brand.textSecondary,
+
                 marginBottom: 6,
               }}
             >
@@ -624,12 +627,12 @@ export default function JobDetailScreen() {
           </View>
         )}
 
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: Brand.white }]}>
           <ThemedText
             type="caption"
             style={{
               fontWeight: 600,
-              color: Brand.textSecondary,
+
               marginBottom: 8,
             }}
           >
@@ -659,7 +662,7 @@ export default function JobDetailScreen() {
                   title={job.title}
                 />
               </MapView>
-              <Pressable style={styles.directionsBtn} onPress={handleDirections}>
+              <Pressable style={[styles.directionsBtn, { backgroundColor: Brand.primaryLight }]} onPress={handleDirections}>
                 <ThemedText style={styles.directionsBtnText}>
                   {t('jobDetail.getDirections')}
                 </ThemedText>
@@ -670,12 +673,12 @@ export default function JobDetailScreen() {
           )}
         </View>
 
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: Brand.white }]}>
           <ThemedText
             type="caption"
             style={{
               fontWeight: 600,
-              color: Brand.textSecondary,
+
               marginBottom: 8,
             }}
           >
@@ -723,12 +726,12 @@ export default function JobDetailScreen() {
         </View>
 
         {myApplication && !isUploader && (
-          <View style={styles.card}>
+          <View style={[styles.card, { backgroundColor: Brand.white }]}>
             <ThemedText
               type="caption"
               style={{
                 fontWeight: 600,
-                color: Brand.textSecondary,
+
                 marginBottom: 6,
               }}
             >
@@ -758,12 +761,12 @@ export default function JobDetailScreen() {
         )}
 
         {applicants.length > 0 && (
-          <View style={styles.card}>
+          <View style={[styles.card, { backgroundColor: Brand.white }]}>
             <ThemedText
               type="caption"
               style={{
                 fontWeight: 600,
-                color: Brand.textSecondary,
+
                 marginBottom: 8,
               }}
             >
@@ -799,7 +802,7 @@ export default function JobDetailScreen() {
                             style={styles.applicantAvatar}
                           />
                         ) : (
-                          <View style={styles.applicantAvatarPlaceholder}>
+                          <View style={[styles.applicantAvatarPlaceholder, { backgroundColor: Brand.primaryLight }]}>
                             <ThemedText style={styles.applicantAvatarText}>
                               {(a.name.charAt(0) || "?").toUpperCase()}
                             </ThemedText>
@@ -854,14 +857,14 @@ export default function JobDetailScreen() {
                       <View style={{ flexDirection: "row", gap: 6 }}>
                         <Pressable
                           onPress={() => handleAccept(a.id)}
-                          style={styles.acceptBtn}
+                          style={[styles.acceptBtn, { backgroundColor: Brand.successLight }]}
                         >
                           <ThemedText style={styles.acceptBtnText}>
                       {t('jobDetail.accept')}
                     </ThemedText>
                   </Pressable>
                   <Pressable
-                    style={styles.rejectBtn}
+                    style={[styles.rejectBtn, { backgroundColor: Brand.dangerLight }]}
                     onPress={() => handleReject(a.id)}
                   >
                     <ThemedText style={styles.rejectBtnText}>
@@ -873,7 +876,7 @@ export default function JobDetailScreen() {
                     {isUploader && a.status !== "pending" && (
                       <Pressable
                         onPress={() => router.push(`/chat/${job.id}/${a.id}`)}
-                        style={styles.chatBtn}
+                        style={[styles.chatBtn, { backgroundColor: Brand.primaryLight }]}
                       >
                         <ThemedText style={styles.chatBtnText}>{t('tabs.chat')}</ThemedText>
                       </Pressable>
@@ -881,7 +884,7 @@ export default function JobDetailScreen() {
                     {isCompleted && isUploader && a.status === "accepted" && !reviewedUserIds.has(a.id) && (
                       <Pressable
                         onPress={() => openReviewModal(a.id, a.name)}
-                        style={styles.reviewBtn}
+                        style={[styles.reviewBtn, { backgroundColor: Brand.warningLight }]}
                       >
                         <ThemedText style={styles.reviewBtnText}>Review</ThemedText>
                       </Pressable>
@@ -896,7 +899,7 @@ export default function JobDetailScreen() {
         {isCompleted && !isUploader && myApplication?.status === "accepted" && !reviewedUserIds.has(job?.uploader_id ?? '') && (
           <Pressable
             onPress={() => openReviewModal(job.uploader_id, uploaderName || 'Uploader')}
-            style={styles.reviewFullBtn}
+            style={[styles.reviewFullBtn, { backgroundColor: Brand.warningLight }]}
           >
             <ThemedText style={styles.reviewFullBtnText}>Leave a Review for {uploaderName || 'Uploader'}</ThemedText>
           </Pressable>
@@ -904,7 +907,7 @@ export default function JobDetailScreen() {
 
         {canApply && (
           <Pressable
-            style={[styles.primaryBtn, applying && { opacity: 0.6 }]}
+            style={[styles.primaryBtn, applying && { opacity: 0.6 }, { backgroundColor: Brand.primary }]}
             onPress={() => setShowApplyModal(true)}
             disabled={applying}
           >
@@ -917,8 +920,7 @@ export default function JobDetailScreen() {
             style={[
               styles.primaryBtn,
               { backgroundColor: Brand.success },
-              completing && { opacity: 0.6 },
-            ]}
+              completing && { opacity: 0.6 },, { backgroundColor: Brand.primary }]}
             onPress={handleComplete}
             disabled={completing}
           >
@@ -930,7 +932,6 @@ export default function JobDetailScreen() {
           <ThemedText
             type="small"
             style={{
-              color: Brand.danger,
               textAlign: "center",
               marginTop: Spacing.three,
             }}
@@ -941,14 +942,14 @@ export default function JobDetailScreen() {
       </ScrollView>
 
       <Modal visible={showReviewModal} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+        <View style={[styles.modalOverlay, { backgroundColor: Brand.overlay }]}>
+          <View style={[styles.modalContent, { backgroundColor: Brand.white }]}>
             <ThemedText style={styles.modalTitle}>Rate {reviewTarget?.name || 'User'}</ThemedText>
             <View style={{ alignItems: 'center', marginBottom: Spacing.four }}>
               <StarRating rating={reviewRating} size={36} interactive onChange={setReviewRating} />
             </View>
             <TextInput
-              style={styles.modalInput}
+              style={[styles.modalInput, { borderColor: Brand.border }]}
               placeholder="Write a comment (optional)"
               placeholderTextColor={Brand.textSecondary}
               value={reviewComment}
@@ -980,14 +981,14 @@ export default function JobDetailScreen() {
       </Modal>
 
       <Modal visible={showApplyModal} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+        <View style={[styles.modalOverlay, { backgroundColor: Brand.overlay }]}>
+          <View style={[styles.modalContent, { backgroundColor: Brand.white }]}>
             <ThemedText style={styles.modalTitle}>{t('jobDetail.applyingModalTitle')}</ThemedText>
             <ThemedText type="small" style={{ color: Brand.textSecondary, textAlign: 'center', marginBottom: Spacing.four }}>
                 {t('jobDetail.applyingModalHelper')}
             </ThemedText>
             <TextInput
-              style={styles.modalInput}
+              style={[styles.modalInput, { borderColor: Brand.border }]}
                 placeholder={t('jobDetail.applyingModalPlaceholder')}
               placeholderTextColor={Brand.textSecondary}
               value={applyMessage}
@@ -1032,7 +1033,7 @@ const styles = StyleSheet.create({
     fontSize: FontSize.xl,
     lineHeight: 40,
     fontWeight: 700,
-    color: Brand.text,
+
     padding: Spacing.one,
     letterSpacing: -0.5,
   },
@@ -1053,7 +1054,6 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.sm,
   },
   card: {
-    backgroundColor: Brand.white,
     borderRadius: BorderRadius.lg,
     padding: Spacing.four,
     marginBottom: Spacing.three,
@@ -1061,7 +1061,7 @@ const styles = StyleSheet.create({
   },
   infoLine: {
     fontSize: FontSize.base,
-    color: Brand.text,
+
   },
   detailImage: {
     width: 200,
@@ -1076,19 +1076,16 @@ const styles = StyleSheet.create({
     marginTop: Spacing.two,
   },
   directionsBtn: {
-    backgroundColor: Brand.primaryLight,
     paddingVertical: 10,
     borderRadius: BorderRadius.sm,
     alignItems: "center",
     marginTop: Spacing.two,
   },
   directionsBtnText: {
-    color: Brand.primary,
     fontWeight: 700,
     fontSize: FontSize.sm,
   },
   primaryBtn: {
-    backgroundColor: Brand.primary,
     paddingVertical: 14,
     borderRadius: BorderRadius.md,
     alignItems: "center",
@@ -1096,7 +1093,6 @@ const styles = StyleSheet.create({
     ...Shadow.elevated,
   },
   primaryBtnText: {
-    color: Brand.white,
     fontSize: FontSize.base,
     fontWeight: 700,
   },
@@ -1111,7 +1107,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: Brand.primaryLight,
+
     justifyContent: "center",
     alignItems: "center",
   },
@@ -1119,7 +1115,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: Brand.primaryLight,
+
     justifyContent: "center",
     alignItems: "center",
   },
@@ -1127,7 +1123,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: Brand.dangerLight,
+
     justifyContent: "center",
     alignItems: "center",
   },
@@ -1135,7 +1131,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: Brand.borderLight,
+
     justifyContent: "center",
     alignItems: "center",
   },
@@ -1143,7 +1139,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: Brand.primaryLight,
+
     justifyContent: "center",
     alignItems: "center",
   },
@@ -1151,40 +1147,34 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: Brand.primaryLight,
+
     justifyContent: "center",
     alignItems: "center",
   },
   chatBtn: {
-    backgroundColor: Brand.primaryLight,
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: BorderRadius.sm,
   },
   chatBtnText: {
-    color: Brand.primary,
     fontWeight: 700,
     fontSize: FontSize.sm,
   },
   acceptBtn: {
-    backgroundColor: Brand.successLight,
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: BorderRadius.sm,
   },
   acceptBtnText: {
-    color: Brand.success,
     fontWeight: 700,
     fontSize: FontSize.sm,
   },
   rejectBtn: {
-    backgroundColor: Brand.dangerLight,
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: BorderRadius.sm,
   },
   rejectBtnText: {
-    color: Brand.danger,
     fontWeight: 700,
     fontSize: FontSize.sm,
   },
@@ -1197,48 +1187,42 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: Brand.primaryLight,
+
     justifyContent: "center",
     alignItems: "center",
   },
   applicantAvatarText: {
-    color: Brand.primary,
     fontWeight: 700,
     fontSize: FontSize.sm,
   },
   reviewBtn: {
-    backgroundColor: Brand.warningLight,
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: BorderRadius.sm,
     marginLeft: 6,
   },
   reviewBtnText: {
-    color: Brand.warning,
     fontWeight: 700,
     fontSize: FontSize.sm,
   },
   reviewFullBtn: {
-    backgroundColor: Brand.warningLight,
     paddingVertical: 14,
     borderRadius: BorderRadius.md,
     alignItems: 'center',
     marginTop: Spacing.three,
   },
   reviewFullBtnText: {
-    color: Brand.warning,
     fontSize: FontSize.base,
     fontWeight: 700,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: Brand.overlay,
+
     justifyContent: 'center',
     alignItems: 'center',
     padding: Spacing.four,
   },
   modalContent: {
-    backgroundColor: Brand.white,
     borderRadius: BorderRadius.lg,
     padding: Spacing.five,
     width: '100%',
@@ -1247,17 +1231,17 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: FontSize.lg,
     fontWeight: 700,
-    color: Brand.text,
+
     textAlign: 'center',
     marginBottom: Spacing.four,
   },
   modalInput: {
     borderWidth: 1,
-    borderColor: Brand.border,
+
     borderRadius: BorderRadius.md,
     padding: Spacing.three,
     fontSize: FontSize.base,
-    color: Brand.text,
+
     minHeight: 80,
     textAlignVertical: 'top',
   },
@@ -1268,7 +1252,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalBtnText: {
-    color: Brand.white,
     fontWeight: 700,
     fontSize: FontSize.base,
   },

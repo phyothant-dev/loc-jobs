@@ -1,6 +1,7 @@
 import { FlatList, Modal, Pressable, StyleSheet, View } from 'react-native'
 import { ThemedText } from './themed-text'
 import { BorderRadius, Brand, Spacing, FontSize } from '@/constants/theme'
+import { useBrand } from "@/contexts/ThemeContext";
 
 interface PickerModalProps {
   visible: boolean
@@ -13,11 +14,13 @@ interface PickerModalProps {
 }
 
 export function PickerModal({ visible, title, options, selected, onSelect, onClose, disabledOptions }: PickerModalProps) {
+  const Brand = useBrand();
+
   return (
     <Modal visible={visible} animationType="slide" transparent>
-      <Pressable style={styles.overlay} onPress={onClose}>
-        <Pressable style={styles.sheet} onPress={() => {}}>
-          <View style={styles.handle} />
+      <Pressable style={[styles.overlay, { backgroundColor: Brand.overlay }]} onPress={onClose}>
+        <Pressable style={[styles.sheet, { backgroundColor: Brand.white }]} onPress={() => {}}>
+          <View style={[styles.handle, { backgroundColor: Brand.borderLight }]} />
           <ThemedText style={styles.title}>{title}</ThemedText>
           <FlatList
             data={options}
@@ -28,7 +31,7 @@ export function PickerModal({ visible, title, options, selected, onSelect, onClo
               const isDisabled = disabledOptions?.includes(item)
               return (
                 <Pressable
-                  style={[styles.option, isSelected && styles.optionSelected, isDisabled && styles.optionDisabled]}
+                  style={[styles.option, isSelected && styles.optionSelected, isDisabled && styles.optionDisabled, { backgroundColor: Brand.primaryLight }]}
                   onPress={() => { if (!isDisabled) { onSelect(item); onClose() } }}
                 >
                   <ThemedText style={[styles.optionText, isSelected && styles.optionTextSelected, isDisabled && styles.optionTextDisabled]}>
@@ -48,11 +51,11 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: Brand.overlay,
+
   },
   sheet: {
     maxHeight: '60%',
-    backgroundColor: Brand.white,
+
     borderTopLeftRadius: BorderRadius.xl,
     borderTopRightRadius: BorderRadius.xl,
     paddingBottom: 34,
@@ -60,7 +63,7 @@ const styles = StyleSheet.create({
   handle: {
     width: 36,
     height: 4,
-    backgroundColor: Brand.borderLight,
+
     borderRadius: 2,
     alignSelf: 'center',
     marginTop: 10,
@@ -69,7 +72,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: FontSize.md,
     fontWeight: 700,
-    color: Brand.text,
+
     paddingHorizontal: Spacing.four,
     paddingVertical: Spacing.three,
   },
@@ -81,20 +84,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.four,
   },
   optionSelected: {
-    backgroundColor: Brand.primaryLight,
   },
   optionTextSelected: {
-    color: Brand.primary,
     fontWeight: 700,
   },
   optionDisabled: {
     opacity: 0.4,
   },
   optionTextDisabled: {
-    color: Brand.textSecondary,
   },
   optionText: {
     fontSize: FontSize.base,
-    color: Brand.text,
+
   },
 })

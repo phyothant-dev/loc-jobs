@@ -37,6 +37,7 @@ import {
 } from "@/lib/categories";
 import { REGIONS } from "@/lib/regions";
 import { supabase } from "@/lib/supabase";
+import { useBrand } from "@/contexts/ThemeContext";
 
 interface Job {
   id: string;
@@ -84,6 +85,8 @@ const CARD_WIDTH =
   NUM_COLUMNS;
 
 export default function AllJobsScreen() {
+  const Brand = useBrand();
+
   const { user } = useAuth();
   const { t } = useLocale();
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -351,10 +354,10 @@ export default function AllJobsScreen() {
 
       <Modal visible={showSaveSearchModal} transparent animationType="fade">
         <Pressable style={styles.modalOverlay} onPress={() => setShowSaveSearchModal(false)}>
-          <Pressable style={styles.saveModalContent} onPress={() => {}}>
+          <Pressable style={[styles.saveModalContent, { backgroundColor: Brand.white }]} onPress={() => {}}>
             <ThemedText style={styles.saveModalTitle}>{t('explore.saveSearch')}</ThemedText>
             <TextInput
-              style={styles.saveModalInput}
+              style={[styles.saveModalInput, { backgroundColor: Brand.bg }]}
               placeholder={t('explore.saveSearchName')}
               placeholderTextColor={Brand.placeholder}
               value={saveSearchName}
@@ -362,10 +365,10 @@ export default function AllJobsScreen() {
               autoFocus
             />
             <View style={{ flexDirection: 'row', gap: Spacing.three, marginTop: Spacing.four }}>
-              <Pressable style={styles.cancelBtn} onPress={() => setShowSaveSearchModal(false)}>
+              <Pressable style={[styles.cancelBtn, { backgroundColor: Brand.bg }]} onPress={() => setShowSaveSearchModal(false)}>
                 <ThemedText style={styles.cancelBtnText}>{t('common.cancel')}</ThemedText>
               </Pressable>
-              <Pressable style={styles.saveBtnStyle} onPress={saveCurrentSearch}>
+              <Pressable style={[styles.saveBtnStyle, { backgroundColor: Brand.primary }]} onPress={saveCurrentSearch}>
                 <ThemedText style={styles.saveBtnStyleText}>{t('common.save')}</ThemedText>
               </Pressable>
             </View>
@@ -383,7 +386,7 @@ export default function AllJobsScreen() {
         >
           <View style={styles.grid}>
             {Array.from({ length: 4 }).map((_, i) => (
-              <View key={i} style={styles.card}>
+              <View key={i} style={[styles.card, { backgroundColor: Brand.white }]}>
                 <Skeleton
                   width="100%"
                   height={140}
@@ -455,13 +458,13 @@ export default function AllJobsScreen() {
                     </ThemedText>
                   </Pressable>
                   <Pressable
-                    style={styles.userSearchBtn}
+                    style={[styles.userSearchBtn, { backgroundColor: Brand.primaryLight }]}
                     onPress={() => router.push('/search-users' as any)}
                   >
                     <Ionicons name="people-outline" size={20} color={Brand.primary} />
                   </Pressable>
                   <Pressable
-                    style={styles.userSearchBtn}
+                    style={[styles.userSearchBtn, { backgroundColor: Brand.primaryLight }]}
                     onPress={() => setShowSaveSearchModal(true)}
                   >
                     <Ionicons name="bookmark-outline" size={20} color={Brand.primary} />
@@ -470,7 +473,7 @@ export default function AllJobsScreen() {
               </View>
 
               <View style={styles.searchContainer}>
-                <View style={styles.searchInner}>
+                <View style={[styles.searchInner, { backgroundColor: Brand.white, borderColor: Brand.borderLight }]}>
                   <Ionicons
                     name="search"
                     size={18}
@@ -494,7 +497,7 @@ export default function AllJobsScreen() {
                       {savedSearches.map((s) => (
                         <Pressable
                           key={s.id}
-                          style={styles.savedSearchChip}
+                          style={[styles.savedSearchChip, { backgroundColor: Brand.primaryLight }]}
                           onPress={() => applySavedSearch(s)}
                           onLongPress={() => {
                             Alert.alert(t('common.delete'), t('explore.deleteSavedSearch'), [
@@ -522,7 +525,7 @@ export default function AllJobsScreen() {
                       {t("explore.type")}
                     </ThemedText>
                     <Pressable
-                      style={styles.dropdown}
+                      style={[styles.dropdown, { backgroundColor: Brand.white, borderColor: Brand.borderLight }]}
                       onPress={() => setShowWorkTypePicker(true)}
                     >
                       <ThemedText
@@ -548,7 +551,7 @@ export default function AllJobsScreen() {
                       {t("explore.employmentType")}
                     </ThemedText>
                     <Pressable
-                      style={styles.dropdown}
+                      style={[styles.dropdown, { backgroundColor: Brand.white, borderColor: Brand.borderLight }]}
                       onPress={() => setShowEmployTypePicker(true)}
                     >
                       <ThemedText
@@ -575,7 +578,7 @@ export default function AllJobsScreen() {
                       {t("explore.region")}
                     </ThemedText>
                     <Pressable
-                      style={styles.dropdown}
+                      style={[styles.dropdown, { backgroundColor: Brand.white, borderColor: Brand.borderLight }]}
                       onPress={() => setShowRegionPicker(true)}
                     >
                       <ThemedText
@@ -607,15 +610,15 @@ export default function AllJobsScreen() {
                       <Pressable
                         style={[
                           styles.cityChip,
-                          !selectedCity && styles.cityChipActive,
+                          !selectedCity
+                            ? { backgroundColor: Brand.primary, borderColor: Brand.primary }
+                            : { backgroundColor: Brand.bg, borderColor: Brand.border },
                         ]}
                         onPress={() => setSelectedCity(null)}
                       >
                         <ThemedText
                           type="small"
-                          style={[
-                            !selectedCity ? styles.cityChipTextActive : {},
-                          ]}
+                          style={!selectedCity ? { color: '#FFFFFF', fontWeight: '700' } : {}}
                         >
                           All
                         </ThemedText>
@@ -625,7 +628,9 @@ export default function AllJobsScreen() {
                           key={city}
                           style={[
                             styles.cityChip,
-                            selectedCity === city && styles.cityChipActive,
+                            selectedCity === city
+                              ? { backgroundColor: Brand.primary, borderColor: Brand.primary }
+                              : { backgroundColor: Brand.bg, borderColor: Brand.border },
                           ]}
                           onPress={() =>
                             setSelectedCity(selectedCity === city ? null : city)
@@ -633,11 +638,7 @@ export default function AllJobsScreen() {
                         >
                           <ThemedText
                             type="small"
-                            style={[
-                              selectedCity === city
-                                ? styles.cityChipTextActive
-                                : {},
-                            ]}
+                            style={selectedCity === city ? { color: '#FFFFFF', fontWeight: '700' } : {}}
                           >
                             {city}
                           </ThemedText>
@@ -662,15 +663,15 @@ export default function AllJobsScreen() {
                       <Pressable
                         style={[
                           styles.cityChip,
-                          !selectedCategory && styles.cityChipActive,
+                          !selectedCategory
+                            ? { backgroundColor: Brand.primary, borderColor: Brand.primary }
+                            : { backgroundColor: Brand.bg, borderColor: Brand.border },
                         ]}
                         onPress={() => setSelectedCategory(null)}
                       >
                         <ThemedText
                           type="small"
-                          style={[
-                            !selectedCategory ? styles.cityChipTextActive : {},
-                          ]}
+                          style={!selectedCategory ? { color: '#FFFFFF', fontWeight: '700' } : {}}
                         >
                           {t("common.all")}
                         </ThemedText>
@@ -680,7 +681,9 @@ export default function AllJobsScreen() {
                           key={cat}
                           style={[
                             styles.cityChip,
-                            selectedCategory === cat && styles.cityChipActive,
+                            selectedCategory === cat
+                              ? { backgroundColor: Brand.primary, borderColor: Brand.primary }
+                              : { backgroundColor: Brand.bg, borderColor: Brand.border },
                           ]}
                           onPress={() =>
                             setSelectedCategory(
@@ -690,11 +693,7 @@ export default function AllJobsScreen() {
                         >
                           <ThemedText
                             type="small"
-                            style={[
-                              selectedCategory === cat
-                                ? styles.cityChipTextActive
-                                : {},
-                            ]}
+                            style={selectedCategory === cat ? { color: '#FFFFFF', fontWeight: '700' } : {}}
                           >
                             {cat}
                           </ThemedText>
@@ -705,7 +704,7 @@ export default function AllJobsScreen() {
                 </View>
                 <View style={styles.priceRow}>
                   <TextInput
-                    style={styles.priceInput}
+                    style={[styles.priceInput, { borderColor: Brand.border }]}
                     placeholder={t("explore.min")}
                     placeholderTextColor={Brand.placeholder}
                     value={minPrice}
@@ -719,7 +718,7 @@ export default function AllJobsScreen() {
                     —
                   </ThemedText>
                   <TextInput
-                    style={styles.priceInput}
+                    style={[styles.priceInput, { borderColor: Brand.border }]}
                     placeholder={t("explore.max")}
                     placeholderTextColor={Brand.placeholder}
                     value={maxPrice}
@@ -761,7 +760,7 @@ export default function AllJobsScreen() {
                     return (
                       <Pressable
                         key={job.id}
-                        style={styles.card}
+                        style={[styles.card, { backgroundColor: Brand.white }]}
                         onPress={() => router.push(`/job/${job.id}`)}
                       >
                         <Pressable
@@ -787,7 +786,7 @@ export default function AllJobsScreen() {
                           style={[styles.workTypeTag, { backgroundColor: bg }]}
                         />
                         {job.category && (
-                          <View style={styles.categoryBadge}>
+                          <View style={[styles.categoryBadge, { backgroundColor: Brand.primaryLight }]}>
                             <ThemedText
                               type="caption"
                               style={styles.categoryBadgeText}
@@ -808,7 +807,6 @@ export default function AllJobsScreen() {
                         {job.employment_type && (
                           <View
                             style={{
-                              backgroundColor: Brand.primaryLight,
                               paddingHorizontal: 6,
                               paddingVertical: 1,
                               borderRadius: BorderRadius.sm,
@@ -891,7 +889,7 @@ const styles = StyleSheet.create({
     fontSize: FontSize.xl,
     lineHeight: 40,
     fontWeight: 700,
-    color: Brand.text,
+
     padding: Spacing.one,
     letterSpacing: -0.5,
   },
@@ -899,7 +897,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: Brand.primaryLight,
+
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -909,9 +907,9 @@ const styles = StyleSheet.create({
   searchInner: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: Brand.white,
+
     borderWidth: 1,
-    borderColor: Brand.borderLight,
+
     borderRadius: BorderRadius.md,
     paddingHorizontal: 14,
   },
@@ -919,7 +917,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 12,
     fontSize: FontSize.base,
-    color: Brand.text,
+
   },
   filtersSection: {
     marginBottom: Spacing.three,
@@ -934,11 +932,11 @@ const styles = StyleSheet.create({
   },
   dropdown: {
     borderWidth: 1,
-    borderColor: Brand.borderLight,
+
     borderRadius: BorderRadius.sm,
     paddingHorizontal: 14,
     paddingVertical: 10,
-    backgroundColor: Brand.white,
+
   },
   citySection: {
     marginBottom: Spacing.two,
@@ -952,15 +950,12 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: BorderRadius.full,
     borderWidth: 1,
-    borderColor: Brand.borderLight,
-    backgroundColor: Brand.white,
+
+
   },
   cityChipActive: {
-    backgroundColor: Brand.primary,
-    borderColor: Brand.primary,
   },
   cityChipTextActive: {
-    color: Brand.white,
     fontWeight: 700,
   },
   sectionHeader: {
@@ -978,7 +973,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontWeight: 700,
     fontSize: FontSize.md,
-    color: Brand.text,
+
     textTransform: "capitalize",
     flex: 1,
   },
@@ -989,7 +984,7 @@ const styles = StyleSheet.create({
   },
   card: {
     width: CARD_WIDTH,
-    backgroundColor: Brand.white,
+
     borderRadius: BorderRadius.lg,
     padding: Spacing.four,
     ...Shadow.card,
@@ -1010,7 +1005,7 @@ const styles = StyleSheet.create({
     fontWeight: 700,
     fontSize: FontSize.base,
     lineHeight: 24,
-    color: Brand.text,
+
   },
   cardLocation: {
     marginTop: 4,
@@ -1033,14 +1028,13 @@ const styles = StyleSheet.create({
   },
   categoryBadge: {
     alignSelf: "flex-start",
-    backgroundColor: Brand.primaryLight,
+
     paddingHorizontal: 6,
     paddingVertical: 1,
     borderRadius: BorderRadius.sm,
     marginBottom: Spacing.two,
   },
   categoryBadgeText: {
-    color: Brand.primary,
     fontSize: FontSize.xs,
     fontWeight: 600,
   },
@@ -1059,18 +1053,18 @@ const styles = StyleSheet.create({
   priceInput: {
     flex: 1,
     borderWidth: 1,
-    borderColor: Brand.border,
+
     borderRadius: BorderRadius.md,
     paddingVertical: 10,
     paddingHorizontal: 12,
     fontSize: FontSize.sm,
-    color: Brand.text,
+
   },
   savedSearchChip: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: Brand.primaryLight,
+
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: BorderRadius.full,
@@ -1082,33 +1076,30 @@ const styles = StyleSheet.create({
     padding: Spacing.five,
   },
   saveModalContent: {
-    backgroundColor: Brand.white,
     borderRadius: BorderRadius.lg,
     padding: Spacing.five,
   },
   saveModalTitle: {
     fontSize: FontSize.md,
     fontWeight: 700,
-    color: Brand.text,
+
     textAlign: 'center',
     marginBottom: Spacing.three,
   },
   saveModalInput: {
-    backgroundColor: Brand.bg,
     borderRadius: BorderRadius.sm,
     padding: Spacing.three,
     fontSize: FontSize.base,
-    color: Brand.text,
+    backgroundColor: Brand.bg,
   },
   cancelBtn: {
     flex: 1,
     paddingVertical: 12,
     borderRadius: BorderRadius.sm,
-    backgroundColor: Brand.bg,
+
     alignItems: 'center',
   },
   cancelBtnText: {
-    color: Brand.textSecondary,
     fontWeight: 700,
     fontSize: FontSize.base,
   },
@@ -1116,11 +1107,10 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 12,
     borderRadius: BorderRadius.sm,
-    backgroundColor: Brand.primary,
+
     alignItems: 'center',
   },
   saveBtnStyleText: {
-    color: Brand.white,
     fontWeight: 700,
     fontSize: FontSize.base,
   },

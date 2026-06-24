@@ -315,6 +315,7 @@ const my: TranslationKeys = {
     rating_one: 'အဆင့်',
     rating_other: 'အဆင့်များ',
     language: 'ဘာသာစကား',
+    darkMode: 'အမှောင်မုဒ်',
     english: 'English',
     burmese: 'မြန်မာ (Burmese)',
     signOut: 'ထွက်ရန်',

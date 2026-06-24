@@ -7,6 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 
 import { ThemedText } from '@/components/themed-text'
 import { BorderRadius, Brand, FontSize, Shadow, Spacing } from '@/constants/theme'
+import { useBrand } from "@/contexts/ThemeContext";
 
 const { width } = Dimensions.get('window')
 
@@ -84,6 +85,8 @@ function PageAnimation({ icon, color, bg, index, currentIndex }: {
 }
 
 export default function OnboardingScreen({ onDone }: { onDone?: () => void }) {
+  const Brand = useBrand();
+
   const [page, setPage] = useState(0)
   const listRef = useRef<FlatList>(null)
   const fadeAnim = useRef(new Animated.Value(1)).current
@@ -117,7 +120,7 @@ export default function OnboardingScreen({ onDone }: { onDone?: () => void }) {
   }, [onDone])
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: Brand.bg }]} edges={['top', 'bottom']}>
       <FlatList
         ref={listRef}
         data={PAGES}
@@ -148,7 +151,7 @@ export default function OnboardingScreen({ onDone }: { onDone?: () => void }) {
       <View style={styles.footer}>
         <View style={styles.dots}>
           {PAGES.map((_, i) => (
-            <View key={i} style={[styles.dot, i === page && [styles.dotActive, { backgroundColor: PAGES[i].color }]]} />
+            <View key={i} style={[styles.dot, i === page && [styles.dotActive, { backgroundColor: PAGES[i].color }], { backgroundColor: Brand.border }]} />
           ))}
         </View>
 
@@ -187,7 +190,7 @@ export default function OnboardingScreen({ onDone }: { onDone?: () => void }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Brand.bg,
+
     justifyContent: 'center',
   },
   page: {
@@ -216,13 +219,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: FontSize.xxl,
     fontWeight: 800,
-    color: Brand.text,
+
     textAlign: 'center',
     marginBottom: Spacing.three,
   },
   description: {
     fontSize: FontSize.base,
-    color: Brand.textSecondary,
+
     textAlign: 'center',
     lineHeight: 22,
     paddingHorizontal: Spacing.two,
@@ -241,7 +244,7 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: Brand.border,
+
   },
   dotActive: {
     width: 24,
@@ -261,7 +264,6 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   btnText: {
-    color: Brand.white,
     fontSize: FontSize.base,
     fontWeight: 700,
   },
@@ -271,7 +273,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   skipText: {
-    color: Brand.textSecondary,
     fontSize: FontSize.base,
     fontWeight: 600,
   },

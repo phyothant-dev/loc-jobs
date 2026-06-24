@@ -8,6 +8,7 @@ import { ThemedText } from '@/components/themed-text'
 import { BorderRadius, Brand, FontSize, Shadow, Spacing } from '@/constants/theme'
 import { supabase } from '@/lib/supabase'
 import { useLocale } from '@/contexts/LocaleContext'
+import { useBrand } from "@/contexts/ThemeContext";
 
 interface UserResult {
   id: string
@@ -19,6 +20,8 @@ interface UserResult {
 }
 
 export default function SearchUsersScreen() {
+  const Brand = useBrand();
+
   const { t } = useLocale()
   const [query, setQuery] = useState('')
   const [users, setUsers] = useState<UserResult[]>([])
@@ -61,14 +64,14 @@ export default function SearchUsersScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: Brand.bg }} edges={['top']}>
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.backBtn}>
+        <Pressable onPress={() => router.back()} style={[styles.backBtn, { backgroundColor: Brand.primaryLight }]}>
           <Ionicons name="chevron-back" size={22} color={Brand.primary} />
         </Pressable>
         <ThemedText style={styles.headerTitle}>{t('userSearch.title')}</ThemedText>
         <View style={{ width: 36 }} />
       </View>
 
-      <View style={styles.searchBar}>
+      <View style={[styles.searchBar, { backgroundColor: Brand.white, borderColor: Brand.border }]}>
         <Ionicons name="search" size={18} color={Brand.textSecondary} style={{ marginRight: 8 }} />
         <TextInput
           style={styles.input}
@@ -104,10 +107,10 @@ export default function SearchUsersScreen() {
           const initial = (item.display_name || '?')[0].toUpperCase()
           return (
             <Pressable
-              style={styles.userCard}
+              style={[styles.userCard, { backgroundColor: Brand.white }]}
               onPress={() => router.push(`/user/${item.id}/jobs` as any)}
             >
-              <View style={styles.avatar}>
+              <View style={[styles.avatar, { backgroundColor: Brand.primaryLight }]}>
                 {item.avatar_url ? (
                   <Image source={{ uri: item.avatar_url }} style={styles.avatarImg} />
                 ) : (
@@ -148,7 +151,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: Brand.primaryLight,
+
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -156,29 +159,29 @@ const styles = StyleSheet.create({
     fontSize: FontSize.xl,
     lineHeight: 40,
     fontWeight: 700,
-    color: Brand.text,
+
     letterSpacing: -0.5,
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
     marginHorizontal: Spacing.four,
-    backgroundColor: Brand.white,
+
     borderRadius: BorderRadius.md,
     paddingHorizontal: Spacing.three,
     height: 44,
     borderWidth: 1,
-    borderColor: Brand.border,
+
   },
   input: {
     flex: 1,
     fontSize: FontSize.base,
-    color: Brand.text,
+
   },
   userCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Brand.white,
+
     borderRadius: BorderRadius.lg,
     padding: Spacing.four,
     ...Shadow.card,
@@ -188,7 +191,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: Brand.primaryLight,
+
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
@@ -199,13 +202,12 @@ const styles = StyleSheet.create({
     borderRadius: 22,
   },
   avatarText: {
-    color: Brand.primary,
     fontWeight: 700,
     fontSize: FontSize.md,
   },
   userName: {
     fontWeight: 700,
     fontSize: FontSize.base,
-    color: Brand.text,
+
   },
 })

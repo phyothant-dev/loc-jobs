@@ -6,8 +6,11 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { ThemedText } from "@/components/themed-text";
 import { BorderRadius, Brand, Spacing } from "@/constants/theme";
 import { useLocale } from "@/contexts/LocaleContext";
+import { useBrand } from "@/contexts/ThemeContext";
 
 export default function VerifyEmailScreen() {
+  const Brand = useBrand();
+
   const { t } = useLocale()
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: Brand.white }}>
@@ -18,7 +21,7 @@ export default function VerifyEmailScreen() {
         <ThemedText type="small" style={styles.body}>
           {t('auth.verifyEmailSent')}
         </ThemedText>
-        <Pressable style={styles.btn} onPress={() => router.replace("/(auth)/login")}>
+        <Pressable style={[styles.btn, { backgroundColor: Brand.primary }]} onPress={() => router.replace("/(auth)/login")}>
           <ThemedText style={styles.btnText}>{t('auth.signIn')}</ThemedText>
         </Pressable>
       </View>

@@ -10,6 +10,7 @@ import { BorderRadius, Brand, Shadow, Spacing, FontSize } from '@/constants/them
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { useLocale } from '@/contexts/LocaleContext'
+import { useBrand } from "@/contexts/ThemeContext";
 
 interface Notification {
   id: string
@@ -34,6 +35,8 @@ function relativeTime(dateStr: string, t?: (key: string) => string) {
 }
 
 export default function NotificationsScreen() {
+  const Brand = useBrand();
+
   const { user } = useAuth()
   const { t } = useLocale()
   const [notifications, setNotifications] = useState<Notification[]>([])
@@ -83,7 +86,7 @@ export default function NotificationsScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: Brand.bg }} edges={['top']}>
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.backBtn}>
+        <Pressable onPress={() => router.back()} style={[styles.backBtn, { backgroundColor: Brand.primaryLight }]}>
           <Ionicons name="chevron-back" size={22} color={Brand.primary} />
         </Pressable>
         <ThemedText style={styles.headerTitle}>{t('notifications.title')}</ThemedText>
@@ -93,7 +96,7 @@ export default function NotificationsScreen() {
       {loading ? (
         <View style={{ padding: Spacing.four, paddingBottom: 100, gap: Spacing.two }}>
           {Array.from({ length: 5 }).map((_, i) => (
-            <View key={i} style={styles.card}>
+            <View key={i} style={[styles.card, { backgroundColor: Brand.white }]}>
               <View style={[styles.cardTop, { gap: Spacing.two }]}>
                 <Skeleton width={24} height={24} borderRadius={12} />
                 <Skeleton width="50%" height={14} style={{ flex: 1 }} />
@@ -120,7 +123,7 @@ export default function NotificationsScreen() {
           ItemSeparatorComponent={() => <View style={{ height: Spacing.two }} />}
           renderItem={({ item }) => (
             <Pressable onPress={() => handlePress(item)}>
-              <View style={[styles.card, !item.read && styles.cardUnread]}>
+              <View style={[styles.card, !item.read && styles.cardUnread, { backgroundColor: Brand.white }, { borderLeftColor: Brand.primary }]}>
                 <View style={styles.cardTop}>
                   <ThemedText style={styles.cardTitle}>{item.title}</ThemedText>
                   <ThemedText type="caption" style={{ color: Brand.textSecondary }}>{relativeTime(item.created_at, t)}</ThemedText>
@@ -148,7 +151,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: Brand.primaryLight,
+
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -156,18 +159,17 @@ const styles = StyleSheet.create({
     fontSize: FontSize.xl,
     lineHeight: 40,
     fontWeight: 700,
-    color: Brand.text,
+
     letterSpacing: -0.5,
   },
   card: {
-    backgroundColor: Brand.white,
     padding: Spacing.four,
     borderRadius: BorderRadius.lg,
     ...Shadow.card,
   },
   cardUnread: {
     borderLeftWidth: 3,
-    borderLeftColor: Brand.primary,
+
   },
   cardTop: {
     flexDirection: 'row',
@@ -177,7 +179,7 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontWeight: 700,
     fontSize: FontSize.base,
-    color: Brand.text,
+
     flex: 1,
   },
 })

@@ -18,6 +18,7 @@ import { EMPLOYMENT_TYPE_LABELS, SALARY_PERIOD_LABELS } from "@/lib/categories";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLocale } from "@/contexts/LocaleContext";
 import { supabase } from "@/lib/supabase";
+import { useBrand } from "@/contexts/ThemeContext";
 
 interface JobWithMeta {
   id: string;
@@ -65,6 +66,9 @@ const APP_STATUS_STYLE: Record<string, { color: string; bg: string }> = {
 type Tab = "posted" | "applied";
 
 export default function MyJobsScreen() {
+  const Brand = useBrand();
+  const tabActiveStyle = { backgroundColor: Brand.primary };
+
   const { user } = useAuth();
   const { t } = useLocale();
   const [tab, setTab] = useState<Tab>("posted");
@@ -264,7 +268,7 @@ export default function MyJobsScreen() {
           <ThemedText style={styles.headerTitle}>{t('myJobs.title')}</ThemedText>
           {tab === "posted" && (
             <Pressable
-              style={styles.topPostBtn}
+              style={[styles.topPostBtn, { backgroundColor: Brand.primary }]}
               onPress={() => router.push("/post")}
             >
               <Text style={styles.topPostBtnText}>+</Text>
@@ -272,9 +276,9 @@ export default function MyJobsScreen() {
           )}
         </View>
 
-        <View style={styles.tabRow}>
+        <View style={[styles.tabRow, { backgroundColor: Brand.borderLight }]}>
           <Pressable
-            style={[styles.tab, tab === "posted" && styles.tabActive]}
+            style={[styles.tab, tab === "posted" && tabActiveStyle]}
             onPress={() => setTab("posted")}
           >
             <ThemedText
@@ -285,7 +289,7 @@ export default function MyJobsScreen() {
             </ThemedText>
           </Pressable>
           <Pressable
-            style={[styles.tab, tab === "applied" && styles.tabActive]}
+            style={[styles.tab, tab === "applied" && tabActiveStyle]}
             onPress={() => setTab("applied")}
           >
             <ThemedText
@@ -312,7 +316,7 @@ export default function MyJobsScreen() {
               <View style={{ height: Spacing.three }} />
             )}
             renderItem={() => (
-              <View style={styles.jobCard}>
+              <View style={[styles.jobCard, { backgroundColor: Brand.white }]}>
                 <Skeleton width="65%" height={16} />
                 <Skeleton
                   width="100%"
@@ -328,7 +332,7 @@ export default function MyJobsScreen() {
                   <Skeleton width="15%" height={14} />
                   <Skeleton width="40%" height={14} />
                 </View>
-                <View style={styles.actionRow}>
+                <View style={[styles.actionRow, { borderTopColor: Brand.border }]}>
                   <Skeleton style={{ flex: 1 }} height={36} />
                   <Skeleton style={{ flex: 1 }} height={36} />
                 </View>
@@ -370,7 +374,7 @@ export default function MyJobsScreen() {
               const s = STATUS_STYLE[item.status] || STATUS_STYLE.open;
               return (
                 <Pressable onPress={() => router.push(`/job/${item.id}`)}>
-                  <View style={styles.jobCard}>
+                  <View style={[styles.jobCard, { backgroundColor: Brand.white }]}>
                     <View style={styles.cardTopRow}>
                       <ThemedText style={styles.jobTitle} numberOfLines={1}>
                         {item.title}
@@ -416,7 +420,7 @@ export default function MyJobsScreen() {
                         </ThemedText>
                         {searcherInfo[item.id] &&
                           searcherInfo[item.id].length > 0 && (
-                            <View style={styles.searcherRow}>
+                            <View style={[styles.searcherRow, { borderTopColor: Brand.border }]}>
                               <ThemedText
                                 type="caption"
                                 style={{ color: Brand.textSecondary }}
@@ -456,16 +460,16 @@ export default function MyJobsScreen() {
                                             <View style={{ flexDirection: "row", gap: 4 }}>
                                               {s.status === "pending" && (
                                                 <>
-                                                  <Pressable onPress={() => handleAccept(item.id, s.id)} style={styles.acceptBtn}>
+                                                  <Pressable onPress={() => handleAccept(item.id, s.id)} style={[styles.acceptBtn, { backgroundColor: Brand.successLight }]}>
                                                     <ThemedText style={styles.acceptBtnText}>{t('myJobs.accept')}</ThemedText>
                                                   </Pressable>
-                                                  <Pressable onPress={() => handleReject(item.id, s.id)} style={styles.rejectBtn}>
+                                                  <Pressable onPress={() => handleReject(item.id, s.id)} style={[styles.rejectBtn, { backgroundColor: Brand.dangerLight }]}>
                                                     <ThemedText style={styles.rejectBtnText}>{t('myJobs.reject')}</ThemedText>
                                                   </Pressable>
                                                 </>
                                               )}
                                               {s.status !== "pending" && (
-                                                <Pressable onPress={() => router.push(`/chat/${item.id}/${s.id}`)} style={styles.chatBtn}>
+                                                <Pressable onPress={() => router.push(`/chat/${item.id}/${s.id}`)} style={[styles.chatBtn, { backgroundColor: Brand.primaryLight }]}>
                                                   <ThemedText style={styles.chatBtnText}>{t('myJobs.chat')}</ThemedText>
                                                 </Pressable>
                                               )}
@@ -479,9 +483,9 @@ export default function MyJobsScreen() {
                               })}
                             </View>
                           )}
-                        <View style={styles.actionRow}>
+                        <View style={[styles.actionRow, { borderTopColor: Brand.border }]}>
                           <Pressable
-                            style={styles.editBtn}
+                            style={[styles.editBtn, { borderColor: Brand.primary }]}
                             onPress={() => router.push(`/post?id=${item.id}`)}
                           >
                             <ThemedText style={styles.editBtnText}>
@@ -489,7 +493,7 @@ export default function MyJobsScreen() {
                             </ThemedText>
                           </Pressable>
                           <Pressable
-                            style={styles.deleteBtn}
+                            style={[styles.deleteBtn, { borderColor: Brand.danger }]}
                             onPress={() => handleDelete(item.id)}
                           >
                             <ThemedText style={styles.deleteBtnText}>
@@ -561,15 +565,16 @@ const styles = StyleSheet.create({
     fontSize: FontSize.xl,
     lineHeight: 40,
     fontWeight: 700,
-    color: Brand.text,
+
     padding: Spacing.one,
     letterSpacing: -0.5,
   },
   tabRow: {
     flexDirection: "row",
+    gap: 6,
     marginHorizontal: Spacing.four,
     marginBottom: Spacing.four,
-    backgroundColor: Brand.borderLight,
+
     borderRadius: BorderRadius.md,
     padding: 3,
   },
@@ -580,7 +585,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   tabActive: {
-    backgroundColor: Brand.white,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.08,
@@ -588,13 +592,11 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   tabText: {
-    color: Brand.textSecondary,
   },
   tabTextActive: {
-    color: Brand.text,
+    color: '#FFFFFF',
   },
   jobCard: {
-    backgroundColor: Brand.white,
     padding: Spacing.four,
     borderRadius: BorderRadius.lg,
     ...Shadow.card,
@@ -608,7 +610,7 @@ const styles = StyleSheet.create({
     fontWeight: 700,
     fontSize: FontSize.md,
     lineHeight: 26,
-    color: Brand.text,
+
     flex: 1,
   },
   metaRow: {
@@ -636,7 +638,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     paddingTop: 8,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: Brand.border,
+
   },
   actionRow: {
     flexDirection: "row",
@@ -644,7 +646,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: Brand.border,
+
   },
   editBtn: {
     flex: 1,
@@ -652,11 +654,10 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: BorderRadius.sm,
     borderWidth: 1,
-    borderColor: Brand.primary,
+
     alignItems: "center",
   },
   editBtnText: {
-    color: Brand.primary,
     fontSize: FontSize.sm,
     fontWeight: 700,
   },
@@ -666,11 +667,10 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: BorderRadius.sm,
     borderWidth: 1,
-    borderColor: Brand.danger,
+
     alignItems: "center",
   },
   deleteBtnText: {
-    color: Brand.danger,
     fontSize: FontSize.sm,
     fontWeight: 700,
   },
@@ -678,50 +678,43 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: Brand.primary,
+
     justifyContent: "center",
     alignItems: "center",
     ...Shadow.elevated,
   },
   topPostBtnText: {
-    color: Brand.white,
+    color: '#FFFFFF',
     fontWeight: '700',
     fontSize: 22,
     lineHeight: 24,
     textAlign: 'center',
     textAlignVertical: 'center',
-    includeFontPadding: false,
   },
   chatBtn: {
-    backgroundColor: Brand.primaryLight,
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: BorderRadius.sm,
   },
   chatBtnText: {
-    color: Brand.primary,
     fontWeight: 700,
     fontSize: FontSize.sm,
   },
   acceptBtn: {
-    backgroundColor: Brand.successLight,
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: BorderRadius.sm,
   },
   acceptBtnText: {
-    color: Brand.success,
     fontWeight: 700,
     fontSize: FontSize.xs,
   },
   rejectBtn: {
-    backgroundColor: Brand.dangerLight,
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: BorderRadius.sm,
   },
   rejectBtnText: {
-    color: Brand.danger,
     fontWeight: 700,
     fontSize: FontSize.xs,
   },

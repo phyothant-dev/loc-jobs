@@ -19,8 +19,13 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { useLocale } from "@/contexts/LocaleContext";
 import { supabase } from "@/lib/supabase";
+import { useBrand, useToggleTheme, useIsDark } from "@/contexts/ThemeContext";
 
 export default function ProfileScreen() {
+  const Brand = useBrand();
+  const isDark = useIsDark();
+  const toggleTheme = useToggleTheme();
+
   const { user, signOut } = useAuth();
   const { t, locale, setLocale } = useLocale();
   const [displayName, setDisplayName] = useState("");
@@ -162,61 +167,61 @@ export default function ProfileScreen() {
       <View style={{ flex: 1 }}>
         <View style={styles.header}>
           <ThemedText style={styles.headerTitle}>{t('profile.title')}</ThemedText>
-          <Pressable onPress={signOut} style={styles.signOutBtn}>
-            <ThemedText style={styles.signOutText}>{t('profile.signOut')}</ThemedText>
+          <Pressable onPress={signOut} style={[styles.signOutBtn, { backgroundColor: Brand.dangerLight }]}>
+            <ThemedText style={[styles.signOutText, { color: Brand.danger }]}>{t('profile.signOut')}</ThemedText>
           </Pressable>
         </View>
 
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           {loading ? (
             <View style={{ gap: Spacing.four }}>
-              <View style={styles.profileCard}>
+              <View style={[styles.profileCard, { backgroundColor: Brand.white }]}>
                 <Skeleton width={88} height={88} borderRadius={44} />
                 <Skeleton width="50%" height={18} style={{ marginTop: Spacing.three }} />
               </View>
 
-              <View style={styles.infoCard}>
+              <View style={[styles.infoCard, { backgroundColor: Brand.white }]}>
                 <View style={styles.infoRow}>
                   <Skeleton width="30%" height={14} />
                   <Skeleton width="50%" height={14} />
                 </View>
-                <View style={styles.divider} />
+                <View style={[styles.divider, { backgroundColor: Brand.borderLight }]} />
                 <View style={styles.infoRow}>
                   <Skeleton width="30%" height={14} />
                   <Skeleton width="50%" height={14} />
                 </View>
-                <View style={styles.divider} />
+                <View style={[styles.divider, { backgroundColor: Brand.borderLight }]} />
                 <View style={styles.infoRow}>
                   <Skeleton width="30%" height={14} />
                   <Skeleton width="50%" height={14} />
                 </View>
               </View>
 
-              <View style={styles.sectionCard}>
+              <View style={[styles.sectionCard, { backgroundColor: Brand.white }]}>
                 <ThemedText style={styles.sectionTitle}>{t('profile.completedJobs', { count: 0 })}</ThemedText>
                 <View style={styles.jobRow}>
                   <Skeleton width="60%" height={14} />
                   <Ionicons name="chevron-forward" size={18} color={Brand.borderLight} />
                 </View>
-                <View style={styles.divider} />
+                <View style={[styles.divider, { backgroundColor: Brand.borderLight }]} />
                 <View style={styles.jobRow}>
                   <Skeleton width="60%" height={14} />
                   <Ionicons name="chevron-forward" size={18} color={Brand.borderLight} />
                 </View>
-                <View style={styles.divider} />
+                <View style={[styles.divider, { backgroundColor: Brand.borderLight }]} />
                 <View style={styles.jobRow}>
                   <Skeleton width="60%" height={14} />
                   <Ionicons name="chevron-forward" size={18} color={Brand.borderLight} />
                 </View>
               </View>
 
-              <View style={styles.sectionCard}>
+              <View style={[styles.sectionCard, { backgroundColor: Brand.white }]}>
                 <ThemedText style={styles.sectionTitle}>{t('profile.savedJobs', { count: 0 })}</ThemedText>
                 <View style={styles.jobRow}>
                   <Skeleton width="60%" height={14} />
                   <Ionicons name="chevron-forward" size={18} color={Brand.borderLight} />
                 </View>
-                <View style={styles.divider} />
+                <View style={[styles.divider, { backgroundColor: Brand.borderLight }]} />
                 <View style={styles.jobRow}>
                   <Skeleton width="60%" height={14} />
                   <Ionicons name="chevron-forward" size={18} color={Brand.borderLight} />
@@ -225,9 +230,9 @@ export default function ProfileScreen() {
             </View>
           ) : (
             <>
-              <View style={styles.profileCard}>
+              <View style={[styles.profileCard, { backgroundColor: Brand.white }]}>
                 <Pressable
-                  style={styles.editBtn}
+                  style={[styles.editBtn, { backgroundColor: Brand.primaryLight }]}
                   onPress={() => router.push("/edit-profile" as any)}
                 >
                   <Ionicons name="pencil" size={16} color={Brand.primary} />
@@ -235,9 +240,9 @@ export default function ProfileScreen() {
 
                 <View style={styles.avatarWrap}>
                   {avatarUrl ? (
-                    <Image source={{ uri: avatarUrl }} style={styles.avatar} />
+                    <Image source={{ uri: avatarUrl }} style={[styles.avatar, { backgroundColor: Brand.primary, borderColor: Brand.primaryLight }]} />
                   ) : (
-                    <View style={styles.avatar}>
+                    <View style={[styles.avatar, { backgroundColor: Brand.primary, borderColor: Brand.primaryLight }]}>
                       <ThemedText style={styles.avatarInitial}>
                         {initial}
                       </ThemedText>
@@ -271,7 +276,7 @@ export default function ProfileScreen() {
                 )}
               </View>
 
-              <View style={styles.infoCard}>
+              <View style={[styles.infoCard, { backgroundColor: Brand.white }]}>
                 <View style={styles.infoRow}>
                   <ThemedText type="caption" style={styles.infoLabel}>
                     {t('profile.phone')}
@@ -280,7 +285,7 @@ export default function ProfileScreen() {
                     {phone || t('profile.emDash')}
                   </ThemedText>
                 </View>
-                <View style={styles.divider} />
+                <View style={[styles.divider, { backgroundColor: Brand.borderLight }]} />
                 <View style={styles.infoRow}>
                   <ThemedText type="caption" style={styles.infoLabel}>
                     {t('profile.city')}
@@ -289,7 +294,7 @@ export default function ProfileScreen() {
                     {city || t('profile.emDash')}
                   </ThemedText>
                 </View>
-                <View style={styles.divider} />
+                <View style={[styles.divider, { backgroundColor: Brand.borderLight }]} />
                 <View style={styles.infoRow}>
                   <ThemedText type="caption" style={styles.infoLabel}>
                     {t('profile.region')}
@@ -301,7 +306,7 @@ export default function ProfileScreen() {
               </View>
 
               {reviews.length > 0 && (
-                <View style={styles.sectionCard}>
+                <View style={[styles.sectionCard, { backgroundColor: Brand.white }]}>
                   <ThemedText style={styles.sectionTitle}>{t('profile.reviews')}</ThemedText>
                   <View style={{ gap: Spacing.two, paddingHorizontal: Spacing.four, paddingBottom: Spacing.four }}>
                     {reviews.map((r) => (
@@ -309,7 +314,7 @@ export default function ProfileScreen() {
                     ))}
                   </View>
                   <Pressable
-                    style={styles.seeAllRow}
+                    style={[styles.seeAllRow, { borderTopColor: Brand.borderLight }]}
                     onPress={() => router.push(`/reviews/${user?.id}` as any)}
                   >
                     <ThemedText style={styles.seeAllText}>{t('profile.seeAllReviews')}</ThemedText>
@@ -319,11 +324,11 @@ export default function ProfileScreen() {
               )}
 
               {completedJobs.length > 0 && (
-                <View style={styles.sectionCard}>
+                <View style={[styles.sectionCard, { backgroundColor: Brand.white }]}>
                   <ThemedText style={styles.sectionTitle}>{t('profile.completedJobs', { count: completedJobs.length })}</ThemedText>
                   {(expandedCompleted ? completedJobs : completedJobs.slice(0, 3)).map((job, i) => (
                     <Pressable key={job.id} onPress={() => router.push(`/job/${job.id}`)}>
-                      <View style={[styles.jobRow, i < (expandedCompleted ? completedJobs.length : Math.min(completedJobs.length, 3)) - 1 && styles.jobRowBorder]}>
+                      <View style={[styles.jobRow, i < (expandedCompleted ? completedJobs.length : Math.min(completedJobs.length, 3)) - 1 && styles.jobRowBorder, { borderBottomColor: Brand.borderLight }]}>
                         <View style={{ flex: 1 }}>
                           <ThemedText style={styles.jobTitle}>{job.title}</ThemedText>
                           {job.price ? <ThemedText type="caption" style={{ color: Brand.textSecondary }}>{job.price.toLocaleString()} MMK</ThemedText> : null}
@@ -333,7 +338,7 @@ export default function ProfileScreen() {
                     </Pressable>
                   ))}
                   {!expandedCompleted && completedJobs.length > 3 && (
-                    <Pressable onPress={() => setExpandedCompleted(true)} style={styles.seeAllRow}>
+                    <Pressable onPress={() => setExpandedCompleted(true)} style={[styles.seeAllRow, { borderTopColor: Brand.borderLight }]}>
                       <ThemedText style={styles.seeAllText}>+{completedJobs.length - 3} {t('userSearch.jobs')}</ThemedText>
                     </Pressable>
                   )}
@@ -341,11 +346,11 @@ export default function ProfileScreen() {
               )}
 
               {savedJobs.length > 0 && (
-                <View style={styles.sectionCard}>
+                <View style={[styles.sectionCard, { backgroundColor: Brand.white }]}>
                   <ThemedText style={styles.sectionTitle}>{t('profile.savedJobs', { count: savedJobs.length })}</ThemedText>
                   {(expandedSaved ? savedJobs : savedJobs.slice(0, 3)).map((job, i) => (
                     <Pressable key={job.id} onPress={() => router.push(`/job/${job.id}`)}>
-                      <View style={[styles.jobRow, i < (expandedSaved ? savedJobs.length : Math.min(savedJobs.length, 3)) - 1 && styles.jobRowBorder]}>
+                      <View style={[styles.jobRow, i < (expandedSaved ? savedJobs.length : Math.min(savedJobs.length, 3)) - 1 && styles.jobRowBorder, { borderBottomColor: Brand.borderLight }]}>
                         <View style={{ flex: 1 }}>
                           <ThemedText style={styles.jobTitle}>{job.title}</ThemedText>
                           {job.price ? <ThemedText type="caption" style={{ color: Brand.textSecondary }}>{job.price.toLocaleString()} MMK</ThemedText> : null}
@@ -355,14 +360,14 @@ export default function ProfileScreen() {
                     </Pressable>
                   ))}
                   {!expandedSaved && savedJobs.length > 3 && (
-                    <Pressable onPress={() => setExpandedSaved(true)} style={styles.seeAllRow}>
+                    <Pressable onPress={() => setExpandedSaved(true)} style={[styles.seeAllRow, { borderTopColor: Brand.borderLight }]}>
                       <ThemedText style={styles.seeAllText}>+{savedJobs.length - 3} {t('userSearch.jobs')}</ThemedText>
                     </Pressable>
                   )}
                 </View>
               )}
 
-                <View style={styles.sectionCard}>
+                <View style={[styles.sectionCard, { backgroundColor: Brand.white }]}>
                   <ThemedText style={styles.sectionTitle}>{t('profile.settings')}</ThemedText>
                   <View style={styles.settingRow}>
                     <ThemedText style={styles.settingLabel}>{t('profile.language')}</ThemedText>
@@ -377,8 +382,22 @@ export default function ProfileScreen() {
                       <ThemedText type="caption" style={{ color: locale === 'my' ? Brand.primary : Brand.textSecondary, fontWeight: 700 }}>MY</ThemedText>
                     </View>
                   </View>
-                <View style={styles.settingDivider} />
-                <Pressable
+                <View style={[styles.settingDivider, { backgroundColor: Brand.borderLight }]} />
+                <View style={styles.settingRow}>
+                  <ThemedText style={styles.settingLabel}>{t('profile.darkMode')}</ThemedText>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <Ionicons name="sunny" size={16} color={isDark ? Brand.textSecondary : Brand.primary} />
+                    <Switch
+                      value={isDark}
+                      onValueChange={toggleTheme}
+                      trackColor={{ false: Brand.borderLight, true: Brand.primaryLight }}
+                      thumbColor={isDark ? Brand.primary : Brand.textSecondary}
+                    />
+                    <Ionicons name="moon" size={16} color={isDark ? Brand.primary : Brand.textSecondary} />
+                  </View>
+                </View>
+              <View style={[styles.settingDivider, { backgroundColor: Brand.borderLight }]} />
+              <Pressable
                   style={styles.settingRow}
                   onPress={() => router.push('/onboarding')}
                 >
@@ -388,7 +407,7 @@ export default function ProfileScreen() {
               </View>
 
               <Pressable
-                style={styles.deleteAccountBtn}
+                style={[styles.deleteAccountBtn, { backgroundColor: Brand.dangerLight }]}
                 onPress={() => {
                   Alert.alert(
                     t('profile.deleteAccount'),
@@ -412,7 +431,7 @@ export default function ProfileScreen() {
                   )
                 }}
               >
-                <ThemedText style={styles.deleteAccountText}>{t('profile.deleteAccount')}</ThemedText>
+                <ThemedText style={[styles.deleteAccountText, { color: Brand.danger }]}>{t('profile.deleteAccount')}</ThemedText>
               </Pressable>
             </>
           )}
@@ -436,17 +455,15 @@ const styles = StyleSheet.create({
     fontSize: FontSize.xl,
     lineHeight: 40,
     fontWeight: 700,
-    color: Brand.text,
+
     letterSpacing: -0.5,
   },
   signOutBtn: {
-    backgroundColor: Brand.dangerLight,
     paddingHorizontal: 14,
     paddingVertical: 7,
     borderRadius: BorderRadius.sm,
   },
   signOutText: {
-    color: Brand.danger,
     fontWeight: 700,
     fontSize: FontSize.sm,
   },
@@ -459,7 +476,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: Spacing.five,
     paddingTop: Spacing.six,
-    backgroundColor: Brand.white,
+
     borderRadius: BorderRadius.lg,
     position: "relative",
     ...Shadow.card,
@@ -471,21 +488,21 @@ const styles = StyleSheet.create({
     width: 88,
     height: 88,
     borderRadius: 44,
-    backgroundColor: Brand.primary,
+
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 3,
-    borderColor: Brand.primaryLight,
+
   },
   avatarInitial: {
     fontSize: 36,
     fontWeight: 700,
-    color: Brand.white,
+
   },
   nameText: {
     fontSize: FontSize.md,
     fontWeight: 700,
-    color: Brand.text,
+
     marginTop: Spacing.three,
   },
   editBtn: {
@@ -495,12 +512,11 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: Brand.primaryLight,
+
     justifyContent: "center",
     alignItems: "center",
   },
   infoCard: {
-    backgroundColor: Brand.white,
     borderRadius: BorderRadius.lg,
     ...Shadow.card,
     overflow: "hidden",
@@ -514,12 +530,12 @@ const styles = StyleSheet.create({
   },
   infoLabel: {
     fontWeight: 600,
-    color: Brand.textSecondary,
+
   },
   infoValue: {
     fontSize: FontSize.base,
     fontWeight: 600,
-    color: Brand.text,
+
   },
   divider: {
     height: StyleSheet.hairlineWidth,
@@ -527,7 +543,6 @@ const styles = StyleSheet.create({
     marginHorizontal: Spacing.four,
   },
   sectionCard: {
-    backgroundColor: Brand.white,
     borderRadius: BorderRadius.lg,
     ...Shadow.card,
     overflow: "hidden",
@@ -535,7 +550,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontWeight: 700,
     fontSize: FontSize.base,
-    color: Brand.text,
+
     paddingHorizontal: Spacing.four,
     paddingTop: Spacing.four,
     paddingBottom: Spacing.two,
@@ -549,13 +564,13 @@ const styles = StyleSheet.create({
   },
   jobRowBorder: {
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Brand.borderLight,
+
   },
   jobTitle: {
     fontSize: FontSize.base,
     lineHeight: 24,
     fontWeight: 600,
-    color: Brand.text,
+
   },
   settingRow: {
     flexDirection: 'row',
@@ -566,28 +581,26 @@ const styles = StyleSheet.create({
   },
   settingLabel: {
     fontWeight: 600,
-    color: Brand.text,
+
     fontSize: FontSize.base,
   },
   settingValue: {
     fontWeight: 600,
-    color: Brand.textSecondary,
+
     fontSize: FontSize.sm,
   },
   settingDivider: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: Brand.borderLight,
+
     marginHorizontal: Spacing.four,
   },
   deleteAccountBtn: {
-    backgroundColor: Brand.dangerLight,
     paddingVertical: 14,
     borderRadius: BorderRadius.md,
     alignItems: 'center',
     marginTop: Spacing.four,
   },
   deleteAccountText: {
-    color: Brand.danger,
     fontWeight: 700,
     fontSize: FontSize.base,
   },
@@ -598,10 +611,9 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     gap: 4,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: Brand.borderLight,
+
   },
   seeAllText: {
-    color: Brand.primary,
     fontWeight: 700,
     fontSize: FontSize.sm,
   },

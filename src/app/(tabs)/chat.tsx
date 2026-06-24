@@ -17,6 +17,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { useLocale } from "@/contexts/LocaleContext";
 import { supabase } from "@/lib/supabase";
+import { useBrand } from "@/contexts/ThemeContext";
 
 interface Conversation {
   key: string;
@@ -82,6 +83,8 @@ function buildConversations(msgs: any[], userId: string, lastReadAt: Map<string,
 }
 
 export default function ChatScreen() {
+  const Brand = useBrand();
+
   const { user } = useAuth();
   const { t } = useLocale();
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -227,7 +230,7 @@ export default function ChatScreen() {
         {loading ? (
           <View style={{ flex: 1, backgroundColor: Brand.bg, padding: Spacing.four, gap: Spacing.three }}>
             {Array.from({ length: 5 }).map((_, i) => (
-              <View key={i} style={styles.conversationCard}>
+              <View key={i} style={[styles.conversationCard, { backgroundColor: Brand.white }]}>
                 <Skeleton width={40} height={40} borderRadius={20} />
                 <View style={styles.conversationContent}>
                   <View style={styles.conversationTop}>
@@ -277,8 +280,8 @@ export default function ChatScreen() {
                 onLongPress={() => handleLongPress(item)}
                 delayLongPress={400}
               >
-                <View style={styles.conversationCard}>
-                  <View style={styles.avatar}>
+                <View style={[styles.conversationCard, { backgroundColor: Brand.white }]}>
+                  <View style={[styles.avatar, { backgroundColor: Brand.primaryLight }]}>
                     {item.otherAvatarUrl ? (
                       <Image
                         source={{ uri: item.otherAvatarUrl }}
@@ -297,7 +300,7 @@ export default function ChatScreen() {
                       </ThemedText>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                         {item.unreadCount > 0 && (
-                          <View style={styles.unreadBadge}>
+                          <View style={[styles.unreadBadge, { backgroundColor: Brand.primary }]}>
                             <Text style={styles.unreadBadgeText}>
                               {item.unreadCount > 9 ? '9+' : item.unreadCount}
                             </Text>
@@ -348,13 +351,13 @@ const styles = StyleSheet.create({
     fontSize: FontSize.xl,
     lineHeight: 40,
     fontWeight: 700,
-    color: Brand.text,
+
     letterSpacing: -0.5,
     padding: Spacing.one,
   },
   conversationCard: {
     flexDirection: "row",
-    backgroundColor: Brand.white,
+
     padding: Spacing.four,
     borderRadius: BorderRadius.lg,
     ...Shadow.card,
@@ -364,7 +367,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: Brand.primaryLight,
+
     justifyContent: "center",
     alignItems: "center",
     overflow: "hidden",
@@ -375,7 +378,6 @@ const styles = StyleSheet.create({
     borderRadius: 24,
   },
   avatarText: {
-    color: Brand.primary,
     fontWeight: 700,
     fontSize: FontSize.md,
   },
@@ -391,7 +393,7 @@ const styles = StyleSheet.create({
   otherName: {
     fontWeight: 700,
     fontSize: FontSize.base,
-    color: Brand.text,
+
     flex: 1,
     marginRight: Spacing.two,
   },
@@ -399,13 +401,12 @@ const styles = StyleSheet.create({
     minWidth: 18,
     height: 18,
     borderRadius: 9,
-    backgroundColor: Brand.primary,
+
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 4,
   },
   unreadBadgeText: {
-    color: Brand.white,
     fontSize: 10,
     fontWeight: 700,
   },

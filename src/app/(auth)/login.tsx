@@ -11,8 +11,11 @@ import { BorderRadius, Brand, Spacing } from "@/constants/theme";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLocale } from "@/contexts/LocaleContext";
 import { supabase } from "@/lib/supabase";
+import { useBrand } from "@/contexts/ThemeContext";
 
 export default function LoginScreen() {
+  const Brand = useBrand();
+
   const { t } = useLocale()
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -87,7 +90,7 @@ export default function LoginScreen() {
     const hasValue = value.length > 0;
     const isUp = isFocused || hasValue;
     return (
-      <View style={[styles.fieldGroup, isFocused && styles.fieldGroupFocused]}>
+      <View style={[styles.fieldGroup, isFocused && styles.fieldGroupFocused, { backgroundColor: Brand.borderLight }]}>
         <TextInput
           ref={key === "email" ? emailRef : passwordRef}
           style={styles.input}
@@ -175,7 +178,7 @@ export default function LoginScreen() {
             {/* Sign In Button */}
             <View style={{ marginTop: Spacing.two }}>
               <Pressable
-                style={({pressed}) => [styles.primaryBtn, loading && { opacity: 0.6 }, pressed && { opacity: 0.8 }]}
+                style={({pressed}) => [styles.primaryBtn, loading && { opacity: 0.6 }, pressed && { opacity: 0.8 }, { backgroundColor: Brand.primary }]}
                 onPress={handleLogin}
                 disabled={loading}
               >
@@ -190,19 +193,19 @@ export default function LoginScreen() {
             {/* Social Logins */}
             <View style={styles.socialSection}>
               <View style={styles.divider}>
-                <View style={styles.dividerLine} />
+                <View style={[styles.dividerLine, { borderTopColor: Brand.border }]} />
                 <ThemedText style={styles.dividerText}>
                   {t('auth.or')}
                 </ThemedText>
-                <View style={styles.dividerLine} />
+                <View style={[styles.dividerLine, { borderTopColor: Brand.border }]} />
               </View>
 
               <Pressable
-                style={({pressed}) => [styles.googleBtn, pressed && { opacity: 0.8 }]}
+                style={({pressed}) => [styles.googleBtn, pressed && { opacity: 0.8 }, { backgroundColor: Brand.text }]}
                 onPress={handleGoogleSignIn}
                 disabled={loading}
               >
-                <View style={styles.googleIconWrap}>
+                <View style={[styles.googleIconWrap, { backgroundColor: Brand.white }]}>
                   <Ionicons name="logo-google" size={18} color={Brand.text} />
                 </View>
                 <ThemedText style={styles.googleBtnText}>
