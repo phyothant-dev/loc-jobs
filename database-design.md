@@ -430,9 +430,292 @@ sequenceDiagram
 
 ---
 
-## Storage
+## State Charts
 
-**Bucket**: `job-images` (public)
+### Job Lifecycle
+
+```mermaid
+stateDiagram-v2
+    [*] --> open : Uploader creates
+    open --> full : All vacancies filled
+    open --> cancelled : Uploader cancels
+    open --> completed : Uploader marks done
+    full --> completed : Uploader marks done
+    full --> cancelled : Uploader cancels
+    completed --> [*]
+    cancelled --> [*]
+
+    note right of open : Accepting applications
+    note right of full : All spots taken, still in progress
+    note right of completed : Job finished, reviews possible
+    note right of cancelled : Uploader soft-deleted or cancelled
+```
+
+### Application Lifecycle
+
+```mermaid
+stateDiagram-v2
+    [*] --> pending : Searcher applies
+    pending --> accepted : Uploader accepts (vacancy available)
+    pending --> rejected : Uploader rejects
+    accepted --> [*] : Job completed
+    rejected --> [*]
+
+    note right of pending : Awaiting uploader decision
+    note right of accepted : Searcher can work on the job
+```
+
+### Notification Lifecycle
+
+```mermaid
+stateDiagram-v2
+    [*] --> new_application : Applicant applies
+    [*] --> application_accepted : Uploader accepts
+    [*] --> application_rejected : Uploader rejects
+    [*] --> new_message : Chat message sent
+    [*] --> job_completed : Job marked done
+
+    new_application --> read : User views
+    application_accepted --> read
+    application_rejected --> read
+    new_message --> read
+    job_completed --> read
+
+    note right of read : read=true, badge count decreases
+```
+
+---
+
+## Class Diagram
+
+```mermaid
+classDiagram
+    class User {
+        +uuid id
+        +string display_name
+        +enum role
+        +string city
+        +string region
+        +string phone
+        +string avatar_url
+        +text bio
+        +boolean verified
+        +datetime deleted_at
+        +datetime created_at
+        +datetime updated_at
+    }
+
+    class Job {
+        +uuid id
+        +uuid uploader_id
+        +string title
+        +text description
+        +enum work_type
+        +string address
+        +string city
+        +string region
+        +enum status
+        +numeric price
+        +string[] image_urls
+        +float lat
+        +float lng
+        +int vacancies
+        +string category
+        +string employment_type
+        +numeric salary_min
+        +numeric salary_max
+        +string salary_period
+        +boolean deleted
+        +datetime created_at
+        +datetime updated_at
+    }
+
+    class Application {
+        +uuid id
+        +uuid job_id
+        +uuid searcher_id
+        +enum status
+        +text message
+        +text reject_reason
+        +datetime created_at
+    }
+
+    class Message {
+        +uuid id
+        +uuid job_id
+        +uuid sender_id
+        +uuid receiver_id
+        +text content
+        +string image_url
+        +datetime edited_at
+        +boolean deleted
+        +datetime created_at
+    }
+
+    class Notification {
+        +uuid id
+        +uuid user_id
+        +string type
+        +string title
+        +string body
+        +jsonb data
+        +boolean read
+        +datetime created_at
+    }
+
+    class SavedJob {
+        +uuid id
+        +uuid user_id
+        +uuid job_id
+        +datetime created_at
+    }
+
+    class Review {
+        +uuid id
+        +uuid job_id
+        +uuid reviewer_id
+        +uuid reviewee_id
+        +int rating
+        +text comment
+        +datetime created_at
+    }
+
+    class Report {
+        +uuid id
+        +uuid job_id
+        +uuid reporter_id
+        +string reason
+        +datetime created_at
+    }
+
+    User "1" --> "*" Job : uploads
+    User "1" --> "*" Application : applies
+    User "1" --> "*" Message : sends
+    User "1" --> "*" Message : receives
+    User "1" --> "*" Notification : owns
+    User "1" --> "*" SavedJob : bookmarks
+    User "1" --> "*" Review : reviews
+    User "1" --> "*" Review : is reviewed
+    User "1" --> "*" Report : reports
+
+    Job "1" --> "*" Application : has
+    Job "1" --> "*" Message : related to
+    Job "1" --> "*" SavedJob : saved as
+    Job "1" --> "*" Review : rated in
+    Job "1" --> "*" Report : flagged in
+```
+
+---
+
+## Activity Diagram — Complete Job Lifecycle
+
+```mermaid
+flowchart TD
+    Start([User opens app]) --> Auth{Authenticated?}
+    Auth -->|No| Login[Login / Sign Up]
+    Login --> Auth
+    Auth -->|Yes| Role{User role?}
+
+    Role -->|Uploader / Both| PostJob[Post a Job]
+    PostJob --> WaitApps[Wait for applications]
+    WaitApps --> ReviewApps{Application received?}
+    ReviewApps -->|No| WaitApps
+    ReviewApps -->|Yes| AcceptReject[Accept or Reject]
+    AcceptReject -->|Accept| NotifyApplicant[Notify applicant]
+    AcceptReject -->|Reject| NotifyReject[Notify applicant with reason]
+    NotifyReject --> WaitApps
+
+    NotifyApplicant --> WorkInProgress[Work in progress]
+    WorkInProgress --> Chat[Chat with searcher]
+    Chat --> MarkComplete{Job done?}
+    MarkComplete -->|No| WorkInProgress
+    MarkComplete -->|Yes| Complete[Mark as completed]
+    Complete --> Review[Leave review for searcher]
+    Review --> EndJob([Job finished])
+
+    Role -->|Searcher / Both| Browse[Browse / Search jobs]
+    Browse --> Apply[Apply to job]
+    Apply --> WaitDecision{Uploader decision}
+    WaitDecision -->|Accepted| DoWork[Do the work]
+    WaitDecision -->|Rejected| Browse
+    DoWork --> ChatMsg[Chat with uploader]
+    ChatMsg --> Finish{Finished?}
+    Finish -->|No| DoWork
+    Finish -->|Yes| GetPaid[Receive payment / completion]
+    GetPaid --> RateUploader[Rate the uploader]
+    RateUploader --> Done([Done])
+```
+
+---
+
+## Architecture Diagram
+
+```mermaid
+flowchart LR
+    subgraph MobileApp [Expo React Native App]
+        UI[React Native UI]
+        State[React Contexts<br/>Auth / Locale]
+        Router[Expo Router]
+        Async[AsyncStorage]
+    end
+
+    subgraph Supabase
+        Auth[Supabase Auth<br/>Google OAuth / Email]
+        REST[Supabase REST API]
+        RT[Realtime WebSocket]
+        DB[(PostgreSQL)]
+        S3[Storage<br/>job-images bucket]
+    end
+
+    subgraph External
+        GOOGLE[Google OAuth<br/>iOS/Android]
+        MAPS[Google Maps /<br/>Apple Maps]
+    end
+
+    UI --> Router
+    Router --> State
+    State --> REST
+    State --> RT
+    UI --> Async
+    REST --> DB
+    RT --> DB
+    Auth --> GOOGLE
+    Auth --> DB
+    UI --> Auth
+    UI --> S3
+    UI --> MAPS
+
+    style MobileApp fill:#e1f5fe
+    style Supabase fill:#f3e5f5
+    style External fill:#fff3e0
+```
+
+---
+
+## Data Flow Diagram (Context Level)
+
+```mermaid
+flowchart TD
+    U[User] -->|Uses| APP[LocJobs Mobile App]
+    APP -->|Auth requests| SA[Supabase Auth]
+    APP -->|CRUD queries| API[Supabase REST API]
+    APP -->|Real-time subscribe| RT[Realtime Channel]
+    APP -->|Upload images| ST[Storage API]
+    SA -->|Store sessions| AS[AsyncStorage]
+    API -->|Read/Write| DB[(PostgreSQL)]
+    RT -->|Broadcast changes| DB
+    ST -->|Serve images| CDN[CDN]
+
+    APP -->|Display maps| GM[Map Provider<br/>Apple / Google]
+
+    style U fill:#c8e6c9
+    style APP fill:#e1f5fe
+    style DB fill:#f3e5f5
+```
+
+---
+
+## Storage
 
 Used for job image uploads. Uploaded via `expo-file-system/legacy` `uploadAsync` with `BINARY_CONTENT` + `PUT` method + auth token.
 
