@@ -340,7 +340,7 @@ export default function ChatDetailScreen() {
             maxLength={1000}
           />
           <Pressable style={[styles.sendBtn, (!input.trim() || sending) && { opacity: 0.4 }, { backgroundColor: Brand.primary }]} onPress={handleSend} disabled={!input.trim() || sending}>
-            <Ionicons name="send" size={20} color={Brand.white} />
+            <Ionicons name="send" size={20} color={'#FFFFFF'} />
           </Pressable>
         </View>
       </KeyboardAvoidingView>
@@ -517,6 +517,7 @@ const styles = StyleSheet.create({
     fontSize: FontSize.lg,
     fontWeight: 700,
     lineHeight: 22,
+    color: Brand.primary,
   },
   input: {
     flex: 1,

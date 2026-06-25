@@ -710,10 +710,11 @@ const styles = StyleSheet.create({
   },
   pillText: {
     fontWeight: 600,
-
+    color: '#FFFFFF',
     textTransform: "capitalize",
   },
   pillTextActive: {
+    color: '#FFFFFF',
   },
   switchRow: {
     flexDirection: "row",
@@ -763,5 +764,6 @@ const styles = StyleSheet.create({
   submitBtnText: {
     fontSize: FontSize.base,
     fontWeight: 700,
+    color: '#FFFFFF',
   },
 });

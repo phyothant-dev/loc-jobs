@@ -1060,6 +1060,7 @@ const styles = StyleSheet.create({
   primaryBtnText: {
     fontSize: FontSize.base,
     fontWeight: 700,
+    color: '#FFFFFF',
   },
   header: {
     flexDirection: "row",
