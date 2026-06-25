@@ -934,7 +934,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 12,
     fontSize: FontSize.base,
-
+    color: Brand.text,
   },
   filtersSection: {
     marginBottom: Spacing.three,
@@ -1070,12 +1070,11 @@ const styles = StyleSheet.create({
   priceInput: {
     flex: 1,
     borderWidth: 1,
-
+    color: Brand.text,
     borderRadius: BorderRadius.md,
     paddingVertical: 10,
     paddingHorizontal: 12,
     fontSize: FontSize.sm,
-
   },
   savedSearchChip: {
     flexDirection: 'row',

@@ -604,6 +604,7 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.md,
     alignItems: 'center',
     marginTop: Spacing.four,
+    marginBottom: BottomTabInset,
   },
   deleteAccountText: {
     fontWeight: 700,
