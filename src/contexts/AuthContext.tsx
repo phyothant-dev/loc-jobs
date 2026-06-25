@@ -58,6 +58,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: error?.message ?? null }
   }
 
+  const importGoogleAvatar = async (userId: string) => {
+    const googleAvatar = (await supabase.auth.getSession()).data.session?.user?.user_metadata?.avatar_url
+    if (!googleAvatar) return
+    const { data: existing } = await supabase.from('users').select('avatar_url').eq('id', userId).single()
+    if ((existing as any)?.avatar_url) return
+    await supabase.from('users').update({ avatar_url: googleAvatar }).eq('id', userId)
+  }
+
   const signInWithGoogle = async () => {
     try {
       // Android dev build uses custom scheme, iOS Expo Go uses exp://
@@ -108,6 +116,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const refresh_token = params.get('refresh_token')
           if (access_token && refresh_token) {
             await supabase.auth.setSession({ access_token, refresh_token })
+            const session = (await supabase.auth.getSession()).data.session
+            if (session) await importGoogleAvatar(session.user.id)
             return { error: null }
           }
         }
@@ -115,7 +125,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       // Fallback
       const { data: { session } } = await supabase.auth.getSession()
-      if (session) return { error: null }
+      if (session) {
+        await importGoogleAvatar(session.user.id)
+        return { error: null }
+      }
 
       return { error: result.type === 'cancel' ? 'Sign in was cancelled.' : 'Sign in failed. Please try again.' }
     } catch (e: any) {
