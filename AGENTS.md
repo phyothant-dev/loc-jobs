@@ -31,3 +31,10 @@ Read the exact versioned docs at https://docs.expo.dev/versions/v56.0.0/ before 
 ## Verified Badges / UploaderInfo
 - Verified badges are fetched in batch from the `users` table (via `uploader_id`) — used across index.tsx, explore.tsx, my-jobs.tsx, and job-detail.tsx
 - Stored in a `Map<string, { name: string; verified: boolean }>` state variable per screen
+
+## OAuth / Google Sign-In for Android Dev Builds
+- `src/contexts/AuthContext.tsx` — `signInWithGoogle` uses `Linking.createURL('auth/callback')` to generate the redirect URL dynamically (handles both Expo Go `exp://` and dev build `locjobs://` schemes)
+- On Android, if `WebBrowser.openAuthSessionAsync` doesn't return the redirect URL, a `Linking` event listener fallback captures the OAuth callback
+- **Supabase Dashboard > Authentication > Redirect URLs** must include the generated redirect URL (e.g., `locjobs://auth/callback` or the Expo dev URL)
+- **Android SHA-1 fingerprint** from the dev build keystore must be added to the Google Cloud Console OAuth credential (needed for the native Google Sign-In integration configured in Supabase)
+- The app's custom scheme (`locjobs`) is configured in `app.json` under `"scheme": "locjobs"`

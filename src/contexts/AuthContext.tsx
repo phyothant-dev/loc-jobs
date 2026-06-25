@@ -1,6 +1,8 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import * as WebBrowser from 'expo-web-browser'
+import * as Linking from 'expo-linking'
 import { router } from 'expo-router'
+import { Platform } from 'react-native'
 import { Session, User } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 
@@ -58,21 +60,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithGoogle = async () => {
     try {
+      const redirectUrl = Linking.createURL('auth/callback')
+
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: 'exp://auth/callback',
+          redirectTo: redirectUrl,
         },
       })
       if (error) return { error: error.message }
       if (!data?.url) return { error: 'No OAuth URL returned' }
 
       // openAuthSessionAsync on iOS uses ASWebAuthenticationSession
-      // which intercepts exp:// callback URLs natively
-      const result = await WebBrowser.openAuthSessionAsync(data.url, 'exp://auth/callback')
+      // which intercepts custom scheme callbacks natively.
+      // On Android it uses Chrome Custom Tabs — the redirect URL
+      // may need to be captured via Linking events.
+      const result = await WebBrowser.openAuthSessionAsync(data.url, redirectUrl)
 
-      if (result.type === 'success') {
-        const fragment = result.url.split('#')[1]
+      let url = result.type === 'success' ? result.url : null
+
+      // On Android, openAuthSessionAsync may not return the redirect URL.
+      // Listen for it via Linking events as a fallback.
+      if (!url && Platform.OS === 'android') {
+        url = await new Promise<string | null>((resolve) => {
+          const baseRedirect = redirectUrl.split('?')[0].split('#')[0]
+          const subscription = Linking.addEventListener('url', (event) => {
+            if (event.url.startsWith(baseRedirect)) {
+              subscription.remove()
+              resolve(event.url)
+            }
+          })
+          setTimeout(() => {
+            subscription.remove()
+            resolve(null)
+          }, 120000)
+        })
+      }
+
+      if (url) {
+        const fragment = url.split('#')[1]
         if (fragment) {
           const params = new URLSearchParams(fragment)
           const access_token = params.get('access_token')
