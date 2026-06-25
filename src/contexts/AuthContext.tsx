@@ -60,7 +60,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithGoogle = async () => {
     try {
-      const redirectUrl = Linking.createURL('auth/callback')
+      // Android dev build uses custom scheme, iOS Expo Go uses exp://
+      const redirectUrl = Platform.OS === 'android'
+        ? 'locjobs://auth/callback'
+        : 'exp://auth/callback'
 
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
