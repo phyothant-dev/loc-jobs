@@ -48,6 +48,10 @@
 | 3.16 | Radius filter (if present) | — | 1. Check the radius selector | Works correctly in both themes |
 | 3.17 | Empty state | No jobs within filter | 1. Apply a filter that matches no jobs | Empty state with icon and message is shown |
 | 3.18 | Loading state | Fresh load or slow network | 1. Observe while data loads | Skeleton loaders appear for each card |
+| 3.19 | Filter badge — no filters (nearby) | App just loaded, no filters active | 1. Look at the Nearby tab icon in the bottom tab bar | No badge (count 0) is shown on the icon |
+| 3.20 | Filter badge — show count (nearby) | Nearby tab loaded | 1. Tap a category filter chip (e.g. "Tutoring")<br>2. Look at the Nearby tab icon | Badge shows "1" on the icon |
+| 3.21 | Filter badge — two filters (nearby) | Nearby tab loaded | 1. Tap a category filter<br>2. Tap a work type filter<br>3. Look at the Nearby tab icon | Badge shows "2" on the icon |
+| 3.22 | Filter badge — clears when filters cleared (nearby) | One filter active, badge showing "1" | 1. Tap the active filter chip to deselect it<br>2. Look at the Nearby tab icon | Badge disappears from the icon |
 
 ## 4. Explore Tab (explore.tsx)
 
@@ -85,6 +89,13 @@
 | 4.30 | Loading state | Fresh load | 1. Observe while data loads | Skeleton cards appear |
 | 4.31 | Empty state — no results | Filters match no jobs | 1. Apply filters that return 0 results | Empty state with icon + "No jobs found" message |
 | 4.32 | Job card — tap | Any card visible | 1. Tap a job card | Navigates to job detail |
+| 4.33 | Filter badge — no filters (explore) | App just loaded, no filters active | 1. Look at the Explore tab icon in the bottom tab bar | No badge (count 0) is shown on the icon |
+| 4.34 | Filter badge — one filter (explore) | Explore tab loaded | 1. Select a work type (e.g. "Remote")<br>2. Look at the Explore tab icon | Badge shows "1" on the icon |
+| 4.35 | Filter badge — multiple filters (explore) | Explore tab loaded | 1. Select a work type<br>2. Select a category<br>3. Type in search<br>4. Look at the Explore tab icon | Badge shows "3" on the icon |
+| 4.36 | Filter badge — price range counts as one filter (explore) | Explore tab loaded | 1. Set a min price<br>2. Look at the Explore tab icon | Badge shows "1" (min price counts as one filter) |
+| 4.37 | Filter badge — price range both fields counts as two (explore) | Explore tab loaded | 1. Set min price AND max price<br>2. Look at the Explore tab icon | Badge shows "2" |
+| 4.38 | Filter badge — clears when filters reset (explore) | Multiple filters active, badge showing count | 1. Clear all filters (search, price, dropdowns, chips)<br>2. Look at the Explore tab icon | Badge disappears from the icon |
+| 4.39 | Filter badge — persists across tab switches (explore) | Explore tab has active filters | 1. Switch to Nearby tab<br>2. Switch back to Explore tab | Badge still shows the same count on the Explore icon |
 
 ## 5. My Jobs Tab (my-jobs.tsx)
 
