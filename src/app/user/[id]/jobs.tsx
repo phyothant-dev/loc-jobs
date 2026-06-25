@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 
 import { ThemedText } from '@/components/themed-text'
+import { Skeleton } from '@/components/skeleton'
 import { BorderRadius, Brand, FontSize, Shadow, Spacing } from '@/constants/theme'
 import { supabase } from '@/lib/supabase'
 import { useLocale } from '@/contexts/LocaleContext'
@@ -71,6 +72,22 @@ export default function UserJobsScreen() {
         <View style={{ width: 36 }} />
       </View>
 
+      {loading ? (
+        <View style={{ padding: Spacing.four, gap: Spacing.three }}>
+          <View style={[styles.profileCard, { backgroundColor: Brand.white, alignItems: 'center', paddingVertical: Spacing.five }]}>
+            <Skeleton width={88} height={88} borderRadius={44} />
+            <Skeleton width="40%" height={18} style={{ marginTop: Spacing.two }} />
+            <Skeleton width="20%" height={14} style={{ marginTop: Spacing.two }} />
+          </View>
+          {[1, 2, 3].map((i) => (
+            <View key={i} style={[styles.jobCard, { backgroundColor: Brand.white }]}>
+              <Skeleton width="70%" height={16} />
+              <Skeleton width="50%" height={14} style={{ marginTop: Spacing.two }} />
+              <Skeleton width="30%" height={14} style={{ marginTop: Spacing.two }} />
+            </View>
+          ))}
+        </View>
+      ) : (
       <FlatList
         data={jobs}
         keyExtractor={(item) => item.id}
@@ -129,6 +146,7 @@ export default function UserJobsScreen() {
           </Pressable>
         )}
       />
+      )}
     </SafeAreaView>
   )
 }

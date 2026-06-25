@@ -78,13 +78,13 @@ export default function RootLayout() {
               <Stack.Screen name="(tabs)" />
               <Stack.Screen name="post" options={{ presentation: 'modal' }} />
               <Stack.Screen name="edit-profile" options={{ presentation: 'modal' }} />
-              <Stack.Screen name="job/[id]" />
-              <Stack.Screen name="chat/[jobId]/[otherUserId]" />
-            <Stack.Screen name="notifications" />
+              <Stack.Screen name="job/[id]" options={{ gestureEnabled: true }} />
+              <Stack.Screen name="chat/[jobId]/[otherUserId]" options={{ gestureEnabled: true }} />
+            <Stack.Screen name="notifications" options={{ gestureEnabled: true }} />
             <Stack.Screen name="onboarding" />
-            <Stack.Screen name="reviews/[userId]" />
-            <Stack.Screen name="search-users" />
-            <Stack.Screen name="user/[id]" />
+            <Stack.Screen name="reviews/[userId]" options={{ gestureEnabled: true }} />
+            <Stack.Screen name="search-users" options={{ gestureEnabled: true }} />
+            <Stack.Screen name="user/[id]" options={{ gestureEnabled: true }} />
             </Stack>
           </AuthProvider>
         )}

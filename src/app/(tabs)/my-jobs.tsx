@@ -1,8 +1,9 @@
 import { router } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Alert, FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
 import { Skeleton } from "@/components/skeleton";
 import { ThemedText } from "@/components/themed-text";
@@ -22,6 +23,7 @@ import { useBrand } from "@/contexts/ThemeContext";
 
 interface JobWithMeta {
   id: string;
+  uploader_id: string;
   title: string;
   city: string | null;
   region: string | null;
@@ -79,6 +81,8 @@ export default function MyJobsScreen() {
   >({});
   const [rejectReasons, setRejectReasons] = useState<Record<string, string | null>>({});
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [uploaderInfo, setUploaderInfo] = useState<Map<string, { name: string; verified: boolean }>>(new Map())
   const [searcherInfo, setSearcherInfo] = useState<
     Record<string, SearcherInfo[]>
   >({});
@@ -168,9 +172,29 @@ export default function MyJobsScreen() {
     setLoading(false);
   };
 
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await loadJobs();
+    setRefreshing(false);
+  };
+
   useEffect(() => {
     loadJobs();
   }, [user]);
+
+  const allJobs = useMemo(() => [...posted, ...applied], [posted, applied]);
+
+  useEffect(() => {
+    const ids = [...new Set(allJobs.map(j => j.uploader_id).filter(Boolean))]
+    if (ids.length === 0) return
+    supabase.from('users').select('id, display_name, verified').in('id', ids).then(({ data }) => {
+      const map = new Map<string, { name: string; verified: boolean }>()
+      for (const u of (data ?? []) as any) {
+        map.set(u.id, { name: u.display_name || 'Anonymous', verified: u.verified || false })
+      }
+      setUploaderInfo(map)
+    })
+  }, [allJobs])
 
   useEffect(() => {
     if (!user) return;
@@ -363,6 +387,8 @@ export default function MyJobsScreen() {
           <FlatList
             data={items}
             keyExtractor={(item) => item.id}
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
             contentContainerStyle={{
               padding: Spacing.four,
               paddingBottom: 100,
@@ -504,8 +530,19 @@ export default function MyJobsScreen() {
                       </>
                     )}
 
-                    {tab === "applied" && appliedStatuses[item.id] && (
+                    {tab === "applied" && (
                       <View style={{ marginTop: 8 }}>
+                        {uploaderInfo.has(item.uploader_id) && (
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, marginBottom: 6 }}>
+                            <ThemedText type="caption" style={{ color: Brand.textSecondary }} numberOfLines={1}>
+                              {uploaderInfo.get(item.uploader_id)!.name}
+                            </ThemedText>
+                            {uploaderInfo.get(item.uploader_id)!.verified && (
+                              <Ionicons name="checkmark-circle" size={12} color={Brand.primary} />
+                            )}
+                          </View>
+                        )}
+                        {appliedStatuses[item.id] && (<>
                         <View
                           style={[
                             styles.miniBadge,
@@ -538,6 +575,7 @@ export default function MyJobsScreen() {
                             Reason: {rejectReasons[item.id]}
                           </ThemedText>
                         )}
+                        </>)}
                       </View>
                     )}
                   </View>

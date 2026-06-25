@@ -1,9 +1,11 @@
 import { Brand } from "@/constants/theme";
 import { useLocale } from "@/contexts/LocaleContext";
+import { useFilterCount } from "@/contexts/FilterCountContext";
 import { NativeTabs } from "expo-router/unstable-native-tabs";
 
 export default function AppTabs() {
   const { t } = useLocale()
+  const { counts } = useFilterCount()
   return (
     <NativeTabs backgroundColor={Brand.white}>
       <NativeTabs.Trigger name="index">
@@ -12,6 +14,9 @@ export default function AppTabs() {
           sf={{ default: "house", selected: "house.fill" }}
           md="home"
         />
+        <NativeTabs.Trigger.Badge hidden={counts.nearby === 0}>
+          {counts.nearby > 0 ? String(counts.nearby) : ""}
+        </NativeTabs.Trigger.Badge>
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="explore">
@@ -20,6 +25,9 @@ export default function AppTabs() {
           sf={{ default: "briefcase", selected: "briefcase.fill" }}
           md="work"
         />
+        <NativeTabs.Trigger.Badge hidden={counts.explore === 0}>
+          {counts.explore > 0 ? String(counts.explore) : ""}
+        </NativeTabs.Trigger.Badge>
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="my-jobs">

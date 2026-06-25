@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import LottieView from "lottie-react-native";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -65,6 +66,7 @@ export default function JobDetailScreen() {
   const [uploaderAvatarUrl, setUploaderAvatarUrl] = useState<string | null>(
     null,
   );
+  const [uploaderVerified, setUploaderVerified] = useState(false);
   const [applicants, setApplicants] = useState<Applicant[]>([]);
   const [loading, setLoading] = useState(true);
   const [vacanciesFilled, setVacanciesFilled] = useState(0);
@@ -99,6 +101,7 @@ export default function JobDetailScreen() {
       setSavedJobIds((prev) => { const next = new Set(prev); next.add(jobId); return next })
       await supabase.from('saved_jobs').insert({ user_id: user.id, job_id: jobId })
     }
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {})
   }
 
   const loadReviews = async () => {
@@ -175,13 +178,14 @@ export default function JobDetailScreen() {
         setJob(data as any);
         const uRes = await supabase
           .from("users")
-          .select("display_name, phone, avatar_url")
+          .select("display_name, phone, avatar_url, verified")
           .eq("id", data.uploader_id)
           .single();
         if (uRes.data) {
           setUploaderName(uRes.data.display_name || "");
           setUploaderPhone(uRes.data.phone || "");
           setUploaderAvatarUrl(uRes.data.avatar_url || null);
+          setUploaderVerified(uRes.data.verified || false);
         }
         const { data: apps } = await supabase
           .from("applications")
@@ -268,6 +272,7 @@ export default function JobDetailScreen() {
       setApplying(false);
       return;
     }
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
     setApplying(false);
     setShowApplyModal(false);
     setApplyMessage('');
@@ -330,6 +335,7 @@ export default function JobDetailScreen() {
       .update({ status: "completed" })
       .eq("id", job.id);
     if (updateErr) setError(updateErr.message);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
     // check verification for uploader and accepted applicants
     await supabase.rpc("check_user_verification", { p_user_id: job.uploader_id });
     const { data: acceptedApps } = await supabase
@@ -709,10 +715,15 @@ export default function JobDetailScreen() {
                 </ThemedText>
               </View>
             )}
-            <View>
-              <ThemedText style={[styles.infoLine, { color: Brand.primary }]}>
-                {uploaderName || "Anonymous"}
-              </ThemedText>
+            <View style={{ flex: 1 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                <ThemedText style={[styles.infoLine, { color: Brand.primary }]}>
+                  {uploaderName || "Anonymous"}
+                </ThemedText>
+                {uploaderVerified && (
+                  <Ionicons name="checkmark-circle" size={16} color={Brand.primary} />
+                )}
+              </View>
               {uploaderPhone && (
                 <ThemedText
                   type="caption"
@@ -777,116 +788,70 @@ export default function JobDetailScreen() {
               return (
                 <View
                   key={i}
-                  style={{
-                    marginBottom: i < applicants.length - 1 ? Spacing.three : 0,
-                  }}
+                  style={[styles.applicantCard, { backgroundColor: Brand.white }]}
                 >
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                    }}
-                  >
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: Spacing.one }}>
+                    {a.avatarUrl ? (
+                      <Image
+                        source={{ uri: a.avatarUrl }}
+                        style={styles.applicantAvatar}
+                      />
+                    ) : (
+                      <View style={[styles.applicantAvatarPlaceholder, { backgroundColor: Brand.primaryLight }]}>
+                        <ThemedText style={styles.applicantAvatarText}>
+                          {(a.name.charAt(0) || "?").toUpperCase()}
+                        </ThemedText>
+                      </View>
+                    )}
                     <View style={{ flex: 1 }}>
-                      <View
-                        style={{
-                          flexDirection: "row",
-                          alignItems: "center",
-                          gap: Spacing.two,
-                        }}
-                      >
-                        {a.avatarUrl ? (
-                          <Image
-                            source={{ uri: a.avatarUrl }}
-                            style={styles.applicantAvatar}
-                          />
-                        ) : (
-                          <View style={[styles.applicantAvatarPlaceholder, { backgroundColor: Brand.primaryLight }]}>
-                            <ThemedText style={styles.applicantAvatarText}>
-                              {(a.name.charAt(0) || "?").toUpperCase()}
-                            </ThemedText>
-                          </View>
-                        )}
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
                         <Pressable onPress={() => router.push(a.id === user?.id ? '/(tabs)/profile' : `/user/${a.id}`)}>
-                          <ThemedText
-                            style={[styles.infoLine, { color: Brand.primary }]}
-                          >
+                          <ThemedText style={[styles.infoLine, { color: Brand.primary }]}>
                             {a.name || "Anonymous"}
                           </ThemedText>
                         </Pressable>
-                        <View
-                          style={[styles.miniBadge, { backgroundColor: sc.bg }]}
-                        >
-                          <ThemedText
-                            type="caption"
-                            style={{ fontWeight: 700, color: sc.color }}
-                          >
-                            {a.status.charAt(0).toUpperCase() +
-                              a.status.slice(1)}
+                        <View style={[styles.miniBadge, { backgroundColor: sc.bg }]}>
+                          <ThemedText type="caption" style={{ fontWeight: 700, color: sc.color }}>
+                            {a.status.charAt(0).toUpperCase() + a.status.slice(1)}
                           </ThemedText>
                         </View>
                       </View>
                       {a.phone ? (
-                        <ThemedText
-                          type="caption"
-                          style={{ color: Brand.textSecondary, marginTop: 2 }}
-                        >
+                        <ThemedText type="caption" style={{ color: Brand.textSecondary }}>
                           {a.phone}
                         </ThemedText>
                       ) : null}
-                      {a.message && isUploader && (
-                        <ThemedText
-                          type="caption"
-                          style={{ color: Brand.textSecondary, marginTop: 4, fontStyle: 'italic' }}
-                          numberOfLines={2}
-                        >
-                          "{a.message}"
-                        </ThemedText>
-                      )}
-                      {a.reject_reason && a.status === "rejected" && (
-                        <ThemedText
-                          type="caption"
-                          style={{ color: Brand.danger, marginTop: 4 }}
-                        >
-                          Reason: {a.reject_reason}
-                        </ThemedText>
-                      )}
                     </View>
+                  </View>
+                  {a.message && isUploader && (
+                    <ThemedText type="caption" style={{ color: Brand.textSecondary, marginTop: Spacing.half, fontStyle: 'italic' }} numberOfLines={2}>
+                      "{a.message}"
+                    </ThemedText>
+                  )}
+                  {a.reject_reason && a.status === "rejected" && (
+                    <ThemedText type="caption" style={{ color: Brand.danger, marginTop: Spacing.half }}>
+                      Reason: {a.reject_reason}
+                    </ThemedText>
+                  )}
+                  <View style={{ flexDirection: "row", gap: 6, marginTop: Spacing.two }}>
                     {isUploader && a.status === "pending" && (
-                      <View style={{ flexDirection: "row", gap: 6 }}>
-                        <Pressable
-                          onPress={() => handleAccept(a.id)}
-                          style={[styles.acceptBtn, { backgroundColor: Brand.successLight }]}
-                        >
-                          <ThemedText style={styles.acceptBtnText}>
-                      {t('jobDetail.accept')}
-                    </ThemedText>
-                  </Pressable>
-                  <Pressable
-                    style={[styles.rejectBtn, { backgroundColor: Brand.dangerLight }]}
-                    onPress={() => handleReject(a.id)}
-                  >
-                    <ThemedText style={styles.rejectBtnText}>
-                      {t('jobDetail.reject')}
-                    </ThemedText>
+                      <>
+                        <Pressable onPress={() => handleAccept(a.id)} style={[styles.applicantActionBtn, { backgroundColor: Brand.successLight }]}>
+                          <ThemedText style={[styles.applicantActionBtnText, { color: Brand.success }]}>{t('jobDetail.accept')}</ThemedText>
                         </Pressable>
-                      </View>
+                        <Pressable onPress={() => handleReject(a.id)} style={[styles.applicantActionBtn, { backgroundColor: Brand.dangerLight }]}>
+                          <ThemedText style={[styles.applicantActionBtnText, { color: Brand.danger }]}>{t('jobDetail.reject')}</ThemedText>
+                        </Pressable>
+                      </>
                     )}
                     {isUploader && a.status !== "pending" && (
-                      <Pressable
-                        onPress={() => router.push(`/chat/${job.id}/${a.id}`)}
-                        style={[styles.chatBtn, { backgroundColor: Brand.primaryLight }]}
-                      >
-                        <ThemedText style={styles.chatBtnText}>{t('tabs.chat')}</ThemedText>
+                      <Pressable onPress={() => router.push(`/chat/${job.id}/${a.id}`)} style={[styles.applicantActionBtn, { backgroundColor: Brand.primaryLight }]}>
+                        <ThemedText style={[styles.applicantActionBtnText, { color: Brand.primary }]}>{t('tabs.chat')}</ThemedText>
                       </Pressable>
                     )}
                     {isCompleted && isUploader && a.status === "accepted" && !reviewedUserIds.has(a.id) && (
-                      <Pressable
-                        onPress={() => openReviewModal(a.id, a.name)}
-                        style={[styles.reviewBtn, { backgroundColor: Brand.warningLight }]}
-                      >
-                        <ThemedText style={styles.reviewBtnText}>Review</ThemedText>
+                      <Pressable onPress={() => openReviewModal(a.id, a.name)} style={[styles.applicantActionBtn, { backgroundColor: Brand.warningLight }]}>
+                        <ThemedText style={[styles.applicantActionBtnText, { color: Brand.warning }]}>Review</ThemedText>
                       </Pressable>
                     )}
                   </View>
@@ -1151,30 +1116,18 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  chatBtn: {
-    paddingHorizontal: 14,
+  applicantCard: {
+    borderRadius: BorderRadius.md,
+    padding: Spacing.one,
+    marginBottom: Spacing.two,
+  },
+  applicantActionBtn: {
+    flex: 1,
     paddingVertical: 6,
     borderRadius: BorderRadius.sm,
+    alignItems: "center",
   },
-  chatBtnText: {
-    fontWeight: 700,
-    fontSize: FontSize.sm,
-  },
-  acceptBtn: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: BorderRadius.sm,
-  },
-  acceptBtnText: {
-    fontWeight: 700,
-    fontSize: FontSize.sm,
-  },
-  rejectBtn: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: BorderRadius.sm,
-  },
-  rejectBtnText: {
+  applicantActionBtnText: {
     fontWeight: 700,
     fontSize: FontSize.sm,
   },
@@ -1192,16 +1145,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   applicantAvatarText: {
-    fontWeight: 700,
-    fontSize: FontSize.sm,
-  },
-  reviewBtn: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: BorderRadius.sm,
-    marginLeft: 6,
-  },
-  reviewBtnText: {
     fontWeight: 700,
     fontSize: FontSize.sm,
   },

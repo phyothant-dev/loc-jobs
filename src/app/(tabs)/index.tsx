@@ -1,8 +1,10 @@
 import BottomSheet, { BottomSheetFlatList } from "@gorhom/bottom-sheet";
 import * as Location from "expo-location";
+import * as Haptics from "expo-haptics";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Image, Linking, Platform, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { useFilterCount } from "@/contexts/FilterCountContext";
 import { Ionicons } from "@expo/vector-icons";
 import MapView, { Marker } from "react-native-maps";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -93,6 +95,7 @@ export default function NearbyJobsScreen() {
 
   const { user } = useAuth();
   const { t } = useLocale();
+  const { setCount } = useFilterCount();
   const insets = useSafeAreaInsets();
   const sheetRef = useRef<BottomSheet>(null);
   const mapRef = useRef<MapView>(null);
@@ -122,30 +125,60 @@ export default function NearbyJobsScreen() {
       setSavedJobIds((prev) => { const next = new Set(prev); next.add(jobId); return next })
       await supabase.from('saved_jobs').insert({ user_id: user.id, job_id: jobId })
     }
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {})
   }
+
+  const [uploaderInfo, setUploaderInfo] = useState<Map<string, { name: string; verified: boolean }>>(new Map())
+
+  useEffect(() => {
+    const ids = [...new Set(jobs.map(j => j.uploader_id))]
+    if (ids.length === 0) return
+    supabase.from('users').select('id, display_name, verified').in('id', ids).then(({ data }) => {
+      const map = new Map<string, { name: string; verified: boolean }>()
+      for (const u of (data ?? []) as any) {
+        map.set(u.id, { name: u.display_name || 'Anonymous', verified: u.verified || false })
+      }
+      setUploaderInfo(map)
+    })
+  }, [jobs])
 
   const snapPoints = useMemo(() => ["35%", "55%", "90%"], []);
 
   useEffect(() => {
-    (async () => {
+    let cancelled = false
+    ;(async () => {
       let lat = 16.8661;
       let lng = 96.1567;
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status === "granted") {
-        try {
-          const loc = await Location.getCurrentPositionAsync({});
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status === "granted") {
+          const loc = await Promise.race([
+            Location.getCurrentPositionAsync({ accuracy: Location.LocationAccuracy.High }),
+            new Promise<any>((_, reject) => setTimeout(() => reject(new Error('timeout')), 20000)),
+          ]);
           lat = loc.coords.latitude;
           lng = loc.coords.longitude;
-          setLocation({ lat, lng });
-        } catch (e) { console.error('Location fetch failed', e) }
+        }
+      } catch {
+        try {
+          const last = await Location.getLastKnownPositionAsync();
+          if (last) {
+            lat = last.coords.latitude;
+            lng = last.coords.longitude;
+          }
+        } catch {}
       }
+      if (!cancelled) setLocation({ lat, lng });
+      if (cancelled) return
       const { data } = await supabase.rpc("nearby_jobs", {
         user_lat: lat,
         user_lng: lng,
-        radius_meters: 50000,
+        radius_meters: radiusKm * 1000,
       });
-      setJobs((data as Job[]) ?? []);
-      setLoading(false);
+      if (!cancelled) {
+        setJobs((data as Job[]) ?? []);
+        setLoading(false);
+      }
     })();
     if (user) {
       supabase.from('users').select('avatar_url').eq('id', user.id).single().then(({ data }) => {
@@ -154,7 +187,8 @@ export default function NearbyJobsScreen() {
       loadUnread()
       loadSavedJobs()
     }
-  }, [user]);
+    return () => { cancelled = true }
+  }, [user, radiusKm]);
 
   useEffect(() => {
     if (!user) return
@@ -164,14 +198,21 @@ export default function NearbyJobsScreen() {
         supabase.rpc('nearby_jobs', {
           user_lat: location?.lat ?? 16.8661,
           user_lng: location?.lng ?? 96.1567,
-          radius_meters: 50000,
+          radius_meters: radiusKm * 1000,
         }).then(({ data }) => {
           if (data) setJobs(data as Job[])
         })
       })
       .subscribe()
     return () => { supabase.removeChannel(sub) }
-  }, [user, location?.lat, location?.lng])
+  }, [user, location?.lat, location?.lng, radiusKm])
+
+  useEffect(() => {
+    let count = 0;
+    if (filterCategory) count++;
+    if (filterWorkType) count++;
+    setCount('nearby', count);
+  }, [filterCategory, filterWorkType]);
 
   useFocusEffect(useCallback(() => {
     if (!user) return
@@ -241,7 +282,7 @@ export default function NearbyJobsScreen() {
             const coords = parseCoords(job);
             if (!coords) return null;
             return (
-              <Marker key={job.id} coordinate={coords} title={job.title} />
+              <Marker key={job.id} coordinate={coords} title={job.title} onCalloutPress={() => router.push(`/job/${job.id}`)} />
             );
           })}
         </MapView>
@@ -412,6 +453,16 @@ export default function NearbyJobsScreen() {
                         {relativeTime(item.created_at, t)}
                       </ThemedText>
                     </View>
+                    {uploaderInfo.has(item.uploader_id) && (
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 4 }}>
+                        <ThemedText type="caption" style={{ color: Brand.textSecondary }} numberOfLines={1}>
+                          {uploaderInfo.get(item.uploader_id)!.name}
+                        </ThemedText>
+                        {uploaderInfo.get(item.uploader_id)!.verified && (
+                          <Ionicons name="checkmark-circle" size={12} color={Brand.primary} />
+                        )}
+                      </View>
+                    )}
                     <View style={[styles.jobCardFooter, { borderTopColor: Brand.border }]}>
                       {item.price && !item.employment_type && (
                         <ThemedText type="price">

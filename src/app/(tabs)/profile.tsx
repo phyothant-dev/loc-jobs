@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import { Alert, Image, Pressable, ScrollView, StyleSheet, Switch, View } from "react-native";
@@ -25,6 +26,10 @@ export default function ProfileScreen() {
   const Brand = useBrand();
   const isDark = useIsDark();
   const toggleTheme = useToggleTheme();
+  const handleToggleTheme = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {})
+    toggleTheme()
+  }
 
   const { user, signOut } = useAuth();
   const { t, locale, setLocale } = useLocale();
@@ -389,7 +394,7 @@ export default function ProfileScreen() {
                     <Ionicons name="sunny" size={16} color={isDark ? Brand.textSecondary : Brand.primary} />
                     <Switch
                       value={isDark}
-                      onValueChange={toggleTheme}
+                      onValueChange={handleToggleTheme}
                       trackColor={{ false: Brand.borderLight, true: Brand.primaryLight }}
                       thumbColor={isDark ? Brand.primary : Brand.textSecondary}
                     />

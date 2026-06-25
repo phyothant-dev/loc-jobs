@@ -8,12 +8,14 @@
     "scheme": "locjobs",
     "userInterfaceStyle": "automatic",
     "ios": {
+      "bundleIdentifier": "com.locjobs.app",
       "icon": "./assets/expo.icon",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "LocJobs uses your location to find nearby jobs."
       }
     },
     "android": {
+      "package": "com.locjobs.app",
       "config": {
         "googleMaps": {
           "apiKey": "AIzaSyAE_iQ_nuJPQy_VYKnt8nFWvtYHbBFwF_g"
@@ -44,6 +46,14 @@
     "plugins": [
       "expo-router",
       [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
+      ],
+      [
         "expo-location",
         {
           "locationAlwaysAndWhenInUsePermission": "LocJobs uses your location to find nearby jobs.",
@@ -60,7 +70,8 @@
           }
         }
       ],
-      "expo-localization"
+      "expo-localization",
+      "expo-build-properties"
     ],
     "experiments": {
       "typedRoutes": true,

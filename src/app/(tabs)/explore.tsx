@@ -1,6 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useFilterCount } from "@/contexts/FilterCountContext";
 import {
     Alert,
     Dimensions,
@@ -89,6 +91,7 @@ export default function AllJobsScreen() {
 
   const { user } = useAuth();
   const { t } = useLocale();
+  const { setCount } = useFilterCount();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [selectedCity, setSelectedCity] = useState<string | null>(null);
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
@@ -188,6 +191,7 @@ export default function AllJobsScreen() {
         .from("saved_jobs")
         .insert({ user_id: user.id, job_id: jobId });
     }
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {})
   };
 
   const fetchJobs = async () => {
@@ -244,6 +248,19 @@ export default function AllJobsScreen() {
       supabase.removeChannel(sub);
     };
   }, []);
+
+  useEffect(() => {
+    let count = 0;
+    if (selectedCity) count++;
+    if (selectedRegion) count++;
+    if (selectedWorkType) count++;
+    if (selectedCategory) count++;
+    if (selectedEmploymentType) count++;
+    if (minPrice) count++;
+    if (maxPrice) count++;
+    if (search) count++;
+    setCount('explore', count);
+  }, [selectedCity, selectedRegion, selectedWorkType, selectedCategory, selectedEmploymentType, minPrice, maxPrice, search]);
 
   const filtered = jobs.filter((j) => {
     const matchCity = !selectedCity || j.city === selectedCity;

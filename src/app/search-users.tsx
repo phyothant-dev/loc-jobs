@@ -74,7 +74,7 @@ export default function SearchUsersScreen() {
       <View style={[styles.searchBar, { backgroundColor: Brand.white, borderColor: Brand.border }]}>
         <Ionicons name="search" size={18} color={Brand.textSecondary} style={{ marginRight: 8 }} />
         <TextInput
-          style={styles.input}
+          style={[styles.input, { color: Brand.text }]}
           placeholder={t('userSearch.placeholder')}
           placeholderTextColor={Brand.placeholder}
           value={query}
