@@ -33,8 +33,17 @@ Read the exact versioned docs at https://docs.expo.dev/versions/v56.0.0/ before 
 - Stored in a `Map<string, { name: string; verified: boolean }>` state variable per screen
 
 ## OAuth / Google Sign-In for Android Dev Builds
-- `src/contexts/AuthContext.tsx` — `signInWithGoogle` uses `Linking.createURL('auth/callback')` to generate the redirect URL dynamically (handles both Expo Go `exp://` and dev build `locjobs://` schemes)
+- `src/contexts/AuthContext.tsx` — `signInWithGoogle` uses platform-specific redirect URLs:
+  - **iOS (Expo Go):** `exp://auth/callback` (stable Expo Go URL)
+  - **Android (dev build):** `locjobs://auth/callback` (app's custom scheme)
+  - **NEVER use `Linking.createURL()`** for the `redirectTo` — Expo Go adds `/--/` prefix and IP address, breaking the Supabase allowlist match
 - On Android, if `WebBrowser.openAuthSessionAsync` doesn't return the redirect URL, a `Linking` event listener fallback captures the OAuth callback
-- **Supabase Dashboard > Authentication > Redirect URLs** must include the generated redirect URL (e.g., `locjobs://auth/callback` or the Expo dev URL)
-- **Android SHA-1 fingerprint** from the dev build keystore must be added to the Google Cloud Console OAuth credential (needed for the native Google Sign-In integration configured in Supabase)
+- **Supabase Dashboard > Authentication > Redirect URLs** must include:
+  - `exp://auth/callback` (iOS Expo Go)
+  - `locjobs://auth/callback` (Android dev build)
+  - `exp://*/--/auth/callback` (optional, for Expo Go with `/--/` prefix)
+- **Google Cloud Console > OAuth credential > Authorized redirect URIs** must have:
+  - `https://<project>.supabase.co/auth/v1/callback` (Supabase callback)
+  - `https://auth.expo.io/@<username>/<project-slug>` (Expo proxy, if used)
+- **Android SHA-1 fingerprint** from the dev build keystore must be added to the Google Cloud Console OAuth credential (for native Google Sign-In configured in Supabase dashboard)
 - The app's custom scheme (`locjobs`) is configured in `app.json` under `"scheme": "locjobs"`
