@@ -71,13 +71,16 @@ const WORK_TYPE_BG: Record<string, string> = {
   hybrid: "#ECFEFF",
 };
 
-const STATUS_STYLE: Record<string, { color: string; bg: string }> = {
-  open: { color: Brand.success, bg: Brand.successLight },
-  full: { color: Brand.warning, bg: Brand.warningLight },
-  accepted: { color: Brand.warning, bg: Brand.warningLight },
-  completed: { color: Brand.primary, bg: Brand.primaryLight },
-  cancelled: { color: Brand.danger, bg: Brand.dangerLight },
-};
+function getStatusStyle(status: string) {
+  switch (status) {
+    case 'open': return { color: Brand.success, bg: Brand.successLight };
+    case 'full': return { color: Brand.warning, bg: Brand.warningLight };
+    case 'accepted': return { color: Brand.warning, bg: Brand.warningLight };
+    case 'completed': return { color: Brand.primary, bg: Brand.primaryLight };
+    case 'cancelled': return { color: Brand.danger, bg: Brand.dangerLight };
+    default: return { color: Brand.success, bg: Brand.successLight };
+  }
+}
 
 const NUM_COLUMNS = 2;
 const CARD_GAP = Spacing.three;
@@ -374,7 +377,7 @@ export default function AllJobsScreen() {
           <Pressable style={[styles.saveModalContent, { backgroundColor: Brand.white }]} onPress={() => {}}>
             <ThemedText style={styles.saveModalTitle}>{t('explore.saveSearch')}</ThemedText>
             <TextInput
-              style={[styles.saveModalInput, { backgroundColor: Brand.bg }]}
+              style={[styles.saveModalInput, { backgroundColor: Brand.bg, color: Brand.text }]}
               placeholder={t('explore.saveSearchName')}
               placeholderTextColor={Brand.placeholder}
               value={saveSearchName}
@@ -498,7 +501,7 @@ export default function AllJobsScreen() {
                     style={{ marginRight: 8 }}
                   />
                   <TextInput
-                    style={styles.searchInput}
+                    style={[styles.searchInput, { color: Brand.text }]}
                     placeholder={t("explore.search")}
                     placeholderTextColor={Brand.placeholder}
                     value={search}
@@ -721,11 +724,11 @@ export default function AllJobsScreen() {
                 </View>
                 <View style={styles.priceRow}>
                   <TextInput
-                    style={[styles.priceInput, { borderColor: Brand.border }]}
+                    style={[styles.priceInput, { borderColor: Brand.border, backgroundColor: Brand.white, color: Brand.text }]}
                     placeholder={t("explore.min")}
                     placeholderTextColor={Brand.placeholder}
                     value={minPrice}
-                    onChangeText={setMinPrice}
+                    onChangeText={(v) => setMinPrice(v.replace(/\D/g, ''))}
                     keyboardType="number-pad"
                   />
                   <ThemedText
@@ -735,11 +738,11 @@ export default function AllJobsScreen() {
                     —
                   </ThemedText>
                   <TextInput
-                    style={[styles.priceInput, { borderColor: Brand.border }]}
+                    style={[styles.priceInput, { borderColor: Brand.border, backgroundColor: Brand.white, color: Brand.text }]}
                     placeholder={t("explore.max")}
                     placeholderTextColor={Brand.placeholder}
                     value={maxPrice}
-                    onChangeText={setMaxPrice}
+                    onChangeText={(v) => setMaxPrice(v.replace(/\D/g, ''))}
                     keyboardType="number-pad"
                   />
                   <ThemedText
@@ -773,7 +776,7 @@ export default function AllJobsScreen() {
                 </View>
                 <View style={styles.grid}>
                   {typeJobs.map((job) => {
-                    const s = STATUS_STYLE[job.status] || STATUS_STYLE.open;
+                    const s = getStatusStyle(job.status);
                     return (
                       <Pressable
                         key={job.id}

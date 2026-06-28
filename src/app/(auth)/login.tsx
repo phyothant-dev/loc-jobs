@@ -23,6 +23,7 @@ export default function LoginScreen() {
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [toast, setToast] = useState({
     visible: false,
     message: "",
@@ -47,6 +48,13 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     setError(null);
+    const errors: Record<string, string> = {};
+    if (!email.trim()) errors.email = "Email is required";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) errors.email = "Enter a valid email";
+    if (!password) errors.password = "Password is required";
+    setValidationErrors(errors);
+    if (Object.keys(errors).length > 0) return;
+
     await withMinDelay(async () => {
       const { error: authErr } = await supabase.auth.signInWithPassword({
         email: email.trim(),
@@ -89,13 +97,15 @@ export default function LoginScreen() {
     const isFocused = focusedField === key;
     const hasValue = value.length > 0;
     const isUp = isFocused || hasValue;
+    const error = validationErrors[key];
     return (
+      <View>
       <View style={[styles.fieldGroup, isFocused && styles.fieldGroupFocused, { backgroundColor: Brand.borderLight }]}>
         <TextInput
           ref={key === "email" ? emailRef : passwordRef}
           style={styles.input}
           value={value}
-          onChangeText={onChange}
+          onChangeText={(v) => { onChange(v); setValidationErrors((prev) => { const n = { ...prev }; delete n[key]; return n; }); }}
           onFocus={() => setFocusedField(key)}
           onBlur={() => setFocusedField(null)}
           secureTextEntry={key === "password" && !showPassword}
@@ -120,6 +130,10 @@ export default function LoginScreen() {
           </ThemedText>
         </Pressable>
         {opts?.children}
+      </View>
+      {error && (
+        <ThemedText type="caption" style={{ color: '#E53935', marginLeft: 4, marginTop: 2, marginBottom: 8 }}>{error}</ThemedText>
+      )}
       </View>
     );
   };

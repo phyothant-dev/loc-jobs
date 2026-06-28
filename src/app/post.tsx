@@ -6,6 +6,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import {
     ActivityIndicator,
+    Alert,
     Image,
     KeyboardAvoidingView,
     Platform,
@@ -20,6 +21,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { PickerModal } from "@/components/picker-modal";
 import { ThemedText } from "@/components/themed-text";
+import { Toast } from "@/components/toast";
 import {
     BorderRadius,
     Brand,
@@ -66,7 +68,8 @@ export default function PostJobScreen() {
   const [showSalaryPeriodPicker, setShowSalaryPeriodPicker] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
+  const [toast, setToast] = useState({ visible: false, message: '', type: 'success' as 'success' | 'error' });
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
   const regionList = Object.keys(REGIONS).sort();
   const cityList = region
@@ -119,7 +122,7 @@ export default function PostJobScreen() {
   const handleUseCurrentLocation = async () => {
     const { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== "granted") {
-      setError("Location permission denied");
+      Alert.alert("Location Permission", "Location permission is needed to use your current location. Please enable it in Settings.");
       return;
     }
     const loc = await Location.getCurrentPositionAsync({});
@@ -128,8 +131,45 @@ export default function PostJobScreen() {
     setUseExactLocation(true);
   };
 
+  const validate = () => {
+    const errors: Record<string, string> = {};
+    if (!title.trim()) errors.title = "Title is required";
+
+    const priceNum = price ? parseInt(price, 10) : NaN;
+    if (price && (isNaN(priceNum) || priceNum <= 0)) errors.price = "Enter a valid price";
+
+    const minNum = salaryMin ? parseInt(salaryMin, 10) : NaN;
+    const maxNum = salaryMax ? parseInt(salaryMax, 10) : NaN;
+    if (salaryMin && (isNaN(minNum) || minNum <= 0)) errors.salaryMin = "Enter a valid minimum salary";
+    if (salaryMax && (isNaN(maxNum) || maxNum <= 0)) errors.salaryMax = "Enter a valid maximum salary";
+    if (salaryMin && salaryMax && !isNaN(minNum) && !isNaN(maxNum) && minNum > maxNum) {
+      errors.salaryMin = "Min should be less than max";
+    }
+
+    if ((workType === "onsite" || workType === "hybrid") && !region) errors.region = "Region is required";
+    if ((workType === "onsite" || workType === "hybrid") && !city) errors.city = "City is required";
+
+    return errors;
+  };
+
+  const clearError = (field: string) => {
+    setValidationErrors((prev) => {
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  };
+
   const handleSubmit = async () => {
     if (!user) return;
+
+    const errors = validate();
+    setValidationErrors(errors);
+    if (Object.keys(errors).length > 0) {
+      Alert.alert("Validation Error", Object.values(errors)[0]);
+      return;
+    }
+
     setSubmitting(true);
     setError(null);
 
@@ -210,48 +250,26 @@ export default function PostJobScreen() {
         .update(updates)
         .eq("id", id);
       if (updateErr) setError(updateErr.message);
-      else setSuccess(true);
+      else {
+        setToast({ visible: true, message: isEditing ? 'Job updated!' : 'Job posted!', type: 'success' });
+        setTimeout(() => router.back(), 1200);
+      }
     } else {
       const { data, error: rpcErr } = await supabase.rpc("post_job", params);
       if (rpcErr) setError(rpcErr.message);
-      else setSuccess(true);
+      else {
+        setToast({ visible: true, message: 'Job posted!', type: 'success' });
+        setTimeout(() => router.back(), 1200);
+      }
     }
     setSubmitting(false);
   };
-
-  if (success) {
-    return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: Brand.bg }}>
-        <View
-          style={{
-            flex: 1,
-            justifyContent: "center",
-            alignItems: "center",
-            padding: Spacing.six,
-          }}
-        >
-          <ThemedText
-            style={{
-              fontSize: FontSize.lg,
-              fontWeight: 700,
-
-              marginBottom: Spacing.three,
-            }}
-          >
-            {isEditing ? "Updated!" : "Job Posted!"}
-          </ThemedText>
-          <Pressable style={[styles.submitBtn, { backgroundColor: Brand.primary }]} onPress={() => router.back()}>
-            <ThemedText style={styles.submitBtnText}>Go Back</ThemedText>
-          </Pressable>
-        </View>
-      </SafeAreaView>
-    );
-  }
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: Brand.bg }}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
       <View style={{ flex: 1 }}>
+        <Toast visible={toast.visible} message={toast.message} type={toast.type} onHide={() => setToast((p) => ({ ...p, visible: false }))} />
         <View style={styles.header}>
           <Pressable onPress={() => router.back()} style={[styles.backBtn, { backgroundColor: Brand.primaryLight }]}>
             <Ionicons name="chevron-down" size={24} color={Brand.primary} />
@@ -280,12 +298,15 @@ export default function PostJobScreen() {
               Title *
             </ThemedText>
             <TextInput
-              style={[styles.input, { backgroundColor: Brand.white, borderColor: Brand.borderLight }]}
+              style={[styles.input, { backgroundColor: Brand.white, borderColor: Brand.borderLight, color: Brand.text }]}
               placeholder="Job title"
               placeholderTextColor={Brand.placeholder}
               value={title}
-              onChangeText={setTitle}
+              onChangeText={(v) => { setTitle(v); clearError("title"); }}
             />
+            {validationErrors.title && (
+              <ThemedText type="caption" style={{ color: '#E53935', marginTop: 4 }}>{validationErrors.title}</ThemedText>
+            )}
           </View>
 
           <View style={styles.formGroup}>
@@ -293,7 +314,7 @@ export default function PostJobScreen() {
               Description
             </ThemedText>
             <TextInput
-              style={[styles.input, { height: 100, textAlignVertical: "top" }, { backgroundColor: Brand.white, borderColor: Brand.borderLight }]}
+              style={[styles.input, { height: 100, textAlignVertical: "top" }, { backgroundColor: Brand.white, borderColor: Brand.borderLight, color: Brand.text }]}
               placeholder="Describe the job..."
               placeholderTextColor={Brand.placeholder}
               value={description}
@@ -307,13 +328,16 @@ export default function PostJobScreen() {
               Price (MMK)
             </ThemedText>
             <TextInput
-              style={[styles.input, { backgroundColor: Brand.white, borderColor: Brand.borderLight }]}
+              style={[styles.input, { backgroundColor: Brand.white, borderColor: Brand.borderLight, color: Brand.text }]}
               placeholder="e.g. 50000"
               placeholderTextColor={Brand.placeholder}
               value={price}
-              onChangeText={setPrice}
+              onChangeText={(v) => { setPrice(v.replace(/\D/g, '')); clearError("price"); }}
               keyboardType="number-pad"
             />
+            {validationErrors.price && (
+              <ThemedText type="caption" style={{ color: '#E53935', marginTop: 4 }}>{validationErrors.price}</ThemedText>
+            )}
           </View>
 
           <View style={styles.formGroup}>
@@ -424,26 +448,32 @@ export default function PostJobScreen() {
                 Salary Min (MMK)
               </ThemedText>
               <TextInput
-                style={[styles.input, { backgroundColor: Brand.white, borderColor: Brand.borderLight }]}
+                style={[styles.input, { backgroundColor: Brand.white, borderColor: Brand.borderLight, color: Brand.text }]}
                 placeholder="e.g. 300000"
                 placeholderTextColor={Brand.placeholder}
                 value={salaryMin}
-                onChangeText={setSalaryMin}
+                onChangeText={(v) => { setSalaryMin(v.replace(/\D/g, '')); clearError("salaryMin"); clearError("salaryMax"); }}
                 keyboardType="number-pad"
               />
+              {validationErrors.salaryMin && (
+                <ThemedText type="caption" style={{ color: '#E53935', marginTop: 4 }}>{validationErrors.salaryMin}</ThemedText>
+              )}
             </View>
             <View style={{ flex: 1 }}>
               <ThemedText type="caption" style={styles.label}>
                 Salary Max (MMK)
               </ThemedText>
               <TextInput
-                style={[styles.input, { backgroundColor: Brand.white, borderColor: Brand.borderLight }]}
+                style={[styles.input, { backgroundColor: Brand.white, borderColor: Brand.borderLight, color: Brand.text }]}
                 placeholder="e.g. 800000"
                 placeholderTextColor={Brand.placeholder}
                 value={salaryMax}
-                onChangeText={setSalaryMax}
+                onChangeText={(v) => { setSalaryMax(v.replace(/\D/g, '')); clearError("salaryMax"); clearError("salaryMin"); }}
                 keyboardType="number-pad"
               />
+              {validationErrors.salaryMax && (
+                <ThemedText type="caption" style={{ color: '#E53935', marginTop: 4 }}>{validationErrors.salaryMax}</ThemedText>
+              )}
             </View>
           </View>
 
@@ -493,6 +523,9 @@ export default function PostJobScreen() {
                     {region || "Select region"}
                   </ThemedText>
                 </Pressable>
+                {validationErrors.region && (
+                  <ThemedText type="caption" style={{ color: '#E53935', marginTop: 4 }}>{validationErrors.region}</ThemedText>
+                )}
                 <PickerModal
                   visible={showRegionPicker}
                   title="Select Region"
@@ -521,6 +554,9 @@ export default function PostJobScreen() {
                     {city || "Select city"}
                   </ThemedText>
                 </Pressable>
+                {validationErrors.city && (
+                  <ThemedText type="caption" style={{ color: '#E53935', marginTop: 4 }}>{validationErrors.city}</ThemedText>
+                )}
                 <PickerModal
                   visible={showCityPicker}
                   title="Select City"
@@ -593,7 +629,7 @@ export default function PostJobScreen() {
               styles.submitBtn,
               { opacity: submitting ? 0.6 : pressed ? 0.7 : 1 },, { backgroundColor: Brand.primary }]}
             onPress={handleSubmit}
-            disabled={submitting || !title.trim()}
+            disabled={submitting}
           >
             {submitting ? (
               <ActivityIndicator size="small" color={Brand.white} />

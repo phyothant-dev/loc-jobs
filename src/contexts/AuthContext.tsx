@@ -82,31 +82,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (error) return { error: error.message }
       if (!data?.url) return { error: 'No OAuth URL returned' }
 
-      // openAuthSessionAsync on iOS uses ASWebAuthenticationSession
-      // which intercepts custom scheme callbacks natively.
-      // On Android it uses Chrome Custom Tabs — the redirect URL
-      // may need to be captured via Linking events.
-      const result = await WebBrowser.openAuthSessionAsync(data.url, redirectUrl)
-
-      let url = result.type === 'success' ? result.url : null
-
-      // On Android, openAuthSessionAsync may not return the redirect URL.
-      // Listen for it via Linking events as a fallback.
-      if (!url && Platform.OS === 'android') {
-        url = await new Promise<string | null>((resolve) => {
-          const baseRedirect = redirectUrl.split('?')[0].split('#')[0]
+      if (Platform.OS === 'android') {
+        // Android: open browser via Linking, handle callback via Linking event
+        const url = await new Promise<string | null>((resolve) => {
           const subscription = Linking.addEventListener('url', (event) => {
-            if (event.url.startsWith(baseRedirect)) {
+            if (event.url.startsWith('locjobs://auth/callback')) {
               subscription.remove()
               resolve(event.url)
             }
           })
+          Linking.openURL(data.url)
           setTimeout(() => {
             subscription.remove()
             resolve(null)
           }, 120000)
         })
+
+        if (url) {
+          const fragment = url.split('#')[1]
+          if (fragment) {
+            const params = new URLSearchParams(fragment)
+            const access_token = params.get('access_token')
+            const refresh_token = params.get('refresh_token')
+            if (access_token && refresh_token) {
+              await supabase.auth.setSession({ access_token, refresh_token })
+              const session = (await supabase.auth.getSession()).data.session
+              if (session) await importGoogleAvatar(session.user.id)
+              return { error: null }
+            }
+          }
+        }
+
+        return { error: null }
       }
+
+      // iOS: openAuthSessionAsync handles ASWebAuthenticationSession natively
+      const result = await WebBrowser.openAuthSessionAsync(data.url, redirectUrl)
+      let url = result.type === 'success' ? result.url : null
 
       if (url) {
         const fragment = url.split('#')[1]

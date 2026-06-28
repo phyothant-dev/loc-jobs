@@ -36,6 +36,7 @@ export default function RegisterScreen() {
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [toast, setToast] = useState({ visible: false, message: "", type: "error" as "error" | "success" });
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
@@ -58,33 +59,18 @@ export default function RegisterScreen() {
     setLoading(false);
   };
 
-  const showError = (msg: string) => {
-    setError(msg);
-    setToast({ visible: true, message: msg, type: "error" });
-  };
-
   const handleRegister = async () => {
     const trimmedEmail = email.trim();
-    if (!fullName.trim()) {
-      showError("Full name is required");
-      return;
-    }
-    if (!trimmedEmail) {
-      showError("Email is required");
-      return;
-    }
-    if (password.length < 6) {
-      showError("Password must be at least 6 characters");
-      return;
-    }
-    if (password !== confirmPassword) {
-      showError("Passwords do not match");
-      return;
-    }
-    if (!agreeTerms) {
-      showError("Please agree to the Terms of Service");
-      return;
-    }
+    const errors: Record<string, string> = {};
+    if (!fullName.trim()) errors.fullName = "Full name is required";
+    if (!trimmedEmail) errors.email = "Email is required";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) errors.email = "Enter a valid email";
+    if (password.length < 6) errors.password = "Password must be at least 6 characters";
+    if (password !== confirmPassword) errors.confirmPassword = "Passwords do not match";
+    if (!agreeTerms) errors.agreeTerms = "Please agree to the Terms of Service";
+    setValidationErrors(errors);
+    if (Object.keys(errors).length > 0) return;
+
     await withMinDelay(async () => {
       setError(null);
       const { data, error: authErr } = await supabase.auth.signUp({
@@ -115,6 +101,14 @@ export default function RegisterScreen() {
     confirmPassword: confirmRef,
   };
 
+  const clearError = (field: string) => {
+    setValidationErrors((prev) => {
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  };
+
   const renderField = (
     key: string,
     label: string,
@@ -131,13 +125,15 @@ export default function RegisterScreen() {
     const hasValue = value.length > 0;
     const isUp = isFocused || hasValue;
     const ref = refMap[key];
+    const error = validationErrors[key];
     return (
+      <View>
       <View style={[styles.fieldGroup, isFocused && styles.fieldGroupFocused]}>
         <TextInput
           ref={ref}
           style={styles.input}
           value={value}
-          onChangeText={onChange}
+          onChangeText={(v) => { onChange(v); clearError(key); }}
           onFocus={() => setFocusedField(key)}
           onBlur={() => setFocusedField(null)}
           secureTextEntry={opts?.secure ?? false}
@@ -157,6 +153,10 @@ export default function RegisterScreen() {
           </ThemedText>
         </Pressable>
         {opts?.children}
+      </View>
+      {error && (
+        <ThemedText type="caption" style={{ color: '#E53935', marginLeft: 4, marginTop: 2, marginBottom: 8 }}>{error}</ThemedText>
+      )}
       </View>
     );
   };
@@ -252,7 +252,7 @@ export default function RegisterScreen() {
             {/* Terms */}
             <Pressable
               style={styles.termsRow}
-              onPress={() => setAgreeTerms(!agreeTerms)}
+              onPress={() => { setAgreeTerms(!agreeTerms); clearError("agreeTerms"); }}
             >
               <View
                 style={[styles.checkbox, agreeTerms && styles.checkboxActive, { borderColor: Brand.border }, { backgroundColor: Brand.primary, borderColor: Brand.primary }]}
@@ -275,6 +275,9 @@ export default function RegisterScreen() {
                 </ThemedText>
               </ThemedText>
             </Pressable>
+            {validationErrors.agreeTerms && (
+              <ThemedText type="caption" style={{ color: '#E53935', marginLeft: 4, marginTop: 2 }}>{validationErrors.agreeTerms}</ThemedText>
+            )}
 
             {/* Primary Action */}
             <Pressable

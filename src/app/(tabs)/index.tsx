@@ -73,12 +73,15 @@ function relativeTime(dateStr: string, t?: (key: string) => string) {
   return new Date(dateStr).toLocaleDateString();
 }
 
-const STATUS_STYLE: Record<string, { color: string; bg: string }> = {
-  open: { color: Brand.success, bg: Brand.successLight },
-  full: { color: Brand.warning, bg: Brand.warningLight },
-  completed: { color: Brand.textSecondary, bg: Brand.borderLight },
-  cancelled: { color: Brand.danger, bg: Brand.dangerLight },
-};
+function getStatusStyle(status: string) {
+  switch (status) {
+    case 'open': return { color: Brand.success, bg: Brand.successLight };
+    case 'full': return { color: Brand.warning, bg: Brand.warningLight };
+    case 'completed': return { color: Brand.textSecondary, bg: Brand.borderLight };
+    case 'cancelled': return { color: Brand.danger, bg: Brand.dangerLight };
+    default: return { color: Brand.success, bg: Brand.successLight };
+  }
+}
 
 function openDirections(lat: number, lng: number) {
   const scheme = Platform.select({ ios: "maps://0,0?q=", android: "geo:0,0?q=" }) || "https://www.google.com/maps?q=";
@@ -395,7 +398,7 @@ export default function NearbyJobsScreen() {
                       coords.longitude,
                     )
                   : null;
-              const s = STATUS_STYLE[item.status] || STATUS_STYLE.open;
+              const s = getStatusStyle(item.status);
               return (
                 <Pressable onPress={() => router.push(`/job/${item.id}`)}>
                   <View style={[styles.jobCard, { backgroundColor: Brand.white }]}>

@@ -1,5 +1,5 @@
-import { router } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
+import { router, useFocusEffect } from "expo-router";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Alert, FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -51,19 +51,25 @@ interface AppliedInfo {
   status: string;
 }
 
-const STATUS_STYLE: Record<string, { color: string; bg: string }> = {
-  open: { color: Brand.success, bg: Brand.successLight },
-  full: { color: Brand.warning, bg: Brand.warningLight },
-  accepted: { color: Brand.warning, bg: Brand.warningLight },
-  completed: { color: Brand.primary, bg: Brand.primaryLight },
-  cancelled: { color: Brand.danger, bg: Brand.dangerLight },
-};
+function getStatusStyle(status: string) {
+  switch (status) {
+    case 'open': return { color: Brand.success, bg: Brand.successLight };
+    case 'full': return { color: Brand.warning, bg: Brand.warningLight };
+    case 'accepted': return { color: Brand.warning, bg: Brand.warningLight };
+    case 'completed': return { color: Brand.primary, bg: Brand.primaryLight };
+    case 'cancelled': return { color: Brand.danger, bg: Brand.dangerLight };
+    default: return { color: Brand.success, bg: Brand.successLight };
+  }
+}
 
-const APP_STATUS_STYLE: Record<string, { color: string; bg: string }> = {
-  pending: { color: Brand.warning, bg: Brand.warningLight },
-  accepted: { color: Brand.success, bg: Brand.successLight },
-  rejected: { color: Brand.danger, bg: Brand.dangerLight },
-};
+function getAppStatusStyle(status: string) {
+  switch (status) {
+    case 'pending': return { color: Brand.warning, bg: Brand.warningLight };
+    case 'accepted': return { color: Brand.success, bg: Brand.successLight };
+    case 'rejected': return { color: Brand.danger, bg: Brand.dangerLight };
+    default: return { color: Brand.warning, bg: Brand.warningLight };
+  }
+}
 
 type Tab = "posted" | "applied";
 
@@ -182,6 +188,11 @@ export default function MyJobsScreen() {
     loadJobs();
   }, [user]);
 
+  useFocusEffect(useCallback(() => {
+    loadJobs();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]))
+
   const allJobs = useMemo(() => [...posted, ...applied], [posted, applied]);
 
   useEffect(() => {
@@ -203,6 +214,13 @@ export default function MyJobsScreen() {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "applications" },
+        () => {
+          loadJobs();
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "jobs", filter: `uploader_id=eq.${user.id}` },
         () => {
           loadJobs();
         },
@@ -397,7 +415,7 @@ export default function MyJobsScreen() {
               <View style={{ height: Spacing.three }} />
             )}
             renderItem={({ item }) => {
-              const s = STATUS_STYLE[item.status] || STATUS_STYLE.open;
+              const s = getStatusStyle(item.status);
               return (
                 <Pressable onPress={() => router.push(`/job/${item.id}`)}>
                   <View style={[styles.jobCard, { backgroundColor: Brand.white }]}>
@@ -459,13 +477,13 @@ export default function MyJobsScreen() {
                                 return (
                                   <View key={statusGroup} style={{ marginTop: 8 }}>
                                     <View style={styles.kanbanHeader}>
-                                      <View style={[styles.kanbanDot, { backgroundColor: APP_STATUS_STYLE[statusGroup].color }]} />
+                                      <View style={[styles.kanbanDot, { backgroundColor: getAppStatusStyle(statusGroup).color }]} />
                                       <ThemedText type="caption" style={{ fontWeight: 700, color: Brand.text, textTransform: 'capitalize' }}>
                                         {statusGroup} ({group.length})
                                       </ThemedText>
                                     </View>
                                     {group.map((s, i) => {
-                                      const asc = APP_STATUS_STYLE[s.status] || APP_STATUS_STYLE.pending
+                                      const asc = getAppStatusStyle(s.status)
                                       return (
                                         <View key={i} style={{ marginTop: 6, paddingLeft: Spacing.three }}>
                                           <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
@@ -548,8 +566,7 @@ export default function MyJobsScreen() {
                             styles.miniBadge,
                             {
                               backgroundColor:
-                                APP_STATUS_STYLE[appliedStatuses[item.id]]
-                                  ?.bg || Brand.warningLight,
+                                getAppStatusStyle(appliedStatuses[item.id]).bg,
                               alignSelf: "flex-start",
                             },
                           ]}
@@ -559,8 +576,7 @@ export default function MyJobsScreen() {
                             style={{
                               fontWeight: 700,
                               color:
-                                APP_STATUS_STYLE[appliedStatuses[item.id]]
-                                  ?.color || Brand.warning,
+                                getAppStatusStyle(appliedStatuses[item.id]).color,
                             }}
                           >
                             {appliedStatuses[item.id].charAt(0).toUpperCase() +

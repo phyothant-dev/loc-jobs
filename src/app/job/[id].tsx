@@ -161,9 +161,15 @@ export default function JobDetailScreen() {
 
   const handleShare = async () => {
     if (!job) return
-    await Share.share({
-      message: `Check out this job on LocJobs: ${job.title}`,
-    })
+    const webUrl = `https://locjobs-landing.netlify.app/job.html?id=${job.id}`
+    const details = [
+      `Check out this job on LocJobs: ${job.title}`,
+      job.description ? `\n${job.description.slice(0, 200)}${job.description.length > 200 ? '...' : ''}` : '',
+      job.price ? `\nPrice: ${job.price.toLocaleString()} MMK` : '',
+      job.city || job.region ? `\nLocation: ${[job.city, job.region].filter(Boolean).join(', ')}` : '',
+      `\n\n${webUrl}`,
+    ].join('')
+    await Share.share({ message: details })
   }
 
   const loadJob = useCallback(async () => {

@@ -22,8 +22,9 @@ function RootGuard() {
     if (isLoading) return
 
     const inAuthGroup = segments[0] === '(auth)'
+    const inCallback = segments[0] === 'auth'
 
-    if (!session && !inAuthGroup) {
+    if (!session && !inAuthGroup && !inCallback) {
       router.replace('/(auth)/login')
     } else if (session && inAuthGroup) {
       router.replace('/(tabs)')
@@ -82,6 +83,7 @@ export default function RootLayout() {
               <Stack.Screen name="chat/[jobId]/[otherUserId]" options={{ gestureEnabled: true }} />
             <Stack.Screen name="notifications" options={{ gestureEnabled: true }} />
             <Stack.Screen name="onboarding" />
+            <Stack.Screen name="auth/callback" />
             <Stack.Screen name="reviews/[userId]" options={{ gestureEnabled: true }} />
             <Stack.Screen name="search-users" options={{ gestureEnabled: true }} />
             <Stack.Screen name="user/[id]" options={{ gestureEnabled: true }} />

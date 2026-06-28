@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LocJobs</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background: #FFF8F4;
+      padding: 20px;
+    }
+    .card {
+      background: #FFFFFF;
+      border-radius: 16px;
+      padding: 48px 32px;
+      max-width: 380px;
+      width: 100%;
+      text-align: center;
+      border: 1px solid #F0E4DA;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .icon {
+      width: 64px;
+      height: 64px;
+      background: #FFF4ED;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 24px;
+    }
+    .icon svg {
+      width: 32px;
+      height: 32px;
+    }
+    h1 {
+      font-size: 20px;
+      font-weight: 700;
+      color: #2D2B2A;
+      margin-bottom: 8px;
+      letter-spacing: -0.3px;
+    }
+    p {
+      font-size: 15px;
+      color: #A09388;
+      line-height: 1.5;
+      font-weight: 500;
+    }
+    .spinner {
+      width: 28px;
+      height: 28px;
+      border: 3px solid #F0E4DA;
+      border-top-color: #FF6B35;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 20px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .btn {
+      display: inline-block;
+      background: #FF6B35;
+      color: #FFFFFF;
+      padding: 14px 32px;
+      border-radius: 12px;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 15px;
+      margin-top: 24px;
+      transition: opacity 0.2s;
+    }
+    .btn:hover { opacity: 0.9; }
+    .fallback { display: none; }
+    .fallback.visible { display: block; }
+    .fallback-text { margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#FF6B35" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20 7h-4a4 4 0 0 0-8 0H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/>
+        <circle cx="12" cy="13" r="2"/>
+        <path d="M12 3v4"/>
+      </svg>
+    </div>
+    <div class="spinner" id="spinner"></div>
+    <h1>Opening LocJobs...</h1>
+    <div class="fallback" id="fallback">
+      <p class="fallback-text">Looks like you don't have LocJobs installed yet.</p>
+      <p class="fallback-text" style="font-size:13px; margin-top:4px;">Download it to view this job.</p>
+      <a class="btn" id="retry-btn" href="#">Try Again</a>
+    </div>
+  </div>
+
+  <script>
+    var params = new URLSearchParams(window.location.search);
+    var jobId = params.get('id');
+
+    if (jobId) {
+      var deepLink = 'locjobs://job/' + jobId;
+
+      var iframe = document.createElement('iframe');
+      iframe.style.display = 'none';
+      iframe.src = deepLink;
+      document.body.appendChild(iframe);
+
+      setTimeout(function() {
+        window.location.href = deepLink;
+      }, 100);
+
+      setTimeout(function() {
+        document.getElementById('spinner').style.display = 'none';
+        document.querySelector('h1').textContent = 'App not found';
+        document.getElementById('fallback').classList.add('visible');
+        document.getElementById('retry-btn').href = deepLink;
+      }, 2000);
+    } else {
+      document.getElementById('spinner').style.display = 'none';
+      document.querySelector('h1').textContent = 'Invalid link';
+      document.getElementById('fallback').classList.add('visible');
+      document.getElementById('fallback-text').textContent = 'This job link is invalid.';
+    }
+  </script>
+</body>
+</html>

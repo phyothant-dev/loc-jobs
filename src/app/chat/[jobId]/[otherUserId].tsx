@@ -331,7 +331,7 @@ export default function ChatDetailScreen() {
             <ThemedText style={styles.imageBtnText}>{imageUploading ? '...' : '+'}</ThemedText>
           </Pressable>
           <TextInput
-            style={[styles.input, { backgroundColor: Brand.bg, borderColor: Brand.borderLight }]}
+            style={[styles.input, { backgroundColor: Brand.bg, borderColor: Brand.borderLight, color: Brand.text }]}
             placeholder="Type a message..."
             placeholderTextColor={Brand.placeholder}
             value={input}
@@ -350,7 +350,7 @@ export default function ChatDetailScreen() {
           <Pressable style={[styles.editModal, { backgroundColor: Brand.bg }]} onPress={() => {}}>
             <ThemedText style={styles.editTitle}>Edit Message</ThemedText>
             <TextInput
-              style={[styles.editInput, { backgroundColor: Brand.bg, borderColor: Brand.borderLight }]}
+              style={[styles.editInput, { backgroundColor: Brand.bg, borderColor: Brand.borderLight, color: Brand.text }]}
               value={editText}
               onChangeText={setEditText}
               multiline

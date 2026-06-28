@@ -37,6 +37,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       textSecondary: '#A09388',
       textTertiary: '#C4B5A6',
       overlay: 'rgba(0,0,0,0.35)',
+      primaryLight: '#FFF4ED',
+      successLight: '#E8F8F0',
+      warningLight: '#FEF9E7',
       dangerLight: '#FDEDEC',
     })
   }

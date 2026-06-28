@@ -30,6 +30,7 @@ export default function EditProfileScreen() {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
   const [imageUploading, setImageUploading] = useState(false)
   const [showRegionPicker, setShowRegionPicker] = useState(false)
   const [showCityPicker, setShowCityPicker] = useState(false)
@@ -91,8 +92,22 @@ export default function EditProfileScreen() {
     setImageUploading(false)
   }
 
+  const clearError = (field: string) => {
+    setValidationErrors((prev) => {
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  };
+
   const handleSave = async () => {
     if (!user) return
+
+    const errors: Record<string, string> = {};
+    if (!displayName.trim()) errors.displayName = "Display name is required";
+    setValidationErrors(errors);
+    if (Object.keys(errors).length > 0) return;
+
     setSaving(true)
     setSaved(false)
     const updates: any = { display_name: displayName || null, phone: phone || null, bio: bio || null, city: city || null, region: region || null }
@@ -147,7 +162,10 @@ export default function EditProfileScreen() {
 
           <View style={styles.formGroup}>
             <ThemedText type="caption" style={styles.label}>Display Name</ThemedText>
-            <TextInput style={[styles.input, { backgroundColor: Brand.white, borderColor: Brand.borderLight, color: Brand.text }]} placeholder="Your name" placeholderTextColor={Brand.placeholder} value={displayName} onChangeText={setDisplayName} />
+            <TextInput style={[styles.input, { backgroundColor: Brand.white, borderColor: Brand.borderLight, color: Brand.text }]} placeholder="Your name" placeholderTextColor={Brand.placeholder} value={displayName} onChangeText={(v) => { setDisplayName(v); clearError("displayName"); }} />
+            {validationErrors.displayName && (
+              <ThemedText type="caption" style={{ color: '#E53935', marginTop: 4 }}>{validationErrors.displayName}</ThemedText>
+            )}
           </View>
 
           <View style={styles.formGroup}>
