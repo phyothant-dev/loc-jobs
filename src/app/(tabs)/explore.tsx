@@ -855,24 +855,6 @@ export default function AllJobsScreen() {
                         <ThemedText type="caption" style={{ color: Brand.textSecondary, marginTop: 2 }}>
                           {relativeTime(job.created_at, t)}
                         </ThemedText>
-                        {job.employment_type && (
-                          <View
-                            style={{
-                              paddingHorizontal: 6,
-                              paddingVertical: 1,
-                              borderRadius: BorderRadius.sm,
-                              alignSelf: "flex-start",
-                              marginTop: 4,
-                            }}
-                          >
-                            <ThemedText
-                              type="caption"
-                              style={{ color: Brand.primary, fontWeight: 600 }}
-                            >
-                              {EMPLOYMENT_TYPE_LABELS[job.employment_type]}
-                            </ThemedText>
-                          </View>
-                        )}
                         <View style={styles.cardMetaRow}>
                           <View style={styles.cardPrice}>
                             <ThemedText
