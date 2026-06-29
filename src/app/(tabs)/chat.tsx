@@ -94,6 +94,11 @@ export default function ChatScreen() {
   const lastReadAt = useRef<Map<string, number>>(new Map())
 
   useEffect(() => {
+    const total = conversations.reduce((sum, c) => sum + c.unreadCount, 0)
+    setCount('chat', total)
+  }, [conversations, setCount])
+
+  useEffect(() => {
     AsyncStorage.getItem('chat_last_read').then((val) => {
       if (val) lastReadAt.current = new Map(JSON.parse(val))
     })
@@ -112,7 +117,6 @@ export default function ChatScreen() {
       if (msgs) {
         const convs = buildConversations(msgs as any[], user.id, lastReadAt.current)
         setConversations(convs);
-        setCount('chat', convs.reduce((sum, c) => sum + c.unreadCount, 0))
       }
     } catch (error) {
       console.error('Failed to fetch conversations', error);
@@ -126,11 +130,6 @@ export default function ChatScreen() {
       fetchAll();
     }, [fetchAll]),
   );
-
-  const computeTotalUnread = useCallback((convs: Conversation[]) => {
-    const total = convs.reduce((sum, c) => sum + c.unreadCount, 0)
-    setCount('chat', total)
-  }, [setCount])
 
   useEffect(() => {
     if (!user) return;
@@ -182,8 +181,7 @@ export default function ChatScreen() {
                 ? [...prev.slice(0, idx), ...prev.slice(idx + 1)]
                 : [...prev]
               const result = [entry, ...next]
-              computeTotalUnread(result)
-              return result
+               return result
             })
           }
         },
@@ -195,11 +193,7 @@ export default function ChatScreen() {
   const handlePress = (item: Conversation) => {
     lastReadAt.current.set(item.key, Date.now())
     AsyncStorage.setItem('chat_last_read', JSON.stringify(Array.from(lastReadAt.current.entries())))
-    setConversations((prev) => {
-      const next = prev.map((c) => (c.key === item.key ? { ...c, unreadCount: 0 } : c))
-      computeTotalUnread(next)
-      return next
-    })
+    setConversations((prev) => prev.map((c) => (c.key === item.key ? { ...c, unreadCount: 0 } : c)))
     router.push(`/chat/${item.jobId}/${item.otherUserId}`)
   }
 

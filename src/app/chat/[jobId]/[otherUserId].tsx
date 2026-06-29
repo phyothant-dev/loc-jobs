@@ -148,7 +148,7 @@ export default function ChatDetailScreen() {
     if (!jobId) return
     setSubStatus('connecting')
     const sub = supabase
-      .channel(`chat-messages-${jobId}`)
+      .channel(`chat-messages-${jobId}-${Date.now()}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'messages', filter: `job_id=eq.${jobId}` }, (payload) => {
         if (payload.eventType === 'INSERT') {
           const m = payload.new as any
