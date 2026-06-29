@@ -65,6 +65,7 @@ export default function PostJobScreen() {
   const [salaryMax, setSalaryMax] = useState("");
   const [salaryPeriod, setSalaryPeriod] = useState("");
   const [showEmployTypePicker, setShowEmployTypePicker] = useState(false);
+  const [showWorkTypePicker, setShowWorkTypePicker] = useState(false);
   const [showSalaryPeriodPicker, setShowSalaryPeriodPicker] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -117,6 +118,14 @@ export default function PostJobScreen() {
     if (result.canceled || !result.assets.length) return;
     const uris = result.assets.map((a) => a.uri);
     setNewImageUris((prev) => [...prev, ...uris]);
+  };
+
+  const removeExistingImage = (index: number) => {
+    setImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const removeNewImage = (index: number) => {
+    setNewImageUris((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleUseCurrentLocation = async () => {
@@ -346,7 +355,7 @@ export default function PostJobScreen() {
             </ThemedText>
             <View style={styles.slotsRow}>
               <Pressable
-                style={[styles.slotBtn, vacancies <= 1 && { opacity: 0.3 }, { backgroundColor: Brand.primaryLight }]}
+                style={[styles.slotBtn, vacancies <= 1 && { opacity: 0.3 }, { backgroundColor: Brand.primary }]}
                 onPress={() => setVacancies(Math.max(1, vacancies - 1))}
                 disabled={vacancies <= 1}
               >
@@ -354,7 +363,7 @@ export default function PostJobScreen() {
               </Pressable>
               <ThemedText style={styles.slotValue}>{vacancies}</ThemedText>
               <Pressable
-                style={[styles.slotBtn, vacancies >= 50 && { opacity: 0.3 }, { backgroundColor: Brand.primaryLight }]}
+                style={[styles.slotBtn, vacancies >= 50 && { opacity: 0.3 }, { backgroundColor: Brand.primary }]}
                 onPress={() => setVacancies(Math.min(50, vacancies + 1))}
                 disabled={vacancies >= 50}
               >
@@ -367,25 +376,25 @@ export default function PostJobScreen() {
             <ThemedText type="caption" style={styles.label}>
               Work Type
             </ThemedText>
-            <View style={styles.pillRow}>
-              {WORK_TYPES.map((wt) => (
-                <Pressable
-                  key={wt}
-                  style={[styles.pill, workType === wt && styles.pillActive, { backgroundColor: Brand.white, borderColor: Brand.borderLight }, { backgroundColor: Brand.primary, borderColor: Brand.primary }]}
-                  onPress={() => setWorkType(wt)}
-                >
-                  <ThemedText
-                    type="caption"
-                    style={[
-                      styles.pillText,
-                      workType === wt && styles.pillTextActive,
-                    ]}
-                  >
-                    {wt}
-                  </ThemedText>
-                </Pressable>
-              ))}
-            </View>
+            <Pressable
+              style={[styles.pickerBtn, { backgroundColor: Brand.white, borderColor: Brand.borderLight }]}
+              onPress={() => setShowWorkTypePicker(true)}
+            >
+              <ThemedText
+                type="small"
+                style={!workType ? { color: Brand.placeholder } : { textTransform: 'capitalize' }}
+              >
+                {workType || "Select work type"}
+              </ThemedText>
+            </Pressable>
+            <PickerModal
+              visible={showWorkTypePicker}
+              title="Work Type"
+              options={WORK_TYPES as unknown as string[]}
+              selected={workType}
+              onSelect={(v) => { setWorkType(v); setShowWorkTypePicker(false); }}
+              onClose={() => setShowWorkTypePicker(false)}
+            />
           </View>
 
           <View style={styles.formGroup}>
@@ -506,105 +515,101 @@ export default function PostJobScreen() {
             />
           </View>
 
-          {(workType === "onsite" || workType === "hybrid") && (
-            <>
-              <View style={styles.formGroup}>
-                <ThemedText type="caption" style={styles.label}>
-                  Region
-                </ThemedText>
-                <Pressable
-                  style={[styles.pickerBtn, { backgroundColor: Brand.white, borderColor: Brand.borderLight }]}
-                  onPress={() => setShowRegionPicker(true)}
-                >
-                  <ThemedText
-                    type="small"
-                    style={!region ? { color: Brand.placeholder } : {}}
-                  >
-                    {region || "Select region"}
-                  </ThemedText>
-                </Pressable>
-                {validationErrors.region && (
-                  <ThemedText type="caption" style={{ color: '#E53935', marginTop: 4 }}>{validationErrors.region}</ThemedText>
-                )}
-                <PickerModal
-                  visible={showRegionPicker}
-                  title="Select Region"
-                  options={regionList}
-                  selected={region}
-                  onSelect={(v) => {
-                    setRegion(v);
-                    setCity("");
-                  }}
-                  onClose={() => setShowRegionPicker(false)}
-                />
-              </View>
+          <View style={styles.formGroup}>
+            <ThemedText type="caption" style={styles.label}>
+              Region
+            </ThemedText>
+            <Pressable
+              style={[styles.pickerBtn, { backgroundColor: Brand.white, borderColor: Brand.borderLight }]}
+              onPress={() => setShowRegionPicker(true)}
+            >
+              <ThemedText
+                type="small"
+                style={!region ? { color: Brand.placeholder } : {}}
+              >
+                {region || "Select region"}
+              </ThemedText>
+            </Pressable>
+            {validationErrors.region && (
+              <ThemedText type="caption" style={{ color: '#E53935', marginTop: 4 }}>{validationErrors.region}</ThemedText>
+            )}
+            <PickerModal
+              visible={showRegionPicker}
+              title="Select Region"
+              options={regionList}
+              selected={region}
+              onSelect={(v) => {
+                setRegion(v);
+                setCity("");
+              }}
+              onClose={() => setShowRegionPicker(false)}
+            />
+          </View>
 
-              <View style={styles.formGroup}>
-                <ThemedText type="caption" style={styles.label}>
-                  City
-                </ThemedText>
-                <Pressable
-                  style={[styles.pickerBtn, { backgroundColor: Brand.white, borderColor: Brand.borderLight }]}
-                  onPress={() => setShowCityPicker(true)}
-                >
-                  <ThemedText
-                    type="small"
-                    style={!city ? { color: Brand.placeholder } : {}}
-                  >
-                    {city || "Select city"}
-                  </ThemedText>
-                </Pressable>
-                {validationErrors.city && (
-                  <ThemedText type="caption" style={{ color: '#E53935', marginTop: 4 }}>{validationErrors.city}</ThemedText>
-                )}
-                <PickerModal
-                  visible={showCityPicker}
-                  title="Select City"
-                  options={cityList}
-                  selected={city}
-                  onSelect={setCity}
-                  onClose={() => setShowCityPicker(false)}
-                />
-              </View>
+          <View style={styles.formGroup}>
+            <ThemedText type="caption" style={styles.label}>
+              City
+            </ThemedText>
+            <Pressable
+              style={[styles.pickerBtn, { backgroundColor: Brand.white, borderColor: Brand.borderLight }]}
+              onPress={() => setShowCityPicker(true)}
+            >
+              <ThemedText
+                type="small"
+                style={!city ? { color: Brand.placeholder } : {}}
+              >
+                {city || "Select city"}
+              </ThemedText>
+            </Pressable>
+            {validationErrors.city && (
+              <ThemedText type="caption" style={{ color: '#E53935', marginTop: 4 }}>{validationErrors.city}</ThemedText>
+            )}
+            <PickerModal
+              visible={showCityPicker}
+              title="Select City"
+              options={cityList}
+              selected={city}
+              onSelect={setCity}
+              onClose={() => setShowCityPicker(false)}
+            />
+          </View>
 
-              <View style={styles.formGroup}>
-                <View style={styles.switchRow}>
-                  <ThemedText type="caption" style={styles.label}>
-                    Use exact location
-                  </ThemedText>
-                  <Switch
-                    value={useExactLocation}
-                    onValueChange={setUseExactLocation}
-                    trackColor={{
-                      false: Brand.borderLight,
-                      true: Brand.primaryLight,
-                    }}
-                    thumbColor={
-                      useExactLocation ? Brand.primary : Brand.textSecondary
-                    }
-                  />
-                </View>
-                {useExactLocation && (
-                  <Pressable
-                    style={[styles.locationBtn, { backgroundColor: Brand.primaryLight }]}
-                    onPress={handleUseCurrentLocation}
-                  >
-                    <ThemedText style={styles.locationBtnText}>
-                      Use My Current Location
-                    </ThemedText>
-                  </Pressable>
-                )}
-                {lat && lng && (
-                  <ThemedText
-                    type="caption"
-                    style={{ color: Brand.textSecondary, marginTop: 4 }}
-                  >
-                    {lat.toFixed(5)}, {lng.toFixed(5)}
-                  </ThemedText>
-                )}
-              </View>
-            </>
-          )}
+          <View style={styles.formGroup}>
+            <View style={styles.switchRow}>
+              <ThemedText type="caption" style={styles.label}>
+                Use exact location
+              </ThemedText>
+              <Switch
+                value={useExactLocation}
+                onValueChange={setUseExactLocation}
+                trackColor={{
+                  false: Brand.borderLight,
+                  true: Brand.primaryLight,
+                }}
+                thumbColor={
+                  useExactLocation ? Brand.primary : Brand.textSecondary
+                }
+              />
+            </View>
+            {useExactLocation && (
+              <Pressable
+                style={[styles.locationBtn, { backgroundColor: Brand.primaryLight }]}
+                onPress={handleUseCurrentLocation}
+              >
+                <ThemedText style={styles.locationBtnText}>
+                  Use My Current Location
+                </ThemedText>
+              </Pressable>
+            )}
+            {lat && lng && (
+              <ThemedText
+                type="caption"
+                style={{ color: Brand.textSecondary, marginTop: 4 }}
+              >
+                {lat.toFixed(5)}, {lng.toFixed(5)}
+              </ThemedText>
+            )}
+          </View>
 
           <View style={styles.formGroup}>
             <ThemedText type="caption" style={styles.label}>
@@ -615,10 +620,27 @@ export default function PostJobScreen() {
                 + Add Images
               </ThemedText>
             </Pressable>
-            {images.length + newImageUris.length > 0 && (
+            {images.length > 0 && (
               <View style={styles.imagePreviewRow}>
-                {[...images, ...newImageUris].map((url, i) => (
-                  <Image key={i} source={{ uri: url }} style={styles.thumb} />
+                {images.map((url, i) => (
+                  <View key={`existing-${i}`} style={styles.thumbWrapper}>
+                    <Image source={{ uri: url }} style={styles.thumb} />
+                    <Pressable style={styles.removeBtn} onPress={() => removeExistingImage(i)}>
+                      <Ionicons name="close-circle" size={22} color={Brand.danger} />
+                    </Pressable>
+                  </View>
+                ))}
+              </View>
+            )}
+            {newImageUris.length > 0 && (
+              <View style={styles.imagePreviewRow}>
+                {newImageUris.map((url, i) => (
+                  <View key={`new-${i}`} style={styles.thumbWrapper}>
+                    <Image source={{ uri: url }} style={styles.thumb} />
+                    <Pressable style={styles.removeBtn} onPress={() => removeNewImage(i)}>
+                      <Ionicons name="close-circle" size={22} color={Brand.danger} />
+                    </Pressable>
+                  </View>
                 ))}
               </View>
             )}
@@ -719,6 +741,7 @@ const styles = StyleSheet.create({
   slotBtnText: {
     fontSize: 24,
     fontWeight: 700,
+    color: '#FFFFFF',
   },
   slotValue: {
     fontSize: 24,
@@ -789,6 +812,15 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: BorderRadius.sm,
+  },
+  thumbWrapper: {
+    position: 'relative',
+  },
+  removeBtn: {
+    position: 'absolute',
+    top: -8,
+    right: -8,
+    zIndex: 1,
   },
   submitBtn: {
     paddingVertical: 14,

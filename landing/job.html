@@ -11,49 +11,126 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
       background: #FFF8F4;
+      min-height: 100vh;
       padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .top-bar {
+      width: 100%;
+      max-width: 480px;
+      padding: 16px 0;
+    }
+    .top-bar h1 {
+      font-size: 24px;
+      font-weight: 800;
+      color: #FF6B35;
+      letter-spacing: -0.5px;
     }
     .card {
       background: #FFFFFF;
       border-radius: 16px;
-      padding: 48px 32px;
-      max-width: 380px;
+      padding: 24px;
+      max-width: 480px;
       width: 100%;
-      text-align: center;
       border: 1px solid #F0E4DA;
       box-shadow: 0 2px 8px rgba(0,0,0,0.06);
     }
-    .icon {
-      width: 64px;
-      height: 64px;
-      background: #FFF4ED;
-      border-radius: 16px;
+    .card-header {
       display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 0 auto 24px;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
     }
-    .icon svg {
-      width: 32px;
-      height: 32px;
-    }
-    h1 {
-      font-size: 20px;
+    .card-title {
+      font-size: 18px;
       font-weight: 700;
       color: #2D2B2A;
-      margin-bottom: 8px;
-      letter-spacing: -0.3px;
+      flex: 1;
+      line-height: 1.3;
     }
-    p {
-      font-size: 15px;
+    .badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 8px;
+      text-transform: capitalize;
+      white-space: nowrap;
+    }
+    .badge-open { background: #E8F8F0; color: #2ECC71; }
+    .badge-full { background: #FEF9E7; color: #F1C40F; }
+    .badge-completed { background: #FFF4ED; color: #FF6B35; }
+    .badge-cancelled { background: #FDEDEC; color: #E74C3C; }
+    .meta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .meta-tag {
+      font-size: 13px;
       color: #A09388;
-      line-height: 1.5;
+      background: #FFF8F4;
+      padding: 4px 10px;
+      border-radius: 8px;
       font-weight: 500;
+    }
+    .price {
+      font-size: 20px;
+      font-weight: 800;
+      color: #2D2B2A;
+      margin-bottom: 8px;
+    }
+    .description {
+      font-size: 14px;
+      color: #666;
+      line-height: 1.6;
+      margin-bottom: 16px;
+    }
+    .divider {
+      height: 1px;
+      background: #F0E4DA;
+      margin: 16px 0;
+    }
+    .app-section {
+      text-align: center;
+      padding: 16px 0 4px;
+    }
+    .app-section p {
+      font-size: 14px;
+      color: #A09388;
+      font-weight: 500;
+      margin-bottom: 12px;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #FF6B35;
+      color: #FFFFFF;
+      padding: 14px 28px;
+      border-radius: 12px;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 15px;
+      border: none;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .btn:hover { opacity: 0.9; }
+    .btn-outline {
+      background: transparent;
+      color: #FF6B35;
+      border: 1.5px solid #FF6B35;
+    }
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
     }
     .spinner {
       width: 28px;
@@ -62,72 +139,146 @@
       border-top-color: #FF6B35;
       border-radius: 50%;
       animation: spin 0.8s linear infinite;
-      margin: 0 auto 20px;
+      margin: 40px auto;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
-    .btn {
-      display: inline-block;
-      background: #FF6B35;
-      color: #FFFFFF;
-      padding: 14px 32px;
-      border-radius: 12px;
-      text-decoration: none;
-      font-weight: 700;
-      font-size: 15px;
-      margin-top: 24px;
-      transition: opacity 0.2s;
+    .error-state {
+      text-align: center;
+      padding: 40px 20px;
     }
-    .btn:hover { opacity: 0.9; }
-    .fallback { display: none; }
-    .fallback.visible { display: block; }
-    .fallback-text { margin-top: 8px; }
+    .error-state h2 {
+      font-size: 18px;
+      color: #2D2B2A;
+      margin-bottom: 8px;
+    }
+    .error-state p {
+      font-size: 14px;
+      color: #A09388;
+    }
+    .loader-wrap {
+      display: flex;
+      justify-content: center;
+      padding: 60px 0;
+    }
+    @media (max-width: 480px) {
+      body { padding: 12px; }
+      .card { padding: 16px; }
+    }
   </style>
 </head>
 <body>
-  <div class="card">
-    <div class="icon">
-      <svg viewBox="0 0 24 24" fill="none" stroke="#FF6B35" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M20 7h-4a4 4 0 0 0-8 0H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/>
-        <circle cx="12" cy="13" r="2"/>
-        <path d="M12 3v4"/>
-      </svg>
-    </div>
-    <div class="spinner" id="spinner"></div>
-    <h1>Opening LocJobs...</h1>
-    <div class="fallback" id="fallback">
-      <p class="fallback-text">Looks like you don't have LocJobs installed yet.</p>
-      <p class="fallback-text" style="font-size:13px; margin-top:4px;">Download it to view this job.</p>
-      <a class="btn" id="retry-btn" href="#">Try Again</a>
+  <div class="top-bar">
+    <h1>LocJobs</h1>
+  </div>
+
+  <div id="content">
+    <div class="loader-wrap">
+      <div class="spinner"></div>
     </div>
   </div>
 
   <script>
+    var SUPABASE_URL = 'https://axuroixwxueufgvodnde.supabase.co';
+    var SUPABASE_ANON_KEY = 'sb_publishable_Owcd89uuD3g2DE7ZzSeUgw_RufrNPCr';
+
     var params = new URLSearchParams(window.location.search);
     var jobId = params.get('id');
+    var content = document.getElementById('content');
 
-    if (jobId) {
-      var deepLink = 'locjobs://job/' + jobId;
+    var DEEP_LINK = jobId ? 'locjobs://job/' + jobId : null;
 
+    function tryOpenApp() {
+      if (!DEEP_LINK) return;
       var iframe = document.createElement('iframe');
       iframe.style.display = 'none';
-      iframe.src = deepLink;
+      iframe.src = DEEP_LINK;
       document.body.appendChild(iframe);
-
       setTimeout(function() {
-        window.location.href = deepLink;
-      }, 100);
+        window.location.href = DEEP_LINK;
+      }, 200);
+    }
 
-      setTimeout(function() {
-        document.getElementById('spinner').style.display = 'none';
-        document.querySelector('h1').textContent = 'App not found';
-        document.getElementById('fallback').classList.add('visible');
-        document.getElementById('retry-btn').href = deepLink;
-      }, 2000);
+    function formatSalary(min, max, period) {
+      var s = min ? min.toLocaleString() : '';
+      if (max) s += ' - ' + max.toLocaleString();
+      if (period) {
+        var labels = { month: '/month', week: '/week', day: '/day', hour: '/hour', year: '/year' };
+        s += ' ' + (labels[period] || '/' + period);
+      }
+      return s ? s + ' MMK' : null;
+    }
+
+    function renderCard(job) {
+      var statusClass = 'badge-' + job.status;
+      var priceHtml = '';
+      if (job.price && !job.employment_type) {
+        priceHtml = '<div class="price">' + job.price.toLocaleString() + ' MMK</div>';
+      }
+      var salaryHtml = '';
+      if (job.salary_min != null && job.employment_type) {
+        var formatted = formatSalary(job.salary_min, job.salary_max, job.salary_period);
+        if (formatted) salaryHtml = '<div class="price">' + formatted + '</div>';
+      }
+      var locationParts = [];
+      if (job.city) locationParts.push(job.city);
+      if (job.region) locationParts.push(job.region);
+      var locationHtml = locationParts.length ? '<span class="meta-tag">' + locationParts.join(', ') + '</span>' : '';
+      var descHtml = job.description ? '<div class="description">' + job.description.replace(/\n/g, '<br>') + '</div>' : '';
+
+      content.innerHTML = `
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">${escapeHtml(job.title)}</div>
+            <span class="badge ${statusClass}">${job.status}</span>
+          </div>
+          <div class="meta-row">
+            <span class="meta-tag">${job.work_type}</span>
+            ${locationHtml}
+            ${job.category ? '<span class="meta-tag">' + escapeHtml(job.category) + '</span>' : ''}
+            ${job.vacancies > 1 ? '<span class="meta-tag">' + job.vacancies + ' openings</span>' : ''}
+          </div>
+          ${priceHtml}
+          ${salaryHtml}
+          ${descHtml}
+        </div>
+        <div class="card" style="margin-top: 12px;">
+          <div class="app-section">
+            <p>Get the full experience — apply, chat, and manage your jobs on the go.</p>
+            <div class="btn-row">
+              <button class="btn" onclick="tryOpenApp()">Open in App</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function escapeHtml(str) {
+      var div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    if (jobId) {
+      fetch(SUPABASE_URL + '/rest/v1/jobs?id=eq.' + jobId + '&select=*', {
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+        }
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data && data.length > 0) {
+          renderCard(data[0]);
+          tryOpenApp();
+        } else {
+          content.innerHTML = '<div class="card"><div class="error-state"><h2>Job not found</h2><p>This job may have been removed or the link is invalid.</p></div></div>';
+        }
+      })
+      .catch(function() {
+        content.innerHTML = '<div class="card"><div class="error-state"><h2>Something went wrong</h2><p>Could not load this job. Please try again.</p></div></div>';
+      });
     } else {
-      document.getElementById('spinner').style.display = 'none';
-      document.querySelector('h1').textContent = 'Invalid link';
-      document.getElementById('fallback').classList.add('visible');
-      document.getElementById('fallback-text').textContent = 'This job link is invalid.';
+      content.innerHTML = '<div class="card"><div class="error-state"><h2>Invalid link</h2><p>No job ID provided.</p></div></div>';
     }
   </script>
 </body>
