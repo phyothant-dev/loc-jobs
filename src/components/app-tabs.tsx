@@ -45,7 +45,7 @@ export default function AppTabs() {
           md="chat"
         />
         <NativeTabs.Trigger.Badge hidden={counts.chat === 0}>
-          {counts.chat > 9 ? '9+' : String(counts.chat)}
+          {counts.chat > 0 ? (counts.chat > 9 ? '9+' : String(counts.chat)) : ''}
         </NativeTabs.Trigger.Badge>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="profile">
