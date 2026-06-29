@@ -7,6 +7,7 @@ import * as FileSystem from 'expo-file-system/legacy'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 
 import { Ionicons } from '@expo/vector-icons'
+import ImageGallery from '@/components/image-gallery'
 import { ThemedText } from '@/components/themed-text'
 import { BorderRadius, Brand, Shadow, Spacing, FontSize } from '@/constants/theme'
 import { supabase } from '@/lib/supabase'
@@ -541,13 +542,11 @@ export default function ChatDetailScreen() {
         </Pressable>
       </Modal>
 
-      <Modal visible={!!previewImage} transparent animationType="fade" onRequestClose={() => setPreviewImage(null)}>
-        <Pressable style={styles.previewOverlay} onPress={() => setPreviewImage(null)}>
-          {previewImage && (
-            <Image source={{ uri: previewImage }} style={styles.previewImage} resizeMode="contain" />
-          )}
-        </Pressable>
-      </Modal>
+      <ImageGallery
+        images={previewImage ? [previewImage] : []}
+        visible={!!previewImage}
+        onClose={() => setPreviewImage(null)}
+      />
     </SafeAreaView>
   )
 }
@@ -813,15 +812,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     ...Shadow.elevated,
-  },
-  previewOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.95)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  previewImage: {
-    width: SCREEN_WIDTH,
-    height: SCREEN_WIDTH,
   },
 })

@@ -22,6 +22,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import ImageGallery from "@/components/image-gallery";
 import { ThemedText } from "@/components/themed-text";
 import { StarRating } from "@/components/star-rating";
 import {
@@ -82,6 +83,7 @@ export default function JobDetailScreen() {
   const [reviewComment, setReviewComment] = useState('');
   const [submittingReview, setSubmittingReview] = useState(false);
   const [galleryIndex, setGalleryIndex] = useState(0);
+  const [showGallery, setShowGallery] = useState(false);
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [applyMessage, setApplyMessage] = useState('');
 
@@ -590,16 +592,18 @@ export default function JobDetailScreen() {
                 const idx = Math.round(e.nativeEvent.contentOffset.x / (Dimensions.get("window").width - Spacing.four * 2))
                 setGalleryIndex(idx)
               }}
-              renderItem={({ item }) => (
-                <Image
-                  source={{ uri: item }}
-                  style={{
-                    width: Dimensions.get("window").width - Spacing.four * 2,
-                    height: 220,
-                    borderRadius: BorderRadius.md,
-                  }}
-                  resizeMode="cover"
-                />
+              renderItem={({ item, index: imgIdx }) => (
+                <Pressable onPress={() => { setGalleryIndex(imgIdx); setShowGallery(true) }}>
+                  <Image
+                    source={{ uri: item }}
+                    style={{
+                      width: Dimensions.get("window").width - Spacing.four * 2,
+                      height: 220,
+                      borderRadius: BorderRadius.md,
+                    }}
+                    resizeMode="cover"
+                  />
+                </Pressable>
               )}
               keyExtractor={(_, i) => String(i)}
             />
@@ -989,6 +993,13 @@ export default function JobDetailScreen() {
           </View>
         </View>
       </Modal>
+
+      <ImageGallery
+        images={job.image_urls || []}
+        initialIndex={galleryIndex}
+        visible={showGallery}
+        onClose={() => setShowGallery(false)}
+      />
     </SafeAreaView>
   );
 }
