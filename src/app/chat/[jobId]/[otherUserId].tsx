@@ -369,7 +369,7 @@ export default function ChatDetailScreen() {
                       style={[styles.replyPreviewText, { color: isMine ? 'rgba(255,255,255,0.85)' : Brand.textSecondary }]}
                       numberOfLines={2}
                     >
-                      {item.reply_to.content || '📷'}
+                      {item.reply_to.content || ''}
                     </ThemedText>
                   </View>
                 )}
@@ -484,7 +484,7 @@ export default function ChatDetailScreen() {
                   {t('chat.replyingTo', { name: otherName })}
                 </ThemedText>
                 <ThemedText style={[styles.replyBarContent, { color: Brand.textSecondary }]} numberOfLines={1}>
-                  {replyingTo.content || (replyingTo.image_url ? '📷 ' + t('chat.photo') : '')}
+                  {replyingTo.content || (replyingTo.image_url ? 'Photo' : '')}
                 </ThemedText>
               </View>
               <Pressable onPress={() => setReplyingTo(null)} style={styles.replyBarClose}>
