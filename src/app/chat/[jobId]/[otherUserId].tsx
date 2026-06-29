@@ -360,19 +360,7 @@ export default function ChatDetailScreen() {
           >
             <View style={[styles.bubbleRow, isMine ? styles.bubbleRowMine : styles.bubbleRowOther]}>
               <View style={isMine ? [styles.bubble, styles.bubbleMine, { backgroundColor: Brand.primary }] : [styles.bubble, styles.bubbleOther, { backgroundColor: Brand.white }]}>
-                {item.reply_to && !item.reply_to.deleted && (
-                  <View style={[styles.replyPreview, { borderLeftColor: isMine ? 'rgba(255,255,255,0.5)' : Brand.primary }]}>
-                    {item.reply_to.image_url ? (
-                      <Image source={{ uri: item.reply_to.image_url }} style={styles.replyPreviewImage} />
-                    ) : null}
-                    <ThemedText
-                      style={[styles.replyPreviewText, { color: isMine ? 'rgba(255,255,255,0.85)' : Brand.textSecondary }]}
-                      numberOfLines={2}
-                    >
-                      {item.reply_to.content || ''}
-                    </ThemedText>
-                  </View>
-                )}
+
                 {item.image_url ? (
                   <Pressable onPress={() => setPreviewImage(item.image_url)}>
                     <Image source={{ uri: item.image_url }} style={styles.bubbleImage} resizeMode="cover" />
