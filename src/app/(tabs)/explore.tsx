@@ -879,22 +879,18 @@ export default function AllJobsScreen() {
                               type="caption"
                               style={{ color: Brand.primary, fontWeight: 600 }}
                             >
-                              {job.employment_type
-                                ? job.salary_min != null &&
-                                  job.salary_max != null
-                                  ? `${job.salary_min.toLocaleString()} — ${job.salary_max.toLocaleString()} ${SALARY_PERIOD_LABELS[job.salary_period || "month"]}`
-                                  : job.salary_min != null
-                                    ? `From ${job.salary_min.toLocaleString()} ${SALARY_PERIOD_LABELS[job.salary_period || "month"]}`
-                                    : job.salary_max != null
-                                      ? `Up to ${job.salary_max.toLocaleString()} ${SALARY_PERIOD_LABELS[job.salary_period || "month"]}`
-                                      : EMPLOYMENT_TYPE_LABELS[
-                                          job.employment_type
-                                        ]
-                                : job.price != null
-                                  ? `${job.price.toLocaleString()} MMK`
-                                  : EMPLOYMENT_TYPE_LABELS[
-                                      job.employment_type || "full_time"
-                                    ]}
+                        {job.employment_type
+                              ? job.salary_min != null &&
+                                job.salary_max != null
+                                ? `${job.salary_min.toLocaleString()} — ${job.salary_max.toLocaleString()} ${SALARY_PERIOD_LABELS[job.salary_period || "month"]}`
+                                : job.salary_min != null
+                                  ? `From ${job.salary_min.toLocaleString()} ${SALARY_PERIOD_LABELS[job.salary_period || "month"]}`
+                                  : job.salary_max != null
+                                    ? `Up to ${job.salary_max.toLocaleString()} ${SALARY_PERIOD_LABELS[job.salary_period || "month"]}`
+                                    : ''
+                              : job.price != null
+                                ? `${job.price.toLocaleString()} MMK`
+                                : ''}
                             </ThemedText>
                           </View>
                           <View style={styles.cardStatus}>
