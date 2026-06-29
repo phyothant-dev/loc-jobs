@@ -81,6 +81,8 @@
 - Bottom sheet (25%/55%/90%) lists nearby jobs sorted by distance
 - Each card: title, description preview, city/region, distance, time ago, price/salary, directions, save toggle
 - Filter bar: work type pills (onsite/remote/hybrid)
+- Real-time DELETE/UPDATE subscription — jobs removed/updated instantly without pull-to-refresh
+- Error state with retry button when API fetch fails
 
 ### All Jobs / Explore (`(tabs)/explore.tsx`)
 - Grouped 2-column grid by work type (onsite/remote/hybrid) with color-coded sections
@@ -88,7 +90,7 @@
 - Category horizontal scroll with multi-select chips
 - Price range inputs (min–max MMK)
 - Cards: work type bar, category badge, title, location, price or salary range, status badge, save button, vacancies
-- Real-time insert subscription
+- Real-time insert/update/delete subscription
 
 ### My Jobs (`(tabs)/my-jobs.tsx`)
 - Tab bar: Posted / Accepted
@@ -113,6 +115,9 @@
 - Avatar (image or initial fallback), email
 - Info card: display name, phone, bio, city, region
 - Stats row: completed jobs, reviews received, saved jobs
+- Language switcher (English / Burmese) — persisted via AsyncStorage
+- Dark mode toggle — persisted, no flash on restart
+- Help & Support link → FAQ + Contact Us screen
 - Edit Profile button, Delete Account (confirmation alert), Sign Out in header
 - Uses `react-native-maps` for map-based UI (no PostGIS)
 
@@ -121,18 +126,19 @@
 - Form: display name, phone, bio, region picker, city picker
 - Region picker filters available cities
 - Image uploads with `upsert=true` via `expo-file-system/legacy`
+- Field-level validation on all inputs
 
 ### Post Job / Edit Job (`post.tsx`)
-- Title, description, employment type picker, salary min/max (side by side), salary period picker
+- Title, description, employment type picker, category picker
 - Category picker (29 categories: gig + professional)
-- Work type pills (onsite/remote/hybrid), region/city pickers
+- Work type picker dropdown (onsite/remote/hybrid), region/city pickers
 - Onsite/hybrid: toggle exact location + "Use My Current Location"
-- Vacancies stepper (1–50), multiple image upload
+- Vacancies stepper (1–50) with orange +/- buttons, multiple image upload with X-remove overlay
 - Submits via `post_job` RPC (new) or direct update (edit mode)
-- Includes new employment type + salary fields in params
+- Field-level validation; success via Toast + auto-navigate back
 
 ### Job Detail (`job/[id].tsx`)
-- Header: back, share, edit (uploader), delete (uploader), save toggle
+- Header: back, share (Netlify landing page URL), edit (uploader), delete (uploader), save toggle
 - Title, status badge, work type, vacancies filled count
 - Price (gig) or salary range (permanent) display
 - Image carousel (horizontal scroll, full-width)
@@ -141,14 +147,17 @@
 - Chat with Poster button, Report button (flag)
 - Reviews section: existing reviews + write review modal
 - Verified badge on uploader info if applicable
+- Share uses web URL (Netlify) that tries deep link first, app card fallback
 
 ### Auth Screens (`login.tsx`, `register.tsx`)
 - Centered layout with app name + form card
 - Email + password inputs, primary button
+- Field-level validation on all inputs
 - Link to toggle between sign in / sign up
-- Google sign in button (iOS: ASWebAuthenticationSession)
+- Google sign in button (iOS: ASWebAuthenticationSession; Android: `Linking.openURL` + event listener)
 - Forgot password link → reset flow with deep link
 - Verify email reminder on signup
+- Display name passed via `options.data` on signup for immediate DB insert
 
 ### Notifications (`notifications.tsx`)
 - FlatList of notifications with real-time subscription
@@ -162,3 +171,5 @@
 - **Reset Password** (`(auth)/reset-password.tsx`) — New password confirmation form
 - **Verify Email** (`(auth)/verify-email.tsx`) — Post-signup confirmation screen
 - **Onboarding** (`onboarding.tsx`) — Splash with Lottie animation + Get Started button
+- **FAQ / Support** (`support.tsx`) — Collapsible FAQ accordion with 8 questions, Contact Us section with email/website, full i18n (en + my)
+- **Network Banner** (`components/network-banner.tsx`) — Absolute-positioned slide-in banner when offline, uses `@react-native-community/netinfo`, i18n support, safe area aware

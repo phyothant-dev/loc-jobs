@@ -723,10 +723,11 @@ Used for job image uploads. Uploaded via `expo-file-system/legacy` `uploadAsync`
 
 ## Real-time Subscriptions
 
-| Channel | Table | Purpose |
-|---------|-------|---------|
-| `supabase_realtime` | `messages` | Live chat |
-| `supabase_realtime` | `notifications` | Live notification badges |
+| Channel | Table | Events | Purpose |
+|---------|-------|--------|---------|
+| `supabase_realtime` | `messages` | INSERT | Live chat |
+| `supabase_realtime` | `notifications` | INSERT | Live notification badges |
+| custom `jobs` channel | `jobs` | DELETE, UPDATE | Live job list updates on explore & nearby screens |
 
 ---
 

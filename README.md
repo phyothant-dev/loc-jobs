@@ -1,6 +1,6 @@
 # LocJobs
 
-A location-based job marketplace built with React Native (Expo) and Supabase. Supports both gig/temporary work and professional permanent positions with salary ranges, employment types, rich categories, real-time chat, reviews, and Google OAuth.
+A location-based job marketplace built with React Native (Expo) and Supabase. Supports both gig/temporary work and professional permanent positions with employment types, rich categories, real-time chat, reviews, and Google OAuth.
 
 ## Stack
 
@@ -8,6 +8,8 @@ A location-based job marketplace built with React Native (Expo) and Supabase. Su
 - **Backend:** Supabase (PostgreSQL, Auth, Storage, RLS)
 - **Maps:** `react-native-maps`
 - **Auth:** Supabase Auth (email/password + Google OAuth)
+- **Offline Detection:** `@react-native-community/netinfo`
+- **i18n:** English + Burmese (my)
 
 ## Get Started
 
@@ -31,7 +33,7 @@ Copy `.env.example` to `.env` and fill in:
 ## Features
 
 - **Dual-role system** — users can post and/or apply for jobs
-- **Job types** — gig (fixed-price) and salaried (employment type + salary range/period)
+- **Job types** — gig (fixed-price) and salaried (employment type)
 - **Categories** — 29 categories spanning gig services and professional fields
 - **Real-time chat** — per-job messaging with image sharing and unread indicators
 - **Saved jobs** — bookmark jobs with toggle from any listing
@@ -44,10 +46,17 @@ Copy `.env.example` to `.env` and fill in:
 - **Job lifecycle** — open → accepted → completed; cancellations, reject reason
 - **Reports & abuse** — flag inappropriate jobs
 - **Soft delete** — jobs and accounts use `deleted`/`deleted_at`
+- **i18n** — full English and Burmese (my) translations
+- **Offline banner** — slide-in indicator when internet drops, with i18n
+- **Help & Support** — FAQ accordion + Contact Us screen
+- **Error + retry UI** — fetch error states with retry buttons on list screens
+- **Posted time labels** — "Posted 3h ago" / "Posted 2d ago" on all job cards
+- **Realtime job sync** — DELETE/UPDATE subscriptions keep job lists current
+- **Display name fix** — passed via `options.data` on signup so it persists through email verification
 
 ## Migrations
 
-All migrations are in `supabase/migrations/` (`00001`–`00021`). Run them manually via the Supabase Dashboard SQL Editor.
+All migrations are in `supabase/migrations/` (`00001`–`00022`). Run them manually via the Supabase Dashboard SQL Editor.
 
 ## Storage
 

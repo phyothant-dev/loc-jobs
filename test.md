@@ -254,4 +254,78 @@
 | 12.10 | Memory — deep navigation | — | 1. Navigate through many screens (tap jobs, users, etc.) | No memory warnings. No crashes. Can go back all the way. |
 | 12.11 | Deep link — job | — | 1. Open a job link externally | Correct job detail screen opens |
 | 12.12 | Deep link — user profile | — | 1. Open a user profile link externally | Correct user profile opens |
-| 12.13 | Supabase realtime | — | 1. Have another user perform an action (apply, review) | Notification/changes arrive without manual refresh |
+| 12.13 | Supabase realtime — notifications | — | 1. Have another user perform an action (apply, review) | Notification/changes arrive without manual refresh |
+| 12.14 | Supabase realtime — job DELETE | Another user's job visible | 1. Have the uploader delete their job<br>2. Observe the list on explore/nearby | Job disappears from the list without pull-to-refresh |
+| 12.15 | Supabase realtime — job UPDATE | Another user's job visible | 1. Have the uploader change the job title/price<br>2. Observe the list on explore/nearby | Job updates in the list without pull-to-refresh |
+| 12.16 | Posted time labels | Any job list | 1. Check any job card on explore, index, my-jobs, user/[id]/jobs | Shows relative time like "Posted 3h ago" or "Posted 2d ago" |
+| 12.17 | Posted time — new job | Just posted a job | 1. Navigate to my-jobs tab | Shows "Posted just now" or "Posted 1m ago" |
+
+## 13. Offline Banner
+
+| # | Test Case | Precondition | Steps | Expected |
+|---|-----------|-------------|-------|----------|
+| 13.1 | Offline banner — appears | Online | 1. Enable airplane mode | Red banner slides in from top: "No internet connection" |
+| 13.2 | Offline banner — disappears | Airplane mode ON | 1. Disable airplane mode | Banner slides up and disappears |
+| 13.3 | Offline banner — animation | Any state | 1. Toggle airplane mode on/off | Banner animates smoothly (slide down on offline, slide up on online) |
+| 13.4 | Offline banner — i18n (English) | Locale = English | 1. Enable airplane mode | Banner shows "No internet connection" |
+| 13.5 | Offline banner — i18n (Burmese) | Locale = Burmese (my) | 1. Enable airplane mode | Banner shows "အင်တာနက်ချိတ်ဆက်မှုမရှိပါ" |
+| 13.6 | Offline banner — remains visible while offline | Airplane mode ON | 1. Navigate between all tabs (Nearby, Explore, My Jobs, Profile) | Banner stays visible on all screens |
+| 13.7 | Offline banner — safe area | Device with notch | 1. Enable airplane mode | Banner clears the status bar (not hidden behind it) |
+
+## 14. Help & Support / FAQ Screen
+
+| # | Test Case | Precondition | Steps | Expected |
+|---|-----------|-------------|-------|----------|
+| 14.1 | FAQ — navigate to | Profile tab | 1. Tap "Help & Support" button | Navigates to FAQ screen with accordion list |
+| 14.2 | FAQ — accordion open | FAQ screen loaded | 1. Tap any question | Answer slides open below the question. Chevron rotates. |
+| 14.3 | FAQ — accordion close | One answer is open | 1. Tap the same question again | Answer slides closed. Chevron returns to original position. |
+| 14.4 | FAQ — multiple open | FAQ screen loaded | 1. Tap Question A → open<br>2. Tap Question B → open | Both answers visible simultaneously (independent accordion) |
+| 14.5 | FAQ — all 8 questions visible | FAQ screen loaded | 1. Scroll through the full FAQ list | All 8 questions visible: How to apply, How to post, Edit job, Delete job, Contact uploader, Profile setup, Verification, Account deletion |
+| 14.6 | FAQ — i18n (English) | Locale = English | 1. Check all FAQ questions and answers | All text in English |
+| 14.7 | FAQ — i18n (Burmese) | Locale = Burmese (my) | 1. Switch language to Burmese<br>2. Open FAQ | All FAQ questions and answers in Burmese |
+| 14.8 | Contact Us — email | FAQ screen loaded | 1. Scroll to "Contact Us" section<br>2. Tap email link | Opens device email client with pre-filled address |
+| 14.9 | Contact Us — website | FAQ screen loaded | 1. Scroll to "Contact Us" section<br>2. Tap website link | Opens browser to the website URL |
+| 14.10 | Contact Us — i18n (English) | Locale = English | 1. Check Contact Us labels | "Contact Us", "Email", "Website" labels in English |
+| 14.11 | Contact Us — i18n (Burmese) | Locale = Burmese | 1. Check Contact Us labels | Labels in Burmese |
+| 14.12 | Help & Support button — i18n (English) | Locale = English | 1. Go to Profile tab | Button label shows "Help & Support" |
+| 14.13 | Help & Support button — i18n (Burmese) | Locale = Burmese | 1. Go to Profile tab | Button label shows "အကူအညီနှင့် ပံ့ပိုးကူညီမှု" |
+
+## 15. i18n / Language Switching
+
+| # | Test Case | Precondition | Steps | Expected |
+|---|-----------|-------------|-------|----------|
+| 15.1 | Language switch — to Burmese | English locale | 1. Go to Profile tab<br>2. Tap the language toggle | All UI text switches to Burmese |
+| 15.2 | Language switch — to English | Burmese locale | 1. Go to Profile tab<br>2. Tap the language toggle | All UI text switches to English |
+| 15.3 | Language — persist after restart | Burmese selected | 1. Kill the app<br>2. Reopen | App loads in Burmese |
+| 15.4 | Language — persist after restart | English selected | 1. Kill the app<br>2. Reopen | App loads in English |
+| 15.5 | Language — device default auto-detect | Device locale set to Myanmar | 1. Fresh install / clear AsyncStorage<br>2. Open app | App loads in Burmese |
+| 15.6 | Language — system location chip i18n | English / Burmese | 1. Switch language | City, region names in DB are still in original language (not translated) |
+| 15.7 | Language — offline banner i18n | See 13.4–13.5 | — | Banner text follows current language |
+
+## 16. Error + Retry UI
+
+| # | Test Case | Precondition | Steps | Expected |
+|---|-----------|-------------|-------|----------|
+| 16.1 | Explore — network error | Airplane mode ON | 1. Go to Explore tab | Empty state with error icon + "Network error" message + "Retry" button visible |
+| 16.2 | Explore — retry | Error state visible | 1. Disable airplane mode<br>2. Tap "Retry" button | List reloads successfully |
+| 16.3 | Nearby — network error | Airplane mode ON | 1. Go to Nearby tab | Empty state with error icon + "Network error" message + "Retry" button |
+| 16.4 | Nearby — retry | Error state visible | 1. Disable airplane mode<br>2. Tap "Retry" button | List reloads successfully |
+| 16.5 | Error state — i18n (English) | English locale, airplane mode ON | 1. Check empty state on any list | Error message in English |
+| 16.6 | Error state — i18n (Burmese) | Burmese locale, airplane mode ON | 1. Check empty state on any list | Error message in Burmese |
+
+## 17. Display Name on Signup
+
+| # | Test Case | Precondition | Steps | Expected |
+|---|-----------|-------------|-------|----------|
+| 17.1 | Display name — saved on signup (email confirmed) | Email verification ON | 1. Register with display name "John"<br>2. Verify email<br>3. Sign in | Profile shows "John" as display name |
+| 17.2 | Display name — saved on signup (no email confirm) | Email verification OFF | 1. Register with display name "Jane"<br>2. Sign in | Profile shows "Jane" as display name |
+| 17.3 | Display name — empty on signup | No display name entered | 1. Register without display name<br>2. Sign in | Display name is empty/not shown |
+| 17.4 | Display name — persists after upsert | Already has display name | 1. Go to Edit Profile<br>2. Change display name to "NewName"<br>3. Save | Display name updated. Revisit profile → shows "NewName". |
+
+## 18. OAuth / Android Dev Build
+
+| # | Test Case | Precondition | Steps | Expected |
+|---|-----------|-------------|-------|----------|
+| 18.1 | Google Sign-In — iOS (Expo Go) | iOS device/simulator | 1. Tap "Sign in with Google" | ASWebAuthenticationSession opens. After auth, user is signed in. |
+| 18.2 | Google Sign-In — Android (dev build) | Android dev build installed | 1. Tap "Sign in with Google" | Browser opens via Linking.openURL. After auth, app captures callback and signs in. |
+| 18.3 | OAuth — cold start deep link | App killed | 1. Open app via a deep link (e.g., locjobs://auth/callback#access_token=...) | Auth callback route parses tokens and signs user in. |
