@@ -857,29 +857,28 @@ export default function AllJobsScreen() {
                         </ThemedText>
                         <View style={styles.cardMetaRow}>
                           <View style={styles.cardPrice}>
+                            <ThemedText type="caption" style={{ color: Brand.primary, fontWeight: 600 }}>
+                              {job.employment_type
+                                ? job.salary_min != null && job.salary_max != null
+                                  ? `${job.salary_min.toLocaleString()} — ${job.salary_max.toLocaleString()} ${SALARY_PERIOD_LABELS[job.salary_period || "month"]}`
+                                  : job.salary_min != null
+                                    ? `From ${job.salary_min.toLocaleString()} ${SALARY_PERIOD_LABELS[job.salary_period || "month"]}`
+                                    : job.salary_max != null
+                                      ? `Up to ${job.salary_max.toLocaleString()} ${SALARY_PERIOD_LABELS[job.salary_period || "month"]}`
+                                      : ''
+                                : job.price != null
+                                  ? `${job.price.toLocaleString()} MMK`
+                                  : ''}
+                            </ThemedText>
+                          </View>
+                          <View style={styles.cardStatus}>
                             {job.employment_type && !job.salary_min && !job.salary_max && !job.price ? (
                               <View style={[styles.employBadge, { backgroundColor: Brand.primaryLight }]}>
                                 <ThemedText type="caption" style={{ color: Brand.primary, fontWeight: 600 }}>
                                   {EMPLOYMENT_TYPE_LABELS[job.employment_type]}
                                 </ThemedText>
                               </View>
-                            ) : (
-                              <ThemedText type="caption" style={{ color: Brand.primary, fontWeight: 600 }}>
-                                {job.employment_type
-                                  ? job.salary_min != null && job.salary_max != null
-                                    ? `${job.salary_min.toLocaleString()} — ${job.salary_max.toLocaleString()} ${SALARY_PERIOD_LABELS[job.salary_period || "month"]}`
-                                    : job.salary_min != null
-                                      ? `From ${job.salary_min.toLocaleString()} ${SALARY_PERIOD_LABELS[job.salary_period || "month"]}`
-                                      : job.salary_max != null
-                                        ? `Up to ${job.salary_max.toLocaleString()} ${SALARY_PERIOD_LABELS[job.salary_period || "month"]}`
-                                        : ''
-                                  : job.price != null
-                                    ? `${job.price.toLocaleString()} MMK`
-                                    : ''}
-                              </ThemedText>
-                            )}
-                          </View>
-                          <View style={styles.cardStatus}>
+                            ) : null}
                             <ThemedText type="caption" style={{ color: s.color }}>
                               {job.status.charAt(0).toUpperCase() + job.status.slice(1)}
                             </ThemedText>
