@@ -68,7 +68,7 @@ function buildConversations(msgs: any[], userId: string, lastReadAt: Map<string,
         otherUserId: otherId,
         otherUserName: otherName || "Anonymous",
         otherAvatarUrl: otherAvatar,
-        lastMessage: m.content || (m.image_url ? "📷 Photo" : ""),
+        lastMessage: m.content || '',
         lastMessageTime: m.created_at,
         unreadCount: existing ? existing.unreadCount + (isUnread ? 1 : 0) : (isUnread ? 1 : 0),
       });
@@ -168,7 +168,7 @@ export default function ChatScreen() {
               otherUserId: otherId,
               otherUserName: otherName || "Anonymous",
               otherAvatarUrl: otherAvatar,
-              lastMessage: msg.content || (msg.image_url ? "📷 Photo" : ""),
+              lastMessage: msg.content || '',
               lastMessageTime: msg.created_at,
               unreadCount: isUnread ? 1 : 0,
             }
