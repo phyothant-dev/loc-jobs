@@ -140,6 +140,12 @@ const en = {
     edited: 'edited',
     markAsRead: 'Mark as read',
     photo: 'Photo',
+    reply: 'Reply',
+    replyingTo: 'Replying to {name}',
+    seen: 'Seen',
+    sendFailed: 'Send failed. Tap to retry.',
+    reconnecting: 'Reconnecting...',
+    loadEarlier: 'Load earlier messages',
   },
   myJobs: {
     posted: 'Posted',

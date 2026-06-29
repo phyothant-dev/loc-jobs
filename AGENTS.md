@@ -81,3 +81,18 @@ Read the exact versioned docs at https://docs.expo.dev/versions/v56.0.0/ before 
 - Full i18n support: all FAQ Q&A and contact labels translated in `src/lib/i18n/en.ts` and `src/lib/i18n/my.ts` under the `support` key
 - Linked from profile settings via "Help & Support" button
 - Uses `t('profile.helpSupport')` — translates to "Help & Support" (en) / "အကူအညီနှင့် ပံ့ပိုးကူညီမှု" (my)
+
+## Chat Detail Features
+- **i18n** — all hardcoded strings replaced with `t('chat.xxx')` calls; date separators use t('chat.today')/t('chat.yesterday')
+- **Channel name** — stable `chat-messages-${jobId}` (no more `Date.now()` channel leak)
+- **Connection indicator** — yellow "Reconnecting..." bar when subscription drops
+- **Error handling** — `sendError` state shows "Send failed. Tap to retry." below input; input not cleared on failure
+- **Pagination** — loads latest 30 messages initially, "Load earlier messages" button or scroll-to-top trigger loads older pages of 30
+- **Reply to message** — `reply_to_id` column (migration 00024), long-press any message → "Reply", preview bar above input with quoted message, green left border in bubble for replied-to content, `fetchReplyDetails` resolves replied message content asynchronously
+- **Read receipts** — `read_at` column (migration 00024), marks all unread messages as read when chat opens, shows "Seen" under own messages that have been read, RLS policy updated so both participants can update `read_at`
+- **New i18n keys**: `reply`, `replyingTo`, `seen`, `sendFailed`, `reconnecting`, `loadEarlier`
+
+## Chat Tab Unread Badge
+- `src/contexts/FilterCountContext.tsx` — added `chat` field to `FilterCounts`
+- `src/components/app-tabs.tsx` — shows `<NativeTabs.Trigger.Badge>` on chat tab with total unread (capped at "9+")
+- `src/app/(tabs)/chat.tsx` — calls `setCount('chat', total)` after computing conversations; updates on new message and when conversation is tapped

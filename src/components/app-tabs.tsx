@@ -44,6 +44,9 @@ export default function AppTabs() {
           sf={{ default: "message", selected: "message.fill" }}
           md="chat"
         />
+        <NativeTabs.Trigger.Badge hidden={counts.chat === 0}>
+          {counts.chat > 9 ? '9+' : String(counts.chat)}
+        </NativeTabs.Trigger.Badge>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="profile">
         <NativeTabs.Trigger.Label>{t('tabs.profile')}</NativeTabs.Trigger.Label>

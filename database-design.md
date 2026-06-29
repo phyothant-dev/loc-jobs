@@ -113,6 +113,8 @@ Extends `auth.users` (Supabase Auth).
 | `image_url` | `text` | nullable | Image message |
 | `edited_at` | `timestamptz` | nullable | |
 | `deleted` | `boolean` | NOT NULL DEFAULT `false` | |
+| `reply_to_id` | `uuid` | FK → `messages(id)` ON DELETE SET NULL | Added in migration 00024 |
+| `read_at` | `timestamptz` | nullable | Added in migration 00024 |
 | `created_at` | `timestamptz` | NOT NULL DEFAULT `now()` | |
 
 **Realtime**: `supabase_realtime` publication includes this table.
@@ -194,7 +196,7 @@ Extends `auth.users` (Supabase Auth).
 | `users` | Public | Own record only (`auth.uid() = id`) | Own record only (`auth.uid() = id`) | — |
 | `jobs` | Public | `auth.uid() = uploader_id` AND role is uploader/both | `auth.uid() = uploader_id` | `auth.uid() = uploader_id` |
 | `applications` | Self OR uploader of job | Searcher role, job must be `open` | Uploader of job (via RPC) | — |
-| `messages` | Participant (sender/receiver) | `auth.uid() = sender_id` | — | — |
+| `messages` | Participant (sender/receiver) | `auth.uid() = sender_id` | Participant (sender/receiver) via UPDATE policy (`read_at` only checked at DB level) | — |
 | `notifications` | Own only (`auth.uid() = user_id`) | System (no check) | Own only | — |
 | `saved_jobs` | Own only | Own only | — | Own only |
 | `reviews` | Public | `auth.uid() = reviewer_id` | `auth.uid() = reviewer_id` | `auth.uid() = reviewer_id` |
@@ -729,6 +731,7 @@ Used for job image uploads. Uploaded via `expo-file-system/legacy` `uploadAsync`
 | `supabase_realtime` | `messages` | INSERT | Live chat |
 | `supabase_realtime` | `notifications` | INSERT | Live notification badges |
 | custom `jobs` channel | `jobs` | DELETE, UPDATE | Live job list updates on explore & nearby screens |
+| custom `chat-messages-{jobId}` channel | `messages` | *, filter job_id=eq.{jobId} | Live chat messages, edits, deletes, read receipts |
 
 ---
 
@@ -759,3 +762,4 @@ Used for job image uploads. Uploaded via `expo-file-system/legacy` `uploadAsync`
 | 00021 | `employment_type.sql` | Employment type + salary fields |
 | 00022 | `reviews_delete_policy.sql` | DELETE RLS for reviews |
 | 00023 | `delete_account_rpc.sql` | `delete_user_account()` SECURITY DEFINER RPC for self-service account deletion |
+| 00024 | `chat_features.sql` | `reply_to_id` and `read_at` columns on messages, UPDATE RLS for read receipts |

@@ -16,6 +16,7 @@ import {
 } from "@/constants/theme";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLocale } from "@/contexts/LocaleContext";
+import { useFilterCount } from "@/contexts/FilterCountContext";
 import { supabase } from "@/lib/supabase";
 import { useBrand } from "@/contexts/ThemeContext";
 
@@ -87,6 +88,7 @@ export default function ChatScreen() {
 
   const { user } = useAuth();
   const { t } = useLocale();
+  const { setCount } = useFilterCount();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
   const lastReadAt = useRef<Map<string, number>>(new Map())
@@ -108,7 +110,9 @@ export default function ChatScreen() {
         .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
         .order("created_at", { ascending: false });
       if (msgs) {
-        setConversations(buildConversations(msgs as any[], user.id, lastReadAt.current));
+        const convs = buildConversations(msgs as any[], user.id, lastReadAt.current)
+        setConversations(convs);
+        setCount('chat', convs.reduce((sum, c) => sum + c.unreadCount, 0))
       }
     } catch (error) {
       console.error('Failed to fetch conversations', error);
@@ -123,10 +127,15 @@ export default function ChatScreen() {
     }, [fetchAll]),
   );
 
+  const computeTotalUnread = useCallback((convs: Conversation[]) => {
+    const total = convs.reduce((sum, c) => sum + c.unreadCount, 0)
+    setCount('chat', total)
+  }, [setCount])
+
   useEffect(() => {
     if (!user) return;
     const sub = supabase
-      .channel(`chat-list-${Date.now()}`)
+      .channel('chat-list')
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "messages" },
@@ -172,7 +181,9 @@ export default function ChatScreen() {
               const next = idx !== -1
                 ? [...prev.slice(0, idx), ...prev.slice(idx + 1)]
                 : [...prev]
-              return [entry, ...next]
+              const result = [entry, ...next]
+              computeTotalUnread(result)
+              return result
             })
           }
         },
@@ -184,9 +195,11 @@ export default function ChatScreen() {
   const handlePress = (item: Conversation) => {
     lastReadAt.current.set(item.key, Date.now())
     AsyncStorage.setItem('chat_last_read', JSON.stringify(Array.from(lastReadAt.current.entries())))
-    setConversations((prev) =>
-      prev.map((c) => (c.key === item.key ? { ...c, unreadCount: 0 } : c))
-    )
+    setConversations((prev) => {
+      const next = prev.map((c) => (c.key === item.key ? { ...c, unreadCount: 0 } : c))
+      computeTotalUnread(next)
+      return next
+    })
     router.push(`/chat/${item.jobId}/${item.otherUserId}`)
   }
 

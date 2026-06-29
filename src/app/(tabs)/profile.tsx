@@ -408,7 +408,7 @@ export default function ProfileScreen() {
                 onPress={() => {
                   Alert.alert(
                     t('profile.deleteAccount'),
-                    t('profile.deleteWarning'),
+                    t('profile.deleteConfirm'),
                     [
                       { text: t('common.cancel'), style: 'cancel' },
                       { text: t('common.delete'), style: 'destructive', onPress: async () => {

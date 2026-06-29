@@ -35,7 +35,7 @@ Copy `.env.example` to `.env` and fill in:
 - **Dual-role system** — users can post and/or apply for jobs
 - **Job types** — gig (fixed-price) and salaried (employment type)
 - **Categories** — 29 categories spanning gig services and professional fields
-- **Real-time chat** — per-job messaging with image sharing and unread indicators
+- **Real-time chat** — per-job messaging with image sharing, unread indicators, reply, read receipts, and pagination
 - **Saved jobs** — bookmark jobs with toggle from any listing
 - **Reviews & ratings** — star ratings on completed jobs
 - **Verified badges** — auto-granted after 3 completed jobs

@@ -142,6 +142,12 @@ const my: TranslationKeys = {
     edited: 'ပြင်ဆင်ပြီး',
     markAsRead: 'ဖတ်ပြီးအမှတ်အသားပြုရန်',
     photo: 'ဓာတ်ပုံ',
+    reply: 'ပြန်ကြားရန်',
+    replyingTo: '{name} ကိုပြန်ကြားနေသည်',
+    seen: 'မြင်ပြီး',
+    sendFailed: 'မပို့နိုင်ပါ။ ပြန်လည်ကြိုးစားရန်နှိပ်ပါ။',
+    reconnecting: 'ပြန်လည်ချိတ်ဆက်နေသည်...',
+    loadEarlier: 'ယခင် မက်ဆေ့ချ်များကို တင်ရန်',
   },
   myJobs: {
     posted: 'တင်ထားသော',
