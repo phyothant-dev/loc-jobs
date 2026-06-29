@@ -413,15 +413,7 @@ export default function ProfileScreen() {
                       { text: t('common.cancel'), style: 'cancel' },
                       { text: t('common.delete'), style: 'destructive', onPress: async () => {
                         if (!user) return
-                        await supabase.from('users').update({
-                          deleted_at: new Date().toISOString(),
-                          display_name: null,
-                          phone: null,
-                          avatar_url: null,
-                          bio: null,
-                          city: null,
-                          region: null,
-                        }).eq('id', user.id)
+                        await supabase.rpc('delete_user_account')
                         signOut()
                       }},
                     ],

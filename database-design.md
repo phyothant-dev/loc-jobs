@@ -216,6 +216,7 @@ Extends `auth.users` (Supabase Auth).
 | `nearby_jobs(lat, lng, radius)` | RPC: spatial query using haversine formula |
 | `post_job(...)` | RPC: insert job with full parameter set |
 | `check_user_verification(uuid)` | Function: auto-verifies user after 3 completed jobs |
+| `delete_user_account()` | SECURITY DEFINER RPC: deletes `auth.users` row for `auth.uid()`, cascading to all user data |
 
 ---
 
@@ -757,3 +758,4 @@ Used for job image uploads. Uploaded via `expo-file-system/legacy` `uploadAsync`
 | 00020 | `delete_job_account.sql` | Soft delete for jobs/users |
 | 00021 | `employment_type.sql` | Employment type + salary fields |
 | 00022 | `reviews_delete_policy.sql` | DELETE RLS for reviews |
+| 00023 | `delete_account_rpc.sql` | `delete_user_account()` SECURITY DEFINER RPC for self-service account deletion |
