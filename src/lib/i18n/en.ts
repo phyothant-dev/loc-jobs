@@ -128,7 +128,7 @@ const en = {
     deleteConversation: 'Delete Conversation',
     deleteConfirm: 'This will delete all messages in this conversation.',
     deleteMessage: 'Delete message?',
-    deleteMessageWarning: 'This cannot be undone.',
+    deleteMessageWarning: 'Are you sure?',
     messageOptions: 'Message',
     messageDeleted: 'Message deleted',
     send: 'Send',

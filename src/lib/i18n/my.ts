@@ -130,7 +130,7 @@ const my: TranslationKeys = {
     deleteConversation: 'စကားပြောခန်းဖျက်ရန်',
     deleteConfirm: 'ဤစကားပြောခန်းရှိ မက်ဆေ့ချ်အားလုံးကို ဖျက်ပစ်မည်။',
     deleteMessage: 'မက်ဆေ့ချ်ဖျက်မည်လား?',
-    deleteMessageWarning: 'ဤအရာကို ပြန်လည်ဖျက်သိမ်း၍မရပါ။',
+    deleteMessageWarning: 'သေချာပါသလား?',
     messageOptions: 'မက်ဆေ့ချ်',
     messageDeleted: 'မက်ဆေ့ချ်ဖျက်ပြီးပါပြီ',
     send: 'ပို့ရန်',
