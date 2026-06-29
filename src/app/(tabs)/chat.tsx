@@ -113,6 +113,7 @@ export default function ChatScreen() {
           "*, job:jobs!job_id(title), sender:users!sender_id(display_name, avatar_url), receiver:users!receiver_id(display_name, avatar_url)",
         )
         .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
+        .eq('deleted', false)
         .order("created_at", { ascending: false });
       if (msgs) {
         const convs = buildConversations(msgs as any[], user.id, lastReadAt.current)
@@ -134,7 +135,7 @@ export default function ChatScreen() {
   useEffect(() => {
     if (!user) return;
     const sub = supabase
-      .channel('chat-list')
+      .channel(`chat-list-${Date.now()}`)
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "messages" },
