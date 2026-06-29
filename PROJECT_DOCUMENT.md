@@ -60,6 +60,12 @@ To develop a mobile application that facilitates the posting and finding of loca
 - Edit profile: avatar upload, display name, phone, bio, region, city
 - Password reset via email + deep link (`locjobs://reset-password`)
 - Email verification on signup
+- Display name passed to `supabase.auth.signUp()` via `options.data` for immediate DB trigger population
+- Offline detection banner (`network-banner.tsx`) with i18n support
+- Error + retry UI on list screens (explore, nearby)
+- FAQ + Contact Us help screen with collapsible FAQ accordion
+- i18n for help/support content (en + my translations)
+- Realtime job updates (DELETE/UPDATE subscriptions) on explore and nearby screens
 - Soft delete for jobs and accounts
 - Row Level Security on all tables
 - Session persistence via AsyncStorage
@@ -69,7 +75,7 @@ To develop a mobile application that facilitates the posting and finding of loca
 - Push notifications (requires dev build with `expo-dev-client`)
 - Payment processing or in-app transactions
 - Admin dashboard or analytics panel
-- Offline mode
+- Full offline mode (basic offline banner exists via `@react-native-community/netinfo`)
 - Android Google OAuth in Expo Go (requires dev build)
 
 ### Target Users
@@ -90,6 +96,7 @@ To develop a mobile application that facilitates the posting and finding of loca
 | Routing | Expo Router (file-based) |
 | Auth | Supabase Auth (email/password + Google OAuth) |
 | Animations | Lottie (`lottie-react-native`) |
+| Offline Detection | `@react-native-community/netinfo` |
 | Chat | In-app real-time via Supabase Realtime |
 
 ### Platform Support

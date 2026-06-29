@@ -76,19 +76,25 @@ export default function RegisterScreen() {
       const { data, error: authErr } = await supabase.auth.signUp({
         email: trimmedEmail,
         password,
+        options: {
+          data: { display_name: fullName.trim() },
+        },
       });
       if (authErr) {
         setError(authErr.message);
         setToast({ visible: true, message: authErr.message, type: "error" });
         return;
       }
-      if (data.user && data.user.email_confirmed_at) {
-        await supabase.from("users").upsert({
-          id: data.user.id,
-          email: trimmedEmail,
-          display_name: fullName.trim(),
-        });
-      } else {
+      if (data.user) {
+        try {
+          await supabase.from("users").upsert({
+            id: data.user.id,
+            email: trimmedEmail,
+            display_name: fullName.trim(),
+          });
+        } catch {}
+      }
+      if (!data.user?.email_confirmed_at) {
         router.replace("/(auth)/verify-email" as any);
       }
     });
@@ -335,7 +341,7 @@ export default function RegisterScreen() {
               opacity: 0.6,
             }}
           >
-            © 2024 LocJobs Inc. All rights reserved.
+            © 2026 LocJobs Inc. All rights reserved.
           </ThemedText>
         </View>
       </ScrollView>

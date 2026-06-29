@@ -37,7 +37,14 @@ export default function UserProfileScreen() {
   const loadProfile = useCallback(async () => {
     if (!id) return
     try {
-      const { data } = await supabase.from('users').select('*').eq('id', id).single()
+      const [userRes, ratingRes, reviewRes, jobRes] = await Promise.all([
+        supabase.from('users').select('*').eq('id', id).single(),
+        supabase.from('reviews').select('rating').eq('reviewee_id', id),
+        supabase.from('reviews').select('*, reviewer:users!reviewer_id(display_name, avatar_url)').eq('reviewee_id', id).order('created_at', { ascending: false }).limit(3),
+        supabase.from('jobs').select('id, title, price, city, employment_type, created_at').eq('uploader_id', id).eq('deleted', false).in('status', ['open', 'full']).order('created_at', { ascending: false }).limit(5),
+      ])
+
+      const { data } = userRes
       if (data) {
         const u = data as any
         setDisplayName(u.display_name || '')
@@ -50,10 +57,7 @@ export default function UserProfileScreen() {
         setVerified(u.verified || false)
       }
 
-      const { data: ratingData } = await supabase
-        .from('reviews')
-        .select('rating')
-        .eq('reviewee_id', id)
+      const { data: ratingData } = ratingRes
       if (ratingData && ratingData.length > 0) {
         const sum = ratingData.reduce((acc: number, r: any) => acc + r.rating, 0)
         setAvgRating(Number((sum / ratingData.length).toFixed(1)))
@@ -63,12 +67,7 @@ export default function UserProfileScreen() {
         setRatingCount(0)
       }
 
-      const { data: reviewRows } = await supabase
-        .from('reviews')
-        .select('*, reviewer:users!reviewer_id(display_name, avatar_url)')
-        .eq('reviewee_id', id)
-        .order('created_at', { ascending: false })
-        .limit(3)
+      const { data: reviewRows } = reviewRes
       if (reviewRows) {
         setReviews((reviewRows as any[]).map((r) => ({
           id: r.id,
@@ -81,14 +80,7 @@ export default function UserProfileScreen() {
         })))
       }
 
-      const { data: jobRows } = await supabase
-        .from('jobs')
-        .select('id, title, price, city, employment_type, created_at')
-        .eq('uploader_id', id)
-        .eq('deleted', false)
-        .in('status', ['open', 'full'])
-        .order('created_at', { ascending: false })
-        .limit(5)
+      const { data: jobRows } = jobRes
       setJobs((jobRows ?? []) as any[])
     } catch (error) {
       console.error('Failed to load profile', error)

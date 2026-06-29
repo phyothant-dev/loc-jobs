@@ -8,6 +8,7 @@ import {
     Dimensions,
     FlatList,
     Modal,
+    Platform,
     Pressable,
     ScrollView,
     StyleSheet,
@@ -55,6 +56,7 @@ interface Job {
   salary_min: number | null;
   salary_max: number | null;
   salary_period: string | null;
+  created_at: string;
 }
 
 const WORK_TYPES = ["onsite", "remote", "hybrid"] as const;
@@ -80,6 +82,18 @@ function getStatusStyle(status: string) {
     case 'cancelled': return { color: Brand.danger, bg: Brand.dangerLight };
     default: return { color: Brand.success, bg: Brand.successLight };
   }
+}
+
+function relativeTime(dateStr: string, t?: (key: string) => string) {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return t ? t('time.now') : "now";
+  if (mins < 60) return `${mins}${t ? t('time.mins') : 'm'}`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}${t ? t('time.hours') : 'h'}`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}${t ? t('time.days') : 'd'}`;
+  return new Date(dateStr).toLocaleDateString();
 }
 
 const NUM_COLUMNS = 2;
@@ -108,6 +122,7 @@ export default function AllJobsScreen() {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [fetchError, setFetchError] = useState(false);
   const [showWorkTypePicker, setShowWorkTypePicker] = useState(false);
   const [showEmployTypePicker, setShowEmployTypePicker] = useState(false);
   const [showRegionPicker, setShowRegionPicker] = useState(false);
@@ -198,14 +213,18 @@ export default function AllJobsScreen() {
   };
 
   const fetchJobs = async () => {
-    const { data } = await supabase
-      .from("jobs")
-      .select("*")
-      .eq("status", "open")
-      .eq("deleted", false)
-      .order("created_at", { ascending: false });
-    const allJobs = (data ?? []) as Job[];
-    setJobs(allJobs);
+    try {
+      setFetchError(false);
+      const { data } = await supabase
+        .from("jobs")
+        .select("*")
+        .eq("status", "open")
+        .eq("deleted", false)
+        .order("created_at", { ascending: false });
+      setJobs((data ?? []) as Job[]);
+    } catch {
+      setFetchError(true);
+    }
   };
 
   const allRegions = Object.keys(REGIONS).sort();
@@ -235,16 +254,21 @@ export default function AllJobsScreen() {
       .channel(`explore-jobs-${Date.now()}`)
       .on(
         "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "jobs",
-          filter: "status=eq.open",
-        },
+        { event: "INSERT", schema: "public", table: "jobs", filter: "status=eq.open" },
         (payload) => {
           const newJob = payload.new as Job;
           setJobs((prev) => [newJob, ...prev]);
         },
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "jobs" },
+        () => { fetchJobs(); },
+      )
+      .on(
+        "postgres_changes",
+        { event: "DELETE", schema: "public", table: "jobs" },
+        () => { fetchJobs(); },
       )
       .subscribe();
     return () => {
@@ -446,6 +470,10 @@ export default function AllJobsScreen() {
             paddingBottom: BottomTabInset + Spacing.four,
           }}
           showsVerticalScrollIndicator={false}
+          windowSize={10}
+          maxToRenderPerBatch={10}
+          removeClippedSubviews={Platform.OS === 'android'}
+          initialNumToRender={7}
           keyboardShouldPersistTaps="handled"
           refreshing={refreshing}
           onRefresh={handleRefresh}
@@ -824,6 +852,9 @@ export default function AllJobsScreen() {
                             {job.region ? `, ${job.region}` : ""}
                           </ThemedText>
                         </View>
+                        <ThemedText type="caption" style={{ color: Brand.textSecondary, marginTop: 2 }}>
+                          {relativeTime(job.created_at, t)}
+                        </ThemedText>
                         {job.employment_type && (
                           <View
                             style={{
@@ -884,12 +915,27 @@ export default function AllJobsScreen() {
             );
           }}
           ListEmptyComponent={
-            <View style={{ paddingVertical: Spacing.six, alignItems: 'center' }}>
-              <Ionicons name="search-outline" size={48} color={Brand.textSecondary} />
-              <ThemedText type="small" style={{ color: Brand.textSecondary }}>
-                {t("explore.noJobs")}
-              </ThemedText>
-            </View>
+            fetchError ? (
+              <View style={{ paddingVertical: Spacing.six, alignItems: 'center' }}>
+                <Ionicons name="cloud-offline-outline" size={48} color={Brand.danger} />
+                <ThemedText type="small" style={{ color: Brand.textSecondary, marginTop: 8 }}>
+                  {t('common.networkError')}
+                </ThemedText>
+                <Pressable
+                  style={{ marginTop: 12, paddingVertical: 10, paddingHorizontal: 20, backgroundColor: Brand.primary, borderRadius: BorderRadius.md }}
+                  onPress={async () => { await fetchJobs(); await loadSavedJobs(); await loadSavedSearches(); }}
+                >
+                  <ThemedText style={{ color: '#fff', fontWeight: 700 }}>Retry</ThemedText>
+                </Pressable>
+              </View>
+            ) : (
+              <View style={{ paddingVertical: Spacing.six, alignItems: 'center' }}>
+                <Ionicons name="search-outline" size={48} color={Brand.textSecondary} />
+                <ThemedText type="small" style={{ color: Brand.textSecondary }}>
+                  {t("explore.noJobs")}
+                </ThemedText>
+              </View>
+            )
           }
         />
       )}

@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react'
-import { FlatList, Image, Pressable, StyleSheet, TextInput, View } from 'react-native'
+import { FlatList, Image, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native'
 import { router, useFocusEffect } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
@@ -93,6 +93,10 @@ export default function SearchUsersScreen() {
         data={users}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ padding: Spacing.four, gap: Spacing.three, paddingBottom: 100 }}
+        windowSize={10}
+        maxToRenderPerBatch={10}
+        removeClippedSubviews={Platform.OS === 'android'}
+        initialNumToRender={7}
         ListEmptyComponent={
           searched ? (
             <View style={{ alignItems: 'center', paddingVertical: Spacing.six }}>

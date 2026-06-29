@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react'
-import { FlatList, Image, Pressable, StyleSheet, View } from 'react-native'
+import { FlatList, Image, Platform, Pressable, StyleSheet, View } from 'react-native'
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
@@ -10,6 +10,18 @@ import { BorderRadius, Brand, FontSize, Shadow, Spacing } from '@/constants/them
 import { supabase } from '@/lib/supabase'
 import { useLocale } from '@/contexts/LocaleContext'
 import { useBrand } from "@/contexts/ThemeContext";
+
+function relativeTime(dateStr: string, t?: (key: string) => string) {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return t ? t('time.now') : "now";
+  if (mins < 60) return `${mins}${t ? t('time.mins') : 'm'}`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}${t ? t('time.hours') : 'h'}`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}${t ? t('time.days') : 'd'}`;
+  return new Date(dateStr).toLocaleDateString();
+}
 
 interface JobItem {
   id: string
@@ -34,23 +46,16 @@ export default function UserJobsScreen() {
     (async () => {
       if (!id) return
       try {
-        const { data: userRow } = await supabase
-          .from('users')
-          .select('display_name, avatar_url')
-          .eq('id', id)
-          .single()
+        const [userRes, jobRes] = await Promise.all([
+          supabase.from('users').select('display_name, avatar_url').eq('id', id).single(),
+          supabase.from('jobs').select('id, title, price, city, employment_type, created_at').eq('uploader_id', id).eq('deleted', false).in('status', ['open', 'full']).order('created_at', { ascending: false }),
+        ])
+        const { data: userRow } = userRes
         if (userRow) {
           setUserName((userRow as any).display_name || '')
           setAvatarUrl((userRow as any).avatar_url || null)
         }
-
-        const { data: jobRows } = await supabase
-          .from('jobs')
-          .select('id, title, price, city, employment_type, created_at')
-          .eq('uploader_id', id)
-          .eq('deleted', false)
-          .in('status', ['open', 'full'])
-          .order('created_at', { ascending: false })
+        const { data: jobRows } = jobRes
         setJobs((jobRows ?? []) as any[])
       } catch (error) {
         console.error('Failed to load user jobs', error)
@@ -92,6 +97,10 @@ export default function UserJobsScreen() {
         data={jobs}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ padding: Spacing.four, gap: Spacing.three, paddingBottom: 100 }}
+        windowSize={10}
+        maxToRenderPerBatch={10}
+        removeClippedSubviews={Platform.OS === 'android'}
+        initialNumToRender={7}
         ListHeaderComponent={
           !loading ? (
             <View style={[styles.profileCard, { backgroundColor: Brand.white }]}>
@@ -143,6 +152,12 @@ export default function UserJobsScreen() {
             {item.price ? (
               <ThemedText style={styles.price}>{item.price.toLocaleString()} MMK</ThemedText>
             ) : null}
+            <ThemedText
+              type="caption"
+              style={{ color: Brand.textSecondary, position: 'absolute', bottom: Spacing.one, right: Spacing.four }}
+            >
+              {relativeTime(item.created_at, t)}
+            </ThemedText>
           </Pressable>
         )}
       />

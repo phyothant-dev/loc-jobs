@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react'
-import { FlatList, Pressable, StyleSheet, View } from 'react-native'
+import { FlatList, Platform, Pressable, StyleSheet, View } from 'react-native'
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
@@ -121,6 +121,10 @@ export default function ReviewsScreen() {
           data={reviews}
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ padding: Spacing.four, gap: Spacing.three, paddingBottom: 100 }}
+          windowSize={10}
+          maxToRenderPerBatch={10}
+          removeClippedSubviews={Platform.OS === 'android'}
+          initialNumToRender={7}
           renderItem={({ item }) => (
             <ReviewCard review={item} isOwn={item.reviewer_id === user?.id} onUpdated={fetchReviews} />
           )}

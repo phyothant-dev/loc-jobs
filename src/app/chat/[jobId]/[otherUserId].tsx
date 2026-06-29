@@ -254,6 +254,10 @@ export default function ChatDetailScreen() {
             data={messages}
             keyExtractor={(item) => item.id}
             contentContainerStyle={{ padding: Spacing.four, paddingBottom: Spacing.four }}
+            windowSize={10}
+            maxToRenderPerBatch={10}
+            removeClippedSubviews={Platform.OS === 'android'}
+            initialNumToRender={7}
             onScroll={handleScroll}
             scrollEventThrottle={100}
             renderItem={({ item, index }) => {

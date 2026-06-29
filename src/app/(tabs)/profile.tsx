@@ -54,11 +54,16 @@ export default function ProfileScreen() {
     if (!user) return;
     setLoading(true);
     try {
-      const { data } = await supabase
-        .from("users")
-        .select("*")
-        .eq("id", user.id)
-        .single();
+      const [userRes, myCompletedRes, myAppsRes, savedRes, ratingRes, reviewRes] = await Promise.all([
+        supabase.from("users").select("*").eq("id", user.id).single(),
+        supabase.from("jobs").select("*").eq("uploader_id", user.id).eq("status", "completed").eq("deleted", false).order("updated_at", { ascending: false }),
+        supabase.from("applications").select("job_id").eq("searcher_id", user.id).eq("status", "accepted"),
+        supabase.from("saved_jobs").select("job_id").eq("user_id", user.id),
+        supabase.from('reviews').select('rating').eq('reviewee_id', user.id),
+        supabase.from('reviews').select('*, reviewer:users!reviewer_id(display_name, avatar_url)').eq('reviewee_id', user.id).order('created_at', { ascending: false }).limit(3),
+      ])
+
+      const { data } = userRes
       if (data) {
         const u = data as any;
         setDisplayName(u.display_name || "");
@@ -70,19 +75,9 @@ export default function ProfileScreen() {
         setVerified(u.verified || false);
       }
 
-      const { data: myCompleted } = await supabase
-        .from("jobs")
-        .select("*")
-        .eq("uploader_id", user.id)
-        .eq("status", "completed")
-        .eq("deleted", false)
-        .order("updated_at", { ascending: false });
+      const { data: myCompleted } = myCompletedRes
 
-      const { data: myApps } = await supabase
-        .from("applications")
-        .select("job_id")
-        .eq("searcher_id", user.id)
-        .eq("status", "accepted");
+      const { data: myApps } = myAppsRes
 
       let workedJobs: any[] = [];
       const jobIds = (myApps ?? []).map((a: any) => a.job_id);
@@ -100,10 +95,7 @@ export default function ProfileScreen() {
       const unique = all.filter((j, i, arr) => arr.findIndex((x) => x.id === j.id) === i);
       setCompletedJobs(unique);
 
-      const { data: savedRows } = await supabase
-        .from("saved_jobs")
-        .select("job_id")
-        .eq("user_id", user.id);
+      const { data: savedRows } = savedRes
 
       const savedJobIds = (savedRows ?? []).map((r: any) => r.job_id);
       if (savedJobIds.length > 0) {
@@ -117,10 +109,7 @@ export default function ProfileScreen() {
         setSavedJobs([]);
       }
 
-      const { data: ratingData } = await supabase
-        .from('reviews')
-        .select('rating')
-        .eq('reviewee_id', user.id);
+      const { data: ratingData } = ratingRes
       if (ratingData && ratingData.length > 0) {
         const sum = ratingData.reduce((acc: number, r: any) => acc + r.rating, 0);
         setAvgRating(Number((sum / ratingData.length).toFixed(1)));
@@ -130,12 +119,7 @@ export default function ProfileScreen() {
         setRatingCount(0);
       }
 
-      const { data: reviewRows } = await supabase
-        .from('reviews')
-        .select('*, reviewer:users!reviewer_id(display_name, avatar_url)')
-        .eq('reviewee_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(3);
+      const { data: reviewRows } = reviewRes
       if (reviewRows) {
         setReviews((reviewRows as any[]).map((r) => ({
           id: r.id,
@@ -407,6 +391,14 @@ export default function ProfileScreen() {
                   onPress={() => router.push('/onboarding')}
                 >
                   <ThemedText style={styles.settingLabel}>Onboarding</ThemedText>
+                  <Ionicons name="chevron-forward" size={16} color={Brand.textSecondary} />
+                </Pressable>
+              <View style={[styles.settingDivider, { backgroundColor: Brand.borderLight }]} />
+              <Pressable
+                  style={styles.settingRow}
+                  onPress={() => router.push('/support')}
+                >
+                  <ThemedText style={styles.settingLabel}>{t('profile.helpSupport')}</ThemedText>
                   <Ionicons name="chevron-forward" size={16} color={Brand.textSecondary} />
                 </Pressable>
               </View>

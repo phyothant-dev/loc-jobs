@@ -30,7 +30,7 @@ import {
     Spacing,
 } from "@/constants/theme";
 import { useAuth } from "@/contexts/AuthContext";
-import { CATEGORIES, EMPLOYMENT_TYPES, SALARY_PERIODS, EMPLOYMENT_TYPE_LABELS, SALARY_PERIOD_LABELS } from "@/lib/categories";
+import { CATEGORIES, EMPLOYMENT_TYPES, EMPLOYMENT_TYPE_LABELS } from "@/lib/categories";
 import { REGIONS } from "@/lib/regions";
 import { supabase } from "@/lib/supabase";
 import { useBrand } from "@/contexts/ThemeContext";
@@ -61,12 +61,8 @@ export default function PostJobScreen() {
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [category, setCategory] = useState("");
   const [employmentType, setEmploymentType] = useState("");
-  const [salaryMin, setSalaryMin] = useState("");
-  const [salaryMax, setSalaryMax] = useState("");
-  const [salaryPeriod, setSalaryPeriod] = useState("");
   const [showEmployTypePicker, setShowEmployTypePicker] = useState(false);
   const [showWorkTypePicker, setShowWorkTypePicker] = useState(false);
-  const [showSalaryPeriodPicker, setShowSalaryPeriodPicker] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState({ visible: false, message: '', type: 'success' as 'success' | 'error' });
@@ -102,9 +98,6 @@ export default function PostJobScreen() {
         setVacancies(j.vacancies || 1);
         setCategory(j.category || "");
         setEmploymentType(j.employment_type || "");
-        setSalaryMin(j.salary_min ? String(j.salary_min) : "");
-        setSalaryMax(j.salary_max ? String(j.salary_max) : "");
-        setSalaryPeriod(j.salary_period || "");
       }
     })();
   }, [isEditing, id]);
@@ -146,14 +139,6 @@ export default function PostJobScreen() {
 
     const priceNum = price ? parseInt(price, 10) : NaN;
     if (price && (isNaN(priceNum) || priceNum <= 0)) errors.price = "Enter a valid price";
-
-    const minNum = salaryMin ? parseInt(salaryMin, 10) : NaN;
-    const maxNum = salaryMax ? parseInt(salaryMax, 10) : NaN;
-    if (salaryMin && (isNaN(minNum) || minNum <= 0)) errors.salaryMin = "Enter a valid minimum salary";
-    if (salaryMax && (isNaN(maxNum) || maxNum <= 0)) errors.salaryMax = "Enter a valid maximum salary";
-    if (salaryMin && salaryMax && !isNaN(minNum) && !isNaN(maxNum) && minNum > maxNum) {
-      errors.salaryMin = "Min should be less than max";
-    }
 
     if ((workType === "onsite" || workType === "hybrid") && !region) errors.region = "Region is required";
     if ((workType === "onsite" || workType === "hybrid") && !city) errors.city = "City is required";
@@ -224,9 +209,6 @@ export default function PostJobScreen() {
     if (region) params.p_region = region;
     if (category) params.p_category = category;
     if (employmentType) params.p_employment_type = employmentType;
-    if (salaryMin) params.p_salary_min = parseInt(salaryMin, 10);
-    if (salaryMax) params.p_salary_max = parseInt(salaryMax, 10);
-    if (salaryPeriod) params.p_salary_period = salaryPeriod;
     if (lat && lng) {
       params.p_lat = lat;
       params.p_lng = lng;
@@ -245,9 +227,6 @@ export default function PostJobScreen() {
         vacancies,
         category: category || null,
         employment_type: employmentType || null,
-        salary_min: salaryMin ? parseInt(salaryMin, 10) : null,
-        salary_max: salaryMax ? parseInt(salaryMax, 10) : null,
-        salary_period: salaryPeriod || null,
       };
       if (lat && lng) {
         updates.lat = lat;
@@ -448,70 +427,6 @@ export default function PostJobScreen() {
                 setEmploymentType(key)
               }}
               onClose={() => setShowEmployTypePicker(false)}
-            />
-          </View>
-
-          <View style={styles.formRow}>
-            <View style={{ flex: 1 }}>
-              <ThemedText type="caption" style={styles.label}>
-                Salary Min (MMK)
-              </ThemedText>
-              <TextInput
-                style={[styles.input, { backgroundColor: Brand.white, borderColor: Brand.borderLight, color: Brand.text }]}
-                placeholder="e.g. 300000"
-                placeholderTextColor={Brand.placeholder}
-                value={salaryMin}
-                onChangeText={(v) => { setSalaryMin(v.replace(/\D/g, '')); clearError("salaryMin"); clearError("salaryMax"); }}
-                keyboardType="number-pad"
-              />
-              {validationErrors.salaryMin && (
-                <ThemedText type="caption" style={{ color: '#E53935', marginTop: 4 }}>{validationErrors.salaryMin}</ThemedText>
-              )}
-            </View>
-            <View style={{ flex: 1 }}>
-              <ThemedText type="caption" style={styles.label}>
-                Salary Max (MMK)
-              </ThemedText>
-              <TextInput
-                style={[styles.input, { backgroundColor: Brand.white, borderColor: Brand.borderLight, color: Brand.text }]}
-                placeholder="e.g. 800000"
-                placeholderTextColor={Brand.placeholder}
-                value={salaryMax}
-                onChangeText={(v) => { setSalaryMax(v.replace(/\D/g, '')); clearError("salaryMax"); clearError("salaryMin"); }}
-                keyboardType="number-pad"
-              />
-              {validationErrors.salaryMax && (
-                <ThemedText type="caption" style={{ color: '#E53935', marginTop: 4 }}>{validationErrors.salaryMax}</ThemedText>
-              )}
-            </View>
-          </View>
-
-          <View style={styles.formGroup}>
-            <ThemedText type="caption" style={styles.label}>
-              Salary Period
-            </ThemedText>
-            <Pressable
-              style={[styles.pickerBtn, { backgroundColor: Brand.white, borderColor: Brand.borderLight }]}
-              onPress={() => setShowSalaryPeriodPicker(true)}
-            >
-              <ThemedText
-                type="small"
-                style={!salaryPeriod ? { color: Brand.placeholder } : {}}
-              >
-                {salaryPeriod ? SALARY_PERIOD_LABELS[salaryPeriod] : "Select period"}
-              </ThemedText>
-            </Pressable>
-            <PickerModal
-              visible={showSalaryPeriodPicker}
-              title="Salary Period"
-              options={["", ...SALARY_PERIODS.map((p) => SALARY_PERIOD_LABELS[p])]}
-              selected={salaryPeriod ? SALARY_PERIOD_LABELS[salaryPeriod] : ""}
-              onSelect={(val) => {
-                if (!val) { setSalaryPeriod(""); return }
-                const key = Object.entries(SALARY_PERIOD_LABELS).find(([, v]) => v === val)?.[0] || ""
-                setSalaryPeriod(key)
-              }}
-              onClose={() => setShowSalaryPeriodPicker(false)}
             />
           </View>
 

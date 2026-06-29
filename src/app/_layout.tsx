@@ -10,6 +10,7 @@ import { AuthProvider, useAuth } from '@/contexts/AuthContext'
 import { LocaleProvider } from '@/contexts/LocaleContext'
 import { ThemeProvider } from '@/contexts/ThemeContext'
 import { Brand } from '@/constants/theme'
+import { NetworkBanner } from '@/components/network-banner'
 import OnboardingScreen from './onboarding'
 
 SplashScreen.preventAutoHideAsync()
@@ -88,6 +89,7 @@ export default function RootLayout() {
             <Stack.Screen name="search-users" options={{ gestureEnabled: true }} />
             <Stack.Screen name="user/[id]" options={{ gestureEnabled: true }} />
             </Stack>
+            <NetworkBanner />
           </AuthProvider>
         )}
       </LocaleProvider>

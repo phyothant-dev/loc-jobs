@@ -1,6 +1,6 @@
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Alert, FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, FlatList, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import * as Haptics from "expo-haptics";
@@ -49,6 +49,18 @@ interface SearcherInfo {
 interface AppliedInfo {
   jobId: string;
   status: string;
+}
+
+function relativeTime(dateStr: string, t?: (key: string) => string) {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return t ? t('time.now') : "now";
+  if (mins < 60) return `${mins}${t ? t('time.mins') : 'm'}`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}${t ? t('time.hours') : 'h'}`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}${t ? t('time.days') : 'd'}`;
+  return new Date(dateStr).toLocaleDateString();
 }
 
 function getStatusStyle(status: string) {
@@ -411,6 +423,10 @@ export default function MyJobsScreen() {
               padding: Spacing.four,
               paddingBottom: 100,
             }}
+            windowSize={10}
+            maxToRenderPerBatch={10}
+            removeClippedSubviews={Platform.OS === 'android'}
+            initialNumToRender={7}
             ItemSeparatorComponent={() => (
               <View style={{ height: Spacing.three }} />
             )}
@@ -451,6 +467,13 @@ export default function MyJobsScreen() {
                           {item.salary_min.toLocaleString()} - {item.salary_max != null ? item.salary_max.toLocaleString() : ''} MMK{item.salary_period ? `/${SALARY_PERIOD_LABELS[item.salary_period] || ''}` : ''}
                         </ThemedText>
                       )}
+
+                    <ThemedText
+                      type="caption"
+                      style={{ marginTop: 4, color: Brand.textSecondary }}
+                    >
+                      {relativeTime(item.created_at, t)}
+                    </ThemedText>
 
                     {tab === "posted" && (
                       <>

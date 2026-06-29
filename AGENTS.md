@@ -47,3 +47,37 @@ Read the exact versioned docs at https://docs.expo.dev/versions/v56.0.0/ before 
   - `https://auth.expo.io/@<username>/<project-slug>` (Expo proxy, if used)
 - **Android SHA-1 fingerprint** from the dev build keystore must be added to the Google Cloud Console OAuth credential (for native Google Sign-In configured in Supabase dashboard)
 - The app's custom scheme (`locjobs`) is configured in `app.json` under `"scheme": "locjobs"`
+
+## Display Name on Signup
+- `src/app/(auth)/register.tsx` passes `options: { data: { display_name } }` to `supabase.auth.signUp()` so the DB trigger `handle_new_user` inserts the display name into `public.users` immediately, regardless of email confirmation state
+- The upsert to `public.users` always runs after signup (even when email confirmation redirects to verify-email screen)
+
+## Salary Fields Removed from Post Job
+- `salaryMin`, `salaryMax`, `salaryPeriod` states, validation, submit params, picker, and `SALARY_PERIODS`/`SALARY_PERIOD_LABELS` import removed from `src/app/post.tsx`
+
+## Posted Time Labels
+- "Posted X ago" labels (e.g. "Posted 3h ago", "Posted 2d ago") shown on job cards in:
+  - `src/app/(tabs)/explore.tsx`
+  - `src/app/(tabs)/my-jobs.tsx`
+  - `src/app/user/[id]/jobs.tsx`
+  - Already present in `index.tsx`, `chat.tsx`, `notifications.tsx`, `review-card.tsx`
+
+## Live Job Updates via Realtime
+- `src/app/(tabs)/explore.tsx` — subscribes to `jobs` channel DELETE/UPDATE events so removed jobs disappear without pull-to-refresh
+- `src/app/(tabs)/index.tsx` — same DELETE/UPDATE subscription
+
+## Offline Detection (NetworkBanner)
+- `src/components/network-banner.tsx` — absolute-positioned banner at top of screen using `@react-native-community/netinfo`
+- Shows "You are offline" / "သင်သည် အော့ဖ်လိုင်းဖြစ်နေသည်" (auto-switches with app language)
+- Rendered inside `AuthProvider` in `src/app/_layout.tsx` — visible on all authenticated screens
+- Animated slide-in/out with `Animated.Value`
+
+## Error + Retry UI
+- `src/app/(tabs)/explore.tsx` — `fetchError` state; retry button shown in `ListEmptyComponent` when fetch fails
+- `src/app/(tabs)/index.tsx` — `retryKey` counter; same retry pattern in empty state
+
+## FAQ + Contact Us Screen
+- `src/app/support.tsx` — collapsible FAQ accordion (press question to reveal answer), Contact Us section with email link + website URL
+- Full i18n support: all FAQ Q&A and contact labels translated in `src/lib/i18n/en.ts` and `src/lib/i18n/my.ts` under the `support` key
+- Linked from profile settings via "Help & Support" button
+- Uses `t('profile.helpSupport')` — translates to "Help & Support" (en) / "အကူအညီနှင့် ပံ့ပိုးကူညီမှု" (my)

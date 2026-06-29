@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { FlatList, Pressable, StyleSheet, View } from 'react-native'
+import { FlatList, Platform, Pressable, StyleSheet, View } from 'react-native'
 import { router, useFocusEffect } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
@@ -120,6 +120,10 @@ export default function NotificationsScreen() {
           data={notifications}
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ padding: Spacing.four, paddingBottom: 100 }}
+          windowSize={10}
+          maxToRenderPerBatch={10}
+          removeClippedSubviews={Platform.OS === 'android'}
+          initialNumToRender={7}
           ItemSeparatorComponent={() => <View style={{ height: Spacing.two }} />}
           renderItem={({ item }) => (
             <Pressable onPress={() => handlePress(item)}>

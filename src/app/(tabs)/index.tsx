@@ -105,12 +105,14 @@ export default function NearbyJobsScreen() {
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const [savedJobIds, setSavedJobIds] = useState<Set<string>>(new Set());
   const [filterCategory, setFilterCategory] = useState<string | null>(null);
   const [filterWorkType, setFilterWorkType] = useState<string | null>(null);
   const [radiusKm, setRadiusKm] = useState(50);
+  const [retryKey, setRetryKey] = useState(0);
 
   const loadSavedJobs = async () => {
     if (!user) return
@@ -173,14 +175,19 @@ export default function NearbyJobsScreen() {
       }
       if (!cancelled) setLocation({ lat, lng });
       if (cancelled) return
-      const { data } = await supabase.rpc("nearby_jobs", {
-        user_lat: lat,
-        user_lng: lng,
-        radius_meters: radiusKm * 1000,
-      });
-      if (!cancelled) {
-        setJobs((data as Job[]) ?? []);
-        setLoading(false);
+      try {
+        setFetchError(false);
+        const { data } = await supabase.rpc("nearby_jobs", {
+          user_lat: lat,
+          user_lng: lng,
+          radius_meters: radiusKm * 1000,
+        });
+        if (!cancelled) {
+          setJobs((data as Job[]) ?? []);
+          setLoading(false);
+        }
+      } catch {
+        if (!cancelled) setFetchError(true);
       }
     })();
     if (user) {
@@ -191,21 +198,22 @@ export default function NearbyJobsScreen() {
       loadSavedJobs()
     }
     return () => { cancelled = true }
-  }, [user, radiusKm]);
+  }, [user, radiusKm, retryKey]);
 
   useEffect(() => {
     if (!user) return
+    const refresh = () => {
+      supabase.rpc('nearby_jobs', {
+        user_lat: location?.lat ?? 16.8661,
+        user_lng: location?.lng ?? 96.1567,
+        radius_meters: radiusKm * 1000,
+      }).then(({ data }) => {
+        if (data) setJobs(data as Job[])
+      })
+    }
     const sub = supabase
       .channel(`nearby-jobs-${Date.now()}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'jobs' }, () => {
-        supabase.rpc('nearby_jobs', {
-          user_lat: location?.lat ?? 16.8661,
-          user_lng: location?.lng ?? 96.1567,
-          radius_meters: radiusKm * 1000,
-        }).then(({ data }) => {
-          if (data) setJobs(data as Job[])
-        })
-      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'jobs' }, refresh)
       .subscribe()
     return () => { supabase.removeChannel(sub) }
   }, [user, location?.lat, location?.lng, radiusKm])
@@ -321,6 +329,10 @@ export default function NearbyJobsScreen() {
             data={filteredJobs}
             keyExtractor={(item) => item.id}
             contentContainerStyle={{ paddingBottom: Spacing.four }}
+            windowSize={10}
+            maxToRenderPerBatch={10}
+            removeClippedSubviews={Platform.OS === 'android'}
+            initialNumToRender={7}
             ItemSeparatorComponent={() => (
               <View style={{ height: Spacing.three }} />
             )}
@@ -378,14 +390,29 @@ export default function NearbyJobsScreen() {
             </View>
             }
             ListEmptyComponent={
-              <View style={{ padding: Spacing.five, alignItems: "center" }}>
-                <View style={{ alignItems: "center", paddingVertical: Spacing.five }}>
-                  <Ionicons name="location-outline" size={48} color={Brand.textSecondary} />
-                  <ThemedText type="small" style={{ color: Brand.textSecondary }}>
-                    {t('nearby.noJobs')}
+              fetchError ? (
+                <View style={{ padding: Spacing.five, alignItems: "center" }}>
+                  <Ionicons name="cloud-offline-outline" size={48} color={Brand.danger} />
+                  <ThemedText type="small" style={{ color: Brand.textSecondary, marginTop: 8 }}>
+                    {t('common.networkError')}
                   </ThemedText>
+                  <Pressable
+                    style={{ marginTop: 12, paddingVertical: 10, paddingHorizontal: 20, backgroundColor: Brand.primary, borderRadius: BorderRadius.md }}
+                    onPress={() => { setRetryKey((k) => k + 1); }}
+                  >
+                    <ThemedText style={{ color: '#fff', fontWeight: 700 }}>Retry</ThemedText>
+                  </Pressable>
                 </View>
-              </View>
+              ) : (
+                <View style={{ padding: Spacing.five, alignItems: "center" }}>
+                  <View style={{ alignItems: "center", paddingVertical: Spacing.five }}>
+                    <Ionicons name="location-outline" size={48} color={Brand.textSecondary} />
+                    <ThemedText type="small" style={{ color: Brand.textSecondary }}>
+                      {t('nearby.noJobs')}
+                    </ThemedText>
+                  </View>
+                </View>
+              )
             }
             renderItem={({ item }) => {
               const coords = parseCoords(item);

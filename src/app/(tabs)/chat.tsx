@@ -1,6 +1,6 @@
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Alert, FlatList, Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, FlatList, Image, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
@@ -271,6 +271,10 @@ export default function ChatScreen() {
               padding: Spacing.four,
               paddingBottom: 100,
             }}
+            windowSize={10}
+            maxToRenderPerBatch={10}
+            removeClippedSubviews={Platform.OS === 'android'}
+            initialNumToRender={7}
             ItemSeparatorComponent={() => (
               <View style={{ height: Spacing.two }} />
             )}
