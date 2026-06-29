@@ -855,32 +855,55 @@ export default function AllJobsScreen() {
                         <ThemedText type="caption" style={{ color: Brand.textSecondary, marginTop: 2 }}>
                           {relativeTime(job.created_at, t)}
                         </ThemedText>
+                        {job.employment_type && (
+                          <View
+                            style={{
+                              paddingHorizontal: 6,
+                              paddingVertical: 1,
+                              borderRadius: BorderRadius.sm,
+                              alignSelf: "flex-start",
+                              marginTop: 4,
+                            }}
+                          >
+                            <ThemedText
+                              type="caption"
+                              style={{ color: Brand.primary, fontWeight: 600 }}
+                            >
+                              {EMPLOYMENT_TYPE_LABELS[job.employment_type]}
+                            </ThemedText>
+                          </View>
+                        )}
                         <View style={styles.cardMetaRow}>
                           <View style={styles.cardPrice}>
-                            <ThemedText type="caption" style={{ color: Brand.primary, fontWeight: 600 }}>
+                            <ThemedText
+                              type="caption"
+                              style={{ color: Brand.primary, fontWeight: 600 }}
+                            >
                               {job.employment_type
-                                ? job.salary_min != null && job.salary_max != null
+                                ? job.salary_min != null &&
+                                  job.salary_max != null
                                   ? `${job.salary_min.toLocaleString()} — ${job.salary_max.toLocaleString()} ${SALARY_PERIOD_LABELS[job.salary_period || "month"]}`
                                   : job.salary_min != null
                                     ? `From ${job.salary_min.toLocaleString()} ${SALARY_PERIOD_LABELS[job.salary_period || "month"]}`
                                     : job.salary_max != null
                                       ? `Up to ${job.salary_max.toLocaleString()} ${SALARY_PERIOD_LABELS[job.salary_period || "month"]}`
-                                      : ''
+                                      : EMPLOYMENT_TYPE_LABELS[
+                                          job.employment_type
+                                        ]
                                 : job.price != null
                                   ? `${job.price.toLocaleString()} MMK`
-                                  : ''}
+                                  : EMPLOYMENT_TYPE_LABELS[
+                                      job.employment_type || "full_time"
+                                    ]}
                             </ThemedText>
                           </View>
                           <View style={styles.cardStatus}>
-                            {job.employment_type && !job.salary_min && !job.salary_max && !job.price ? (
-                              <View style={[styles.employBadge, { backgroundColor: Brand.primaryLight }]}>
-                                <ThemedText type="caption" style={{ color: Brand.primary, fontWeight: 600 }}>
-                                  {EMPLOYMENT_TYPE_LABELS[job.employment_type]}
-                                </ThemedText>
-                              </View>
-                            ) : null}
-                            <ThemedText type="caption" style={{ color: s.color }}>
-                              {job.status.charAt(0).toUpperCase() + job.status.slice(1)}
+                            <ThemedText
+                              type="caption"
+                              style={{ color: s.color }}
+                            >
+                              {job.status.charAt(0).toUpperCase() +
+                                job.status.slice(1)}
                             </ThemedText>
                           </View>
                         </View>
@@ -1068,12 +1091,6 @@ const styles = StyleSheet.create({
     fontSize: FontSize.xs,
     fontWeight: 700,
     textTransform: "capitalize",
-  },
-  employBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: BorderRadius.sm,
-    alignSelf: 'flex-start',
   },
   categoryBadge: {
     alignSelf: "flex-start",
