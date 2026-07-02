@@ -193,6 +193,7 @@ const en = {
     submitReport: 'Submit Report',
     reviews: 'Reviews',
     noReviews: 'No reviews yet',
+    chatWithPoster: 'Chat with Poster',
     writeReview: 'Write a Review',
     editReview: 'Edit Review',
     deleteReview: 'Delete Review',

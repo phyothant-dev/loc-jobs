@@ -564,7 +564,7 @@ export default function PostJobScreen() {
           <Pressable
             style={({pressed}) => [
               styles.submitBtn,
-              { opacity: submitting ? 0.6 : pressed ? 0.7 : 1 },, { backgroundColor: Brand.primary }]}
+              { opacity: submitting ? 0.6 : pressed ? 0.7 : 1 }, { backgroundColor: Brand.primary }]}
             onPress={handleSubmit}
             disabled={submitting}
           >

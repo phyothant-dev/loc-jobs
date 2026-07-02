@@ -91,6 +91,21 @@ Read the exact versioned docs at https://docs.expo.dev/versions/v56.0.0/ before 
 - **Reply to message** — `reply_to_id` column (migration 00024), long-press any message → "Reply", preview bar above input with quoted message, green left border in bubble for replied-to content, `fetchReplyDetails` resolves replied message content asynchronously
 - **Read receipts** — `read_at` column (migration 00024), marks all unread messages as read when chat opens, shows "Seen" under own messages that have been read, RLS policy updated so both participants can update `read_at`
 - **New i18n keys**: `reply`, `replyingTo`, `seen`, `sendFailed`, `reconnecting`, `loadEarlier`
+- **Performance**: `loadPage` rewritten — splits OR query into two parallel equality queries (avoids Postgres OR index inefficiency), removes `reply_to` self-join (dead code); loading spinner shown during initial fetch
+- **Bubble text color**: `bubbleTextMine` uses `color: '#fff'` for white text on orange bubble
+
+## Chat List Performance
+- `fetchAll` limited to 300 most recent messages (was: all messages)
+- `handlePress` fires `router.push` first, then defers `setConversations` via `InteractionManager.runAfterInteractions` — prevents state update from blocking navigation animation
+- `handlePress`, `handleLongPress`, `renderConversation` wrapped in `useCallback` — prevents unnecessary FlatList re-renders
+
+## Notification Badge Fix
+- Removed auto-mark-read (`read: true`) in realtime INSERT handler in `notifications.tsx`
+- Notifications are only marked as read when the user taps them
+- `FilterCountContext` includes `notifications` field for the unread notification count
+
+## Migration 00025
+- `00025_chat_query_index.sql`: composite index `(job_id, sender_id, receiver_id)` + index on `reply_to_id` for chat query performance
 
 ## Chat Tab Unread Badge
 - `src/contexts/FilterCountContext.tsx` — added `chat` field to `FilterCounts`

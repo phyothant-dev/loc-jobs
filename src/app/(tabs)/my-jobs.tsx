@@ -552,18 +552,18 @@ export default function MyJobsScreen() {
                           )}
                         <View style={[styles.actionRow, { borderTopColor: Brand.border }]}>
                           <Pressable
-                            style={[styles.editBtn, { borderColor: Brand.primary }]}
+                            style={[styles.editBtn, { backgroundColor: Brand.primaryLight }]}
                             onPress={() => router.push(`/post?id=${item.id}`)}
                           >
-                            <ThemedText style={styles.editBtnText}>
+                            <ThemedText style={[styles.editBtnText, { color: Brand.primary }]}>
                               {t('myJobs.editJob')}
                             </ThemedText>
                           </Pressable>
                           <Pressable
-                            style={[styles.deleteBtn, { borderColor: Brand.danger }]}
+                            style={[styles.deleteBtn, { backgroundColor: Brand.dangerLight }]}
                             onPress={() => handleDelete(item.id)}
                           >
-                            <ThemedText style={styles.deleteBtnText}>
+                            <ThemedText style={[styles.deleteBtnText, { color: Brand.danger }]}>
                               {t('myJobs.deleteJob')}
                             </ThemedText>
                           </Pressable>
@@ -727,11 +727,8 @@ const styles = StyleSheet.create({
   },
   editBtn: {
     flex: 1,
-    paddingHorizontal: 8,
-    paddingVertical: 8,
+    paddingVertical: 6,
     borderRadius: BorderRadius.sm,
-    borderWidth: 1,
-
     alignItems: "center",
   },
   editBtnText: {
@@ -740,11 +737,8 @@ const styles = StyleSheet.create({
   },
   deleteBtn: {
     flex: 1,
-    paddingHorizontal: 8,
-    paddingVertical: 8,
+    paddingVertical: 6,
     borderRadius: BorderRadius.sm,
-    borderWidth: 1,
-
     alignItems: "center",
   },
   deleteBtnText: {

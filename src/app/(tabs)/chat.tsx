@@ -114,7 +114,8 @@ export default function ChatScreen() {
         )
         .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
         .eq('deleted', false)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(100);
       if (msgs) {
         const convs = buildConversations(msgs as any[], user.id, lastReadAt.current)
         setConversations(convs);
@@ -191,14 +192,16 @@ export default function ChatScreen() {
     return () => { supabase.removeChannel(sub) }
   }, [user?.id])
 
-  const handlePress = (item: Conversation) => {
+  const handlePress = useCallback((item: Conversation) => {
+    router.push(`/chat/${item.jobId}/${item.otherUserId}`)
     lastReadAt.current.set(item.key, Date.now())
     AsyncStorage.setItem('chat_last_read', JSON.stringify(Array.from(lastReadAt.current.entries())))
-    setConversations((prev) => prev.map((c) => (c.key === item.key ? { ...c, unreadCount: 0 } : c)))
-    router.push(`/chat/${item.jobId}/${item.otherUserId}`)
-  }
+    requestIdleCallback(() => {
+      setConversations((prev) => prev.map((c) => (c.key === item.key ? { ...c, unreadCount: 0 } : c)))
+    })
+  }, [])
 
-  const handleLongPress = (item: Conversation) => {
+  const handleLongPress = useCallback((item: Conversation) => {
       Alert.alert(item.otherUserName, undefined, [
       {
         text: t('chat.deleteConversation'),
@@ -223,7 +226,68 @@ export default function ChatScreen() {
       },
       { text: t('common.cancel'), style: 'cancel' },
     ])
-  }
+  }, [t, user])
+
+  const renderConversation = useCallback(({ item }: { item: Conversation }) => (
+    <Pressable
+      onPress={() => handlePress(item)}
+      onLongPress={() => handleLongPress(item)}
+      delayLongPress={400}
+    >
+      <View style={[styles.conversationCard, { backgroundColor: Brand.white }]}>
+        <View style={[styles.avatar, { backgroundColor: Brand.primaryLight }]}>
+          {item.otherAvatarUrl ? (
+            <Image
+              source={{ uri: item.otherAvatarUrl }}
+              style={styles.avatarImg}
+            />
+          ) : (
+            <ThemedText style={styles.avatarText}>
+              {(item.otherUserName.charAt(0) || "?").toUpperCase()}
+            </ThemedText>
+          )}
+        </View>
+        <View style={styles.conversationContent}>
+          <View style={styles.conversationTop}>
+            <ThemedText style={styles.otherName} numberOfLines={1}>
+              {item.otherUserName}
+            </ThemedText>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              {item.unreadCount > 0 && (
+                <View style={[styles.unreadBadge, { backgroundColor: Brand.primary }]}>
+                  <Text style={styles.unreadBadgeText}>
+                    {item.unreadCount > 9 ? '9+' : item.unreadCount}
+                  </Text>
+                </View>
+              )}
+              <ThemedText
+                type="caption"
+                style={{ color: Brand.textSecondary }}
+              >
+                {relativeTime(item.lastMessageTime, t)}
+              </ThemedText>
+            </View>
+          </View>
+          <ThemedText
+            type="caption"
+            style={{ color: Brand.textSecondary }}
+            numberOfLines={1}
+          >
+            {item.jobTitle}
+          </ThemedText>
+          <ThemedText
+            type="small"
+            style={{
+              color: item.unreadCount > 0 ? Brand.text : Brand.textSecondary,
+            }}
+            numberOfLines={1}
+          >
+            {item.lastMessage}
+          </ThemedText>
+        </View>
+      </View>
+    </Pressable>
+  ), [handlePress, handleLongPress, Brand, t])
 
   return (
     <SafeAreaView
@@ -286,66 +350,7 @@ export default function ChatScreen() {
             ItemSeparatorComponent={() => (
               <View style={{ height: Spacing.two }} />
             )}
-            renderItem={({ item }) => (
-              <Pressable
-                onPress={() => handlePress(item)}
-                onLongPress={() => handleLongPress(item)}
-                delayLongPress={400}
-              >
-                <View style={[styles.conversationCard, { backgroundColor: Brand.white }]}>
-                  <View style={[styles.avatar, { backgroundColor: Brand.primaryLight }]}>
-                    {item.otherAvatarUrl ? (
-                      <Image
-                        source={{ uri: item.otherAvatarUrl }}
-                        style={styles.avatarImg}
-                      />
-                    ) : (
-                      <ThemedText style={styles.avatarText}>
-                        {(item.otherUserName.charAt(0) || "?").toUpperCase()}
-                      </ThemedText>
-                    )}
-                  </View>
-                  <View style={styles.conversationContent}>
-                    <View style={styles.conversationTop}>
-                      <ThemedText style={styles.otherName} numberOfLines={1}>
-                        {item.otherUserName}
-                      </ThemedText>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                        {item.unreadCount > 0 && (
-                          <View style={[styles.unreadBadge, { backgroundColor: Brand.primary }]}>
-                            <Text style={styles.unreadBadgeText}>
-                              {item.unreadCount > 9 ? '9+' : item.unreadCount}
-                            </Text>
-                          </View>
-                        )}
-                        <ThemedText
-                          type="caption"
-                          style={{ color: Brand.textSecondary }}
-                        >
-                          {relativeTime(item.lastMessageTime, t)}
-                        </ThemedText>
-                      </View>
-                    </View>
-                    <ThemedText
-                      type="caption"
-                      style={{ color: Brand.textSecondary }}
-                      numberOfLines={1}
-                    >
-                      {item.jobTitle}
-                    </ThemedText>
-                    <ThemedText
-                      type="small"
-                      style={{
-                        color: item.unreadCount > 0 ? Brand.text : Brand.textSecondary,
-                      }}
-                      numberOfLines={1}
-                    >
-                      {item.lastMessage}
-                    </ThemedText>
-                  </View>
-                </View>
-              </Pressable>
-            )}
+            renderItem={renderConversation}
           />
         )}
       </View>

@@ -112,6 +112,9 @@
 | 6.9 | Read receipt — seen indicator | User B sent a message | 1. As User A, open the chat | User B's message shows "Seen" indicator under it. |
 | 6.10 | Connection indicator | Internet drops | 1. Enable airplane mode while in chat | Yellow "Reconnecting..." bar appears. |
 | 6.11 | Unread badge on Chat tab | User B sent a new message | 1. As User A, look at Chat tab icon | Badge shows unread count. |
+| 6.12 | Chat navigation — no freeze | Chat list has conversations | 1. Tap a conversation | Navigates immediately without freeze. Loading spinner shown during fetch. |
+| 6.13 | Notification badge — no auto-read | New notification arrives | 1. Another user triggers a notification<br>2. Check bell badge without tapping | Badge count persists. Only decrements when notification is tapped. |
+| 6.14 | Bubble text white on orange | User sent a message | 1. Send a message as yourself | Text is white on orange background. Readable. |
 
 ---
 

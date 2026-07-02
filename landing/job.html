@@ -379,9 +379,6 @@
         var raw = job.image_urls;
       var images = parseUrls(raw);
       var imagesHtml = '';
-      if (typeof raw === 'undefined') imagesHtml += '<div style="margin:8px 0;font-size:12px;color:#999">Debug: image_urls is undefined</div>';
-      else if (!raw) imagesHtml += '<div style="margin:8px 0;font-size:12px;color:#999">Debug: image_urls is falsy (' + JSON.stringify(raw) + ')</div>';
-      else if (!Array.isArray(raw) && typeof raw !== 'string') imagesHtml += '<div style="margin:8px 0;font-size:12px;color:#999">Debug: image_urls type=' + (typeof raw) + ' value=' + JSON.stringify(raw).slice(0,200) + '</div>';
       if (images.length > 0) {
         var imgs = '';
         for (var i = 0; i < images.length; i++) {

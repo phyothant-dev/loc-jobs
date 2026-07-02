@@ -628,6 +628,10 @@ const styles = StyleSheet.create({
   bellBadgeText: {
     fontSize: 10,
     fontWeight: '700',
+    color: '#fff',
+    lineHeight: 18,
+    textAlign: 'center',
+    includeFontPadding: false,
   },
   locateHeaderBtn: {
     width: 40,

@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { ActivityIndicator, Alert, FlatList, Image, KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, TextInput, View, Dimensions } from 'react-native'
+import LottieView from 'lottie-react-native'
 import { router, useLocalSearchParams } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import * as ImagePicker from 'expo-image-picker'
@@ -39,6 +40,74 @@ const IMAGE_MAX_W = SCREEN_WIDTH * 0.55
 const IMAGE_MAX_H = 260
 const PAGE_SIZE = 30
 
+interface MessageBubbleProps {
+  item: Message
+  isMine: boolean
+  showDateSep: boolean
+  Brand: ReturnType<typeof useBrand>
+  t: (key: string) => string
+  onLongPress: (msg: Message) => void
+  onImagePress: (url: string) => void
+}
+
+const MessageBubble = React.memo(function MessageBubble({ item, isMine, showDateSep, Brand, t, onLongPress, onImagePress }: MessageBubbleProps) {
+  return (
+    <View>
+      {showDateSep && (
+        <View style={styles.dateSeparator}>
+          <View style={[styles.dateSepLine, { backgroundColor: Brand.borderLight }]} />
+          <ThemedText style={styles.dateSepText}>
+            {formatDateSeparator(item.created_at, t)}
+          </ThemedText>
+          <View style={[styles.dateSepLine, { backgroundColor: Brand.borderLight }]} />
+        </View>
+      )}
+      {item.deleted ? (
+        <View style={[styles.bubbleRow, isMine ? styles.bubbleRowMine : styles.bubbleRowOther]}>
+          <View style={[styles.bubble, styles.bubbleDeleted, { backgroundColor: Brand.borderLight }]}>
+            <ThemedText style={styles.bubbleDeletedText}>{t('chat.messageDeleted')}</ThemedText>
+          </View>
+        </View>
+      ) : (
+        <Pressable
+          onLongPress={() => onLongPress(item)}
+          delayLongPress={400}
+        >
+          <View style={[styles.bubbleRow, isMine ? styles.bubbleRowMine : styles.bubbleRowOther]}>
+            <View style={isMine ? [styles.bubble, styles.bubbleMine, { backgroundColor: Brand.primary }] : [styles.bubble, styles.bubbleOther, { backgroundColor: Brand.white }]}>
+              {item.image_url ? (
+                <Pressable onPress={() => onImagePress(item.image_url!)}>
+                  <Image source={{ uri: item.image_url }} style={styles.bubbleImage} resizeMode="cover" />
+                </Pressable>
+              ) : null}
+              {item.content ? (
+                <ThemedText style={[styles.bubbleText, isMine ? styles.bubbleTextMine : styles.bubbleTextOther]}>
+                  {item.content}
+                </ThemedText>
+              ) : null}
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                <ThemedText style={[styles.bubbleTime, !item.content && item.image_url ? { marginTop: 0, paddingTop: 4 } : {}, isMine ? styles.bubbleTimeMine : styles.bubbleTimeOther]}>
+                  {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </ThemedText>
+                {item.edited_at && (
+                  <ThemedText style={[styles.bubbleTime, isMine ? styles.bubbleTimeMine : styles.bubbleTimeOther]}>
+                    · {t('chat.edited')}
+                  </ThemedText>
+                )}
+                {isMine && item.read_at && (
+                  <ThemedText style={[styles.bubbleTime, isMine ? styles.bubbleTimeMine : styles.bubbleTimeOther]}>
+                    · {t('chat.seen')}
+                  </ThemedText>
+                )}
+              </View>
+            </View>
+          </View>
+        </Pressable>
+      )}
+    </View>
+  )
+})
+
 export default function ChatDetailScreen() {
   const Brand = useBrand()
   const { t } = useLocale()
@@ -53,6 +122,7 @@ export default function ChatDetailScreen() {
   const [jobTitle, setJobTitle] = useState('')
   const [otherName, setOtherName] = useState('')
   const [otherAvatarUrl, setOtherAvatarUrl] = useState<string | null>(null)
+  const [initialLoading, setInitialLoading] = useState(true)
   const [editingMessage, setEditingMessage] = useState<Message | null>(null)
   const [editText, setEditText] = useState('')
   const [previewImage, setPreviewImage] = useState<string | null>(null)
@@ -60,7 +130,6 @@ export default function ChatDetailScreen() {
   const [replyingTo, setReplyingTo] = useState<Message | null>(null)
   const [hasMore, setHasMore] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
-  const [subStatus, setSubStatus] = useState<'connected' | 'connecting' | 'disconnected'>('connected')
   const flatRef = useRef<FlatList>(null)
   const oldestTimeRef = useRef<string | null>(null)
 
@@ -93,29 +162,34 @@ export default function ChatDetailScreen() {
   }, [])
 
   const loadInitial = useCallback(async () => {
-    if (!jobId || !otherUserId || !user) return
-    const [page, jobRes, otherRes] = await Promise.all([
-      loadPage(),
-      supabase.from('jobs').select('title').eq('id', jobId).single(),
-      supabase.from('users').select('display_name, avatar_url').eq('id', otherUserId).single(),
-    ])
-    if (page && page.length > 0) {
-      setMessages(page)
-      oldestTimeRef.current = page[0].created_at
-      if (page.length < PAGE_SIZE) setHasMore(false)
-      for (const msg of page) {
-        if (msg.reply_to_id) {
-          fetchReplyDetails(msg.id, msg.reply_to_id)
+    if (!jobId || !otherUserId || !user) { setInitialLoading(false); return }
+    try {
+      const [page, jobRes, otherRes] = await Promise.all([
+        loadPage(),
+        supabase.from('jobs').select('title').eq('id', jobId).single(),
+        supabase.from('users').select('display_name, avatar_url').eq('id', otherUserId).single(),
+      ])
+      if (page && page.length > 0) {
+        setMessages(page)
+        oldestTimeRef.current = page[0].created_at
+        if (page.length < PAGE_SIZE) setHasMore(false)
+        for (const msg of page) {
+          if (msg.reply_to_id) {
+            fetchReplyDetails(msg.id, msg.reply_to_id)
+          }
         }
+      } else {
+        setHasMore(false)
       }
-    } else {
-      setHasMore(false)
+      if (jobRes.data) setJobTitle((jobRes.data as any).title || '')
+      if (otherRes.data) {
+        setOtherName((otherRes.data as any).display_name || 'Anonymous')
+        setOtherAvatarUrl((otherRes.data as any).avatar_url || null)
+      }
+    } catch (e) {
+      console.error('loadInitial error', e)
     }
-    if (jobRes.data) setJobTitle((jobRes.data as any).title || '')
-    if (otherRes.data) {
-      setOtherName((otherRes.data as any).display_name || 'Anonymous')
-      setOtherAvatarUrl((otherRes.data as any).avatar_url || null)
-    }
+    setInitialLoading(false)
   }, [loadPage, fetchReplyDetails, jobId, otherUserId, user])
 
   useEffect(() => { loadInitial() }, [loadInitial])
@@ -146,7 +220,6 @@ export default function ChatDetailScreen() {
 
   useEffect(() => {
     if (!jobId) return
-    setSubStatus('connecting')
     const sub = supabase
       .channel(`chat-messages-${jobId}-${Date.now()}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'messages', filter: `job_id=eq.${jobId}` }, (payload) => {
@@ -169,9 +242,7 @@ export default function ChatDetailScreen() {
           setMessages((prev) => prev.filter((p) => p.id !== old.id))
         }
       })
-      .subscribe((status) => {
-        setSubStatus(status === 'SUBSCRIBED' ? 'connected' : 'disconnected')
-      })
+      .subscribe()
     return () => { supabase.removeChannel(sub) }
   }, [jobId, user?.id])
 
@@ -251,7 +322,7 @@ export default function ChatDetailScreen() {
     setImageUploading(false)
   }
 
-  const handleLongPress = (msg: Message) => {
+  const handleLongPress = useCallback((msg: Message) => {
     if (msg.sender_id !== user?.id) {
       Alert.alert(t('chat.messageOptions'), undefined, [
         {
@@ -292,7 +363,7 @@ export default function ChatDetailScreen() {
       },
       { text: t('common.cancel'), style: 'cancel' },
     ])
-  }
+  }, [user, t, setReplyingTo, setEditText, setEditingMessage])
 
   const handleSaveEdit = async () => {
     if (!editingMessage || !editText.trim()) return
@@ -324,9 +395,9 @@ export default function ChatDetailScreen() {
   }
 
   const handleScroll = (e: any) => {
-    const { contentOffset, layoutMeasurement } = e.nativeEvent
-    const scrolledUpNow = contentOffset.y < 50
-    setScrolledUp(!scrolledUpNow)
+    const { contentOffset, layoutMeasurement, contentSize } = e.nativeEvent
+    const nearBottom = contentOffset.y + layoutMeasurement.height >= contentSize.height - 50
+    setScrolledUp(!nearBottom)
     if (contentOffset.y <= 0 && hasMore && !loadingMore) {
       loadMoreMessages()
     }
@@ -334,68 +405,33 @@ export default function ChatDetailScreen() {
 
   const renderMessage = useCallback(({ item, index }: { item: Message; index: number }) => {
     const isMine = item.sender_id === user?.id
-    const showDateSep = index === 0 || new Date(item.created_at).toDateString() !== new Date(messages[index - 1].created_at).toDateString()
-
+    const showDateSep = index === 0 || new Date(item.created_at).toDateString() !== new Date((messages[index - 1]?.created_at ?? '')).toDateString()
     return (
-      <View>
-        {showDateSep && (
-          <View style={styles.dateSeparator}>
-            <View style={[styles.dateSepLine, { backgroundColor: Brand.borderLight }]} />
-            <ThemedText style={styles.dateSepText}>
-              {formatDateSeparator(item.created_at, t)}
-            </ThemedText>
-            <View style={[styles.dateSepLine, { backgroundColor: Brand.borderLight }]} />
-          </View>
-        )}
-        {item.deleted ? (
-          <View style={[styles.bubbleRow, isMine ? styles.bubbleRowMine : styles.bubbleRowOther]}>
-            <View style={[styles.bubble, styles.bubbleDeleted, { backgroundColor: Brand.borderLight }]}>
-              <ThemedText style={styles.bubbleDeletedText}>{t('chat.messageDeleted')}</ThemedText>
-            </View>
-          </View>
-        ) : (
-          <Pressable
-            onLongPress={() => handleLongPress(item)}
-            delayLongPress={400}
-          >
-            <View style={[styles.bubbleRow, isMine ? styles.bubbleRowMine : styles.bubbleRowOther]}>
-              <View style={isMine ? [styles.bubble, styles.bubbleMine, { backgroundColor: Brand.primary }] : [styles.bubble, styles.bubbleOther, { backgroundColor: Brand.white }]}>
-
-                {item.image_url ? (
-                  <Pressable onPress={() => setPreviewImage(item.image_url)}>
-                    <Image source={{ uri: item.image_url }} style={styles.bubbleImage} resizeMode="cover" />
-                  </Pressable>
-                ) : null}
-                {item.content ? (
-                  <ThemedText style={[styles.bubbleText, isMine ? styles.bubbleTextMine : styles.bubbleTextOther]}>
-                    {item.content}
-                  </ThemedText>
-                ) : null}
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                  <ThemedText style={[styles.bubbleTime, !item.content && item.image_url ? { marginTop: 0, paddingTop: 4 } : {}, isMine ? styles.bubbleTimeMine : styles.bubbleTimeOther]}>
-                    {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </ThemedText>
-                  {item.edited_at && (
-                    <ThemedText style={[styles.bubbleTime, isMine ? styles.bubbleTimeMine : styles.bubbleTimeOther]}>
-                      · {t('chat.edited')}
-                    </ThemedText>
-                  )}
-                  {isMine && item.read_at && (
-                    <ThemedText style={[styles.bubbleTime, isMine ? styles.bubbleTimeMine : styles.bubbleTimeOther]}>
-                      · {t('chat.seen')}
-                    </ThemedText>
-                  )}
-                </View>
-              </View>
-            </View>
-          </Pressable>
-        )}
-      </View>
+      <MessageBubble
+        item={item}
+        isMine={isMine}
+        showDateSep={showDateSep}
+        Brand={Brand}
+        t={t}
+        onLongPress={handleLongPress}
+        onImagePress={setPreviewImage}
+      />
     )
-  }, [user, messages, Brand, t])
+  }, [user, messages, Brand, t, handleLongPress, setPreviewImage])
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: Brand.bg }} edges={['top']}>
+      {initialLoading ? (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <LottieView
+            source={require('@/assets/images/crew-loader.json')}
+            style={{ width: 200, height: 200 }}
+            autoPlay
+            loop
+          />
+        </View>
+      ) : (
+      <>
       <View style={[styles.header, { backgroundColor: Brand.white, borderBottomColor: Brand.border }]}>
         <Pressable onPress={() => router.back()} style={[styles.backBtn, { backgroundColor: Brand.primaryLight }]}>
           <Ionicons name="chevron-back" size={22} color={Brand.primary} />
@@ -416,12 +452,6 @@ export default function ChatDetailScreen() {
           </View>
         </Pressable>
       </View>
-
-      {subStatus !== 'connected' && (
-        <View style={[styles.connBar, { backgroundColor: Brand.warning }]}>
-          <ThemedText style={styles.connBarText}>{t('chat.reconnecting')}</ThemedText>
-        </View>
-      )}
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}>
         <View style={{ flex: 1 }}>
@@ -493,8 +523,8 @@ export default function ChatDetailScreen() {
               multiline
               maxLength={1000}
             />
-            <Pressable style={[styles.sendBtn, (!input.trim() || sending) && { opacity: 0.4 }, { backgroundColor: Brand.primary }]} onPress={handleSend} disabled={!input.trim() || sending}>
-              <Ionicons name="send" size={20} color={Brand.white} />
+            <Pressable style={[styles.sendBtn, (!input.trim() || sending) && { opacity: 0.4 }, { backgroundColor: Brand.white }]} onPress={handleSend} disabled={!input.trim() || sending}>
+              <Ionicons name="send" size={20} color={Brand.primary} />
             </Pressable>
           </View>
           {sendError && (
@@ -535,6 +565,8 @@ export default function ChatDetailScreen() {
         visible={!!previewImage}
         onClose={() => setPreviewImage(null)}
       />
+      </>
+      )}
     </SafeAreaView>
   )
 }
@@ -643,7 +675,9 @@ const styles = StyleSheet.create({
     fontSize: FontSize.base,
     lineHeight: 20,
   },
-  bubbleTextMine: {},
+  bubbleTextMine: {
+    color: '#fff',
+  },
   bubbleTextOther: {},
   bubbleTime: {
     fontSize: 10,

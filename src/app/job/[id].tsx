@@ -743,6 +743,15 @@ export default function JobDetailScreen() {
                 </ThemedText>
               )}
             </View>
+            {!isUploader && user && (
+              <Pressable
+                hitSlop={8}
+                onPress={() => router.push(`/chat/${job?.id}/${job?.uploader_id}`)}
+                style={[styles.chatIconBtn, { backgroundColor: Brand.primaryLight }]}
+              >
+                <Ionicons name="chatbubble-outline" size={18} color={Brand.primary} />
+              </Pressable>
+            )}
           </Pressable>
         </View>
 
@@ -895,7 +904,7 @@ export default function JobDetailScreen() {
             style={[
               styles.primaryBtn,
               { backgroundColor: Brand.success },
-              completing && { opacity: 0.6 },, { backgroundColor: Brand.primary }]}
+              completing && { opacity: 0.6 }, { backgroundColor: Brand.primary }]}
             onPress={handleComplete}
             disabled={completing}
           >
@@ -1134,6 +1143,14 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
+  chatIconBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+
+    justifyContent: "center",
+    alignItems: "center",
+  },
   applicantCard: {
     borderRadius: BorderRadius.md,
     padding: Spacing.one,
@@ -1215,5 +1232,6 @@ const styles = StyleSheet.create({
   modalBtnText: {
     fontWeight: 700,
     fontSize: FontSize.base,
+    color: '#fff',
   },
 });

@@ -104,12 +104,21 @@
 - Each row: avatar, other user name, job title, last message preview, time, unread dot indicator
 - Real-time subscription to `messages` table — new messages update/prepend the conversation
 - Tap to open `chat/[jobId]/[otherUserId].tsx`
+- Performance: fetches only latest 300 messages; `handlePress` uses `router.push` first then defers state update; `useCallback` on handlers
 
 ### Chat Detail (`chat/[jobId]/[otherUserId].tsx`)
 - Message list with real-time subscription, auto-scroll to bottom
 - FlatList with inverted render + text input + send button
 - Image picker with upload via `expo-file-system/legacy`
 - Separator per user, header with back button, other user name/job title
+- Pagination: latest 30 messages initially, "Load earlier messages" for older pages
+- Reply to message: long-press → "Reply", quoted preview bar above input
+- Read receipts: "Seen" under own messages when the other user opened the chat
+- Error handling: "Send failed. Tap to retry." below input on failure
+- Connection indicator: yellow "Reconnecting..." bar on subscription drop
+- Loading spinner during initial data fetch
+- `loadPage` uses two parallel equality queries (index-friendly) instead of OR query
+- Bubble text: `bubbleTextMine` uses `color: '#fff'` for white text on orange
 
 ### Profile (`(tabs)/profile.tsx`)
 - Avatar (image or initial fallback), email
@@ -164,6 +173,7 @@
 - Each row: type icon, message, time, read/unread state
 - Tap routes: `new_message` → chat conversation, other types → job detail
 - Header: Mark All Read button
+- Badge count persisted until user taps notification (no auto-mark-read on INSERT)
 
 ### Other Screens
 - **User Profile** (`user/[id].tsx`) — Public profile with avatar, bio, contact info, rating

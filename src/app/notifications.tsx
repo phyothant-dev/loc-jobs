@@ -67,15 +67,16 @@ export default function NotificationsScreen() {
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` }, (payload) => {
         const n = payload.new as Notification
         setNotifications((prev) => [n, ...prev])
-        supabase.from('notifications').update({ read: true }).eq('id', n.id).then(() => {
-          setNotifications((prev) => prev.map((item) => item.id === n.id ? { ...item, read: true } : item))
-        })
       })
       .subscribe()
     return () => { supabase.removeChannel(sub) }
   }, [user?.id])
 
-  const handlePress = (n: Notification) => {
+  const handlePress = async (n: Notification) => {
+    if (!n.read) {
+      await supabase.from('notifications').update({ read: true }).eq('id', n.id)
+      setNotifications((prev) => prev.map((item) => item.id === n.id ? { ...item, read: true } : item))
+    }
     if (n.type === 'new_message' && n.data?.job_id && n.data?.sender_id) {
       router.push(`/chat/${n.data.job_id}/${n.data.sender_id}`)
     } else if (n.data?.job_id) {

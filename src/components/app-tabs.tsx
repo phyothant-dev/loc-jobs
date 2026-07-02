@@ -7,7 +7,7 @@ export default function AppTabs() {
   const { t } = useLocale()
   const { counts } = useFilterCount()
   return (
-    <NativeTabs backgroundColor={Brand.white}>
+    <NativeTabs backgroundColor={Brand.white} badgeTextColor="#fff">
       <NativeTabs.Trigger name="index">
         <NativeTabs.Trigger.Label>{t('tabs.nearby')}</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
@@ -22,8 +22,8 @@ export default function AppTabs() {
       <NativeTabs.Trigger name="explore">
         <NativeTabs.Trigger.Label>{t('tabs.explore')}</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
-          sf={{ default: "briefcase", selected: "briefcase.fill" }}
-          md="work"
+          sf={{ default: "tray", selected: "tray.fill" }}
+          md="search"
         />
         <NativeTabs.Trigger.Badge hidden={counts.explore === 0}>
           {counts.explore > 0 ? String(counts.explore) : ""}
@@ -33,8 +33,8 @@ export default function AppTabs() {
       <NativeTabs.Trigger name="my-jobs">
         <NativeTabs.Trigger.Label>{t('tabs.myJobs')}</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
-          sf={{ default: "bookmark", selected: "bookmark.fill" }}
-          md="bookmark"
+          sf={{ default: "briefcase", selected: "briefcase.fill" }}
+          md="work"
         />
       </NativeTabs.Trigger>
 

@@ -763,3 +763,5 @@ Used for job image uploads. Uploaded via `expo-file-system/legacy` `uploadAsync`
 | 00022 | `reviews_delete_policy.sql` | DELETE RLS for reviews |
 | 00023 | `delete_account_rpc.sql` | `delete_user_account()` SECURITY DEFINER RPC for self-service account deletion |
 | 00024 | `chat_features.sql` | `reply_to_id` and `read_at` columns on messages, UPDATE RLS for read receipts |
+| 00025 | `chat_query_index.sql` | Composite index `(job_id, sender_id, receiver_id)` + index on `reply_to_id` for chat query performance |
+| 00026 | `review_notification.sql` | Trigger to notify reviewee when a review is created |

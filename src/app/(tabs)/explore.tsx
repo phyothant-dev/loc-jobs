@@ -233,12 +233,14 @@ export default function AllJobsScreen() {
     : Object.values(REGIONS).flat().sort();
 
   useEffect(() => {
-    (async () => {
-      await fetchJobs();
-      await loadSavedJobs();
-      await loadSavedSearches();
-      setLoading(false);
-    })();
+    requestIdleCallback(() => {
+      (async () => {
+        await fetchJobs();
+        await loadSavedJobs();
+        await loadSavedSearches();
+        setLoading(false);
+      })();
+    });
   }, []);
 
   const handleRefresh = async () => {

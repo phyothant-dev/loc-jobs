@@ -386,6 +386,7 @@ const styles = StyleSheet.create({
   msgBtnText: {
     fontSize: FontSize.base,
     fontWeight: 700,
+    color: '#fff',
   },
   sectionCard: {
     borderRadius: BorderRadius.lg,

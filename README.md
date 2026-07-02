@@ -35,7 +35,7 @@ Copy `.env.example` to `.env` and fill in:
 - **Dual-role system** — users can post and/or apply for jobs
 - **Job types** — gig (fixed-price) and salaried (employment type)
 - **Categories** — 29 categories spanning gig services and professional fields
-- **Real-time chat** — per-job messaging with image sharing, unread indicators, reply, read receipts, and pagination
+- **Real-time chat** — per-job messaging with image sharing, unread indicators, reply, read receipts, pagination, and optimized performance (indexed queries, `InteractionManager` deferred state)
 - **Saved jobs** — bookmark jobs with toggle from any listing
 - **Reviews & ratings** — star ratings on completed jobs
 - **Verified badges** — auto-granted after 3 completed jobs
@@ -56,7 +56,7 @@ Copy `.env.example` to `.env` and fill in:
 
 ## Migrations
 
-All migrations are in `supabase/migrations/` (`00001`–`00022`). Run them manually via the Supabase Dashboard SQL Editor.
+All migrations are in `supabase/migrations/` (`00001`–`00026`). Run them manually via the Supabase Dashboard SQL Editor.
 
 ## Storage
 

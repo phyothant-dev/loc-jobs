@@ -69,6 +69,10 @@ To develop a mobile application that facilitates the posting and finding of loca
 - Soft delete for jobs and accounts
 - Row Level Security on all tables
 - Session persistence via AsyncStorage
+- Performance optimizations: chat list pagination (300 msg limit), `InteractionManager` deferred state updates, `useCallback` memoization, split OR queries into parallel index seeks
+- Chat navigation loading spinner for immediate visual feedback
+- Notification badge read fix (no longer auto-marks as read on receipt)
+- `notifications` field added to `FilterCountContext` for unread notification badge
 
 ### Out of Scope
 

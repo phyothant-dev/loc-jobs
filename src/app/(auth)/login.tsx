@@ -1,7 +1,15 @@
-import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 import { useRef, useState } from "react";
-import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, TextInput, View, ActivityIndicator } from "react-native";
+import {
+    ActivityIndicator,
+    KeyboardAvoidingView,
+    Platform,
+    Pressable,
+    StyleSheet,
+    TextInput,
+    View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { LoadingOverlay } from "@/components/loading-overlay";
@@ -10,20 +18,22 @@ import { Toast } from "@/components/toast";
 import { BorderRadius, Brand, Spacing } from "@/constants/theme";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLocale } from "@/contexts/LocaleContext";
-import { supabase } from "@/lib/supabase";
 import { useBrand } from "@/contexts/ThemeContext";
+import { supabase } from "@/lib/supabase";
 
 export default function LoginScreen() {
   const Brand = useBrand();
 
-  const { t } = useLocale()
+  const { t } = useLocale();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [validationErrors, setValidationErrors] = useState<
+    Record<string, string>
+  >({});
   const [toast, setToast] = useState({
     visible: false,
     message: "",
@@ -50,7 +60,8 @@ export default function LoginScreen() {
     setError(null);
     const errors: Record<string, string> = {};
     if (!email.trim()) errors.email = "Email is required";
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) errors.email = "Enter a valid email";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()))
+      errors.email = "Enter a valid email";
     if (!password) errors.password = "Password is required";
     setValidationErrors(errors);
     if (Object.keys(errors).length > 0) return;
@@ -100,40 +111,65 @@ export default function LoginScreen() {
     const error = validationErrors[key];
     return (
       <View>
-      <View style={[styles.fieldGroup, isFocused && styles.fieldGroupFocused, { backgroundColor: Brand.borderLight }]}>
-        <TextInput
-          ref={key === "email" ? emailRef : passwordRef}
-          style={styles.input}
-          value={value}
-          onChangeText={(v) => { onChange(v); setValidationErrors((prev) => { const n = { ...prev }; delete n[key]; return n; }); }}
-          onFocus={() => setFocusedField(key)}
-          onBlur={() => setFocusedField(null)}
-          secureTextEntry={key === "password" && !showPassword}
-          keyboardType={opts?.keyboardType}
-          autoCapitalize="none"
-          placeholder=""
-          placeholderTextColor="transparent"
-          returnKeyType={key === "email" ? "next" : "done"}
-          onSubmitEditing={key === "email" ? () => passwordRef.current?.focus() : handleLogin}
-        />
-        <Pressable
-          style={styles.labelHit}
-          onPress={() => {
-            if (key === "email") emailRef.current?.focus();
-            else passwordRef.current?.focus();
-          }}
+        <View
+          style={[
+            styles.fieldGroup,
+            isFocused && styles.fieldGroupFocused,
+            { backgroundColor: Brand.borderLight },
+          ]}
         >
-          <ThemedText
-            style={[styles.floatingLabel, isUp && styles.floatingLabelUp]}
+          <TextInput
+            ref={key === "email" ? emailRef : passwordRef}
+            style={styles.input}
+            value={value}
+            onChangeText={(v) => {
+              onChange(v);
+              setValidationErrors((prev) => {
+                const n = { ...prev };
+                delete n[key];
+                return n;
+              });
+            }}
+            onFocus={() => setFocusedField(key)}
+            onBlur={() => setFocusedField(null)}
+            secureTextEntry={key === "password" && !showPassword}
+            keyboardType={opts?.keyboardType}
+            autoCapitalize="none"
+            placeholder=""
+            placeholderTextColor="transparent"
+            returnKeyType={key === "email" ? "next" : "done"}
+            onSubmitEditing={
+              key === "email" ? () => passwordRef.current?.focus() : handleLogin
+            }
+          />
+          <Pressable
+            style={styles.labelHit}
+            onPress={() => {
+              if (key === "email") emailRef.current?.focus();
+              else passwordRef.current?.focus();
+            }}
           >
-            {label}
+            <ThemedText
+              style={[styles.floatingLabel, isUp && styles.floatingLabelUp]}
+            >
+              {label}
+            </ThemedText>
+          </Pressable>
+          {opts?.children}
+        </View>
+        {error && (
+          <ThemedText
+            type="caption"
+            style={{
+              color: "#E53935",
+              marginLeft: 4,
+              marginTop: 2,
+              marginBottom: 8,
+            }}
+          >
+            {error}
           </ThemedText>
-        </Pressable>
-        {opts?.children}
-      </View>
-      {error && (
-        <ThemedText type="caption" style={{ color: '#E53935', marginLeft: 4, marginTop: 2, marginBottom: 8 }}>{error}</ThemedText>
-      )}
+        )}
       </View>
     );
   };
@@ -141,107 +177,144 @@ export default function LoginScreen() {
   return (
     <View style={{ flex: 1, position: "relative" }}>
       <SafeAreaView style={{ flex: 1, backgroundColor: Brand.white }}>
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-        <Toast
-          visible={toast.visible}
-          message={toast.message}
-          type={toast.type}
-          onHide={() => setToast((p) => ({ ...p, visible: false }))}
-        />
-        <View style={styles.container}>
-          {/* Logo Section */}
-          <View style={styles.logoSection}>
-            <ThemedText style={styles.appName}>LocJobs</ThemedText>
-            <ThemedText style={styles.subtitle}>
-              Finding local talent, simplified.
-            </ThemedText>
-          </View>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          style={{ flex: 1 }}
+        >
+          <Toast
+            visible={toast.visible}
+            message={toast.message}
+            type={toast.type}
+            onHide={() => setToast((p) => ({ ...p, visible: false }))}
+          />
+          <View style={styles.container}>
+            {/* Logo Section */}
+            <View style={styles.logoSection}>
+              <ThemedText style={styles.appName}>LocJobs</ThemedText>
+              <ThemedText style={styles.subtitle}>
+                Finding local talent, simplified.
+              </ThemedText>
+            </View>
 
-          {/* Form */}
-          <View style={styles.formContainer}>
-            {renderField("email", t('auth.email'), email, setEmail, {
-              keyboardType: "email-address",
-            })}
-            {renderField("password", t('auth.password'), password, setPassword, {
-              secure: true,
-              children: (
-                  <Pressable
-                    style={styles.toggleBtn}
-                    onPress={() => setShowPassword(!showPassword)}
-                  >
-                    <Ionicons
-                      name={showPassword ? "eye-off-outline" : "eye-outline"}
-                      size={20}
-                      color={Brand.textSecondary}
-                    />
-                  </Pressable>
-                ),
-            })}
+            {/* Form */}
+            <View style={styles.formContainer}>
+              {renderField("email", t("auth.email"), email, setEmail, {
+                keyboardType: "email-address",
+              })}
+              {renderField(
+                "password",
+                t("auth.password"),
+                password,
+                setPassword,
+                {
+                  secure: true,
+                  children: (
+                    <Pressable
+                      style={styles.toggleBtn}
+                      onPress={() => setShowPassword(!showPassword)}
+                    >
+                      <Ionicons
+                        name={showPassword ? "eye-off-outline" : "eye-outline"}
+                        size={20}
+                        color={Brand.textSecondary}
+                      />
+                    </Pressable>
+                  ),
+                },
+              )}
 
-            <View style={styles.forgotRow}>
-              <Pressable onPress={() => router.push("/(auth)/forgot-password" as any)}>
-                <ThemedText
-                  type="smallBold"
-                  style={{ color: Brand.primary, fontSize: 14 }}
+              <View style={styles.forgotRow}>
+                <Pressable
+                  onPress={() => router.push("/(auth)/forgot-password" as any)}
                 >
-                  {t('auth.forgotPassword')}
-                </ThemedText>
-              </Pressable>
-            </View>
-
-            {/* Sign In Button */}
-            <View style={{ marginTop: Spacing.two }}>
-              <Pressable
-                style={({pressed}) => [styles.primaryBtn, loading && { opacity: 0.6 }, pressed && { opacity: 0.8 }, { backgroundColor: Brand.primary }]}
-                onPress={handleLogin}
-                disabled={loading}
-              >
-                {loading ? (
-                  <ActivityIndicator size="small" color={Brand.white} />
-                ) : (
-                  <ThemedText style={styles.primaryBtnText}>{t('auth.signIn')}</ThemedText>
-                )}
-              </Pressable>
-            </View>
-
-            {/* Social Logins */}
-            <View style={styles.socialSection}>
-              <View style={styles.divider}>
-                <View style={[styles.dividerLine, { borderTopColor: Brand.border }]} />
-                <ThemedText style={styles.dividerText}>
-                  {t('auth.or')}
-                </ThemedText>
-                <View style={[styles.dividerLine, { borderTopColor: Brand.border }]} />
+                  <ThemedText
+                    type="smallBold"
+                    style={{ color: Brand.primary, fontSize: 14 }}
+                  >
+                    {t("auth.forgotPassword")}
+                  </ThemedText>
+                </Pressable>
               </View>
 
-              <Pressable
-                style={({pressed}) => [styles.googleBtn, pressed && { opacity: 0.8 }, { backgroundColor: Brand.text }]}
-                onPress={handleGoogleSignIn}
-                disabled={loading}
-              >
-                <View style={[styles.googleIconWrap, { backgroundColor: Brand.white }]}>
-                  <Ionicons name="logo-google" size={18} color={Brand.text} />
+              {/* Sign In Button */}
+              <View style={{ marginTop: Spacing.two }}>
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.primaryBtn,
+                    loading && { opacity: 0.6 },
+                    pressed && { opacity: 0.8 },
+                    { backgroundColor: Brand.primary },
+                  ]}
+                  onPress={handleLogin}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <ActivityIndicator size="small" color={Brand.white} />
+                  ) : (
+                    <ThemedText style={styles.primaryBtnText}>
+                      {t("auth.signIn")}
+                    </ThemedText>
+                  )}
+                </Pressable>
+              </View>
+
+              {/* Social Logins */}
+              <View style={styles.socialSection}>
+                <View style={styles.divider}>
+                  <View
+                    style={[
+                      styles.dividerLine,
+                      { borderTopColor: Brand.border },
+                    ]}
+                  />
+                  <ThemedText style={styles.dividerText}>
+                    {t("auth.or")}
+                  </ThemedText>
+                  <View
+                    style={[
+                      styles.dividerLine,
+                      { borderTopColor: Brand.border },
+                    ]}
+                  />
                 </View>
-                <ThemedText style={styles.googleBtnText}>
-                  {t('auth.signInWithGoogle')}
+
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.googleBtn,
+                    pressed && { opacity: 0.8 },
+                    { backgroundColor: Brand.text },
+                  ]}
+                  onPress={handleGoogleSignIn}
+                  disabled={loading}
+                >
+                  <View
+                    style={[
+                      styles.googleIconWrap,
+                      { backgroundColor: Brand.white },
+                    ]}
+                  >
+                    <Ionicons name="logo-google" size={18} color={Brand.text} />
+                  </View>
+                  <ThemedText style={styles.googleBtnText}>
+                    {t("auth.signInWithGoogle")}
+                  </ThemedText>
+                </Pressable>
+              </View>
+            </View>
+
+            {/* Footer */}
+            <View style={styles.footer}>
+              <ThemedText style={styles.footerText}>
+                {t("auth.noAccount")}{" "}
+                <ThemedText
+                  style={styles.footerLink}
+                  onPress={() => router.replace("/register" as any)}
+                >
+                  {t("auth.signUp")}
                 </ThemedText>
-              </Pressable>
+              </ThemedText>
             </View>
           </View>
-
-          {/* Footer */}
-          <View style={styles.footer}>
-            <ThemedText style={styles.footerText}>
-              {t('auth.noAccount')}{" "}
-              <ThemedText
-                style={styles.footerLink}
-                onPress={() => router.replace("/register" as any)}
-              >
-                {t('auth.signUp')}
-              </ThemedText>
-            </ThemedText>
-          </View>
-        </View>
         </KeyboardAvoidingView>
       </SafeAreaView>
       <LoadingOverlay visible={loading} />
@@ -265,7 +338,7 @@ const styles = StyleSheet.create({
   },
   appName: {
     fontSize: 35,
-    padding: Spacing.five,
+    padding: Spacing.six,
     fontWeight: "condensedBold",
     color: Brand.primary,
     marginBottom: Spacing.one,

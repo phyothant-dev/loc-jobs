@@ -255,10 +255,14 @@
 | 12.11 | Deep link — job | — | 1. Open a job link externally | Correct job detail screen opens |
 | 12.12 | Deep link — user profile | — | 1. Open a user profile link externally | Correct user profile opens |
 | 12.13 | Supabase realtime — notifications | — | 1. Have another user perform an action (apply, review) | Notification/changes arrive without manual refresh |
-| 12.14 | Supabase realtime — job DELETE | Another user's job visible | 1. Have the uploader delete their job<br>2. Observe the list on explore/nearby | Job disappears from the list without pull-to-refresh |
+| 12.14 | Supabase realtime — notification badge persists | Notification arrives | 1. Have another user trigger a notification for you<br>2. Check notification bell badge | Badge count increments and stays until you tap the notification |
+| 12.15 | Supabase realtime — job DELETE | Another user's job visible | 1. Have the uploader delete their job<br>2. Observe the list on explore/nearby | Job disappears from the list without pull-to-refresh |
 | 12.15 | Supabase realtime — job UPDATE | Another user's job visible | 1. Have the uploader change the job title/price<br>2. Observe the list on explore/nearby | Job updates in the list without pull-to-refresh |
 | 12.16 | Posted time labels | Any job list | 1. Check any job card on explore, index, my-jobs, user/[id]/jobs | Shows relative time like "Posted 3h ago" or "Posted 2d ago" |
 | 12.17 | Posted time — new job | Just posted a job | 1. Navigate to my-jobs tab | Shows "Posted just now" or "Posted 1m ago" |
+| 12.18 | Chat navigation performance | Chat list has many conversations | 1. Tap a conversation | Navigates immediately to chat detail without freeze. Loading spinner appears during data fetch. |
+| 12.19 | Chat list scroll performance | 10+ conversations | 1. Scroll through chat list | Smooth scrolling, no jank. |
+| 12.20 | Notification badge — not auto-marked read | New notification arrives | 1. Notification arrives via realtime<br>2. Check bell badge without tapping the notification | Badge count remains > 0. Only decrements when tapped. |
 
 ## 13. Offline Banner
 

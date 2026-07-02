@@ -4,6 +4,7 @@ interface FilterCounts {
   nearby: number;
   explore: number;
   chat: number;
+  notifications: number;
 }
 
 interface FilterCountContextValue {
@@ -12,12 +13,12 @@ interface FilterCountContextValue {
 }
 
 const FilterCountContext = createContext<FilterCountContextValue>({
-  counts: { nearby: 0, explore: 0, chat: 0 },
+  counts: { nearby: 0, explore: 0, chat: 0, notifications: 0 },
   setCount: () => {},
 });
 
 export function FilterCountProvider({ children }: { children: ReactNode }) {
-  const [counts, setCounts] = useState<FilterCounts>({ nearby: 0, explore: 0, chat: 0 });
+  const [counts, setCounts] = useState<FilterCounts>({ nearby: 0, explore: 0, chat: 0, notifications: 0 });
   const setCount = (tab: keyof FilterCounts, count: number) => {
     setCounts((prev) => ({ ...prev, [tab]: count }));
   };

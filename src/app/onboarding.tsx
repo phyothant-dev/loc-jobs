@@ -279,9 +279,9 @@ const styles = StyleSheet.create({
   title: {
     fontSize: FontSize.xxl,
     fontWeight: 800,
-    padding: Spacing.three,
     textAlign: "center",
-    marginBottom: Spacing.three,
+    marginBottom: Spacing.four,
+    lineHeight: FontSize.xxl * 1.3,
   },
   description: {
     fontSize: FontSize.base,
