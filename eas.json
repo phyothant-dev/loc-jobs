@@ -9,8 +9,10 @@
       "distribution": "internal"
     },
     "preview": {
-      "distribution": "internal",
-      "channel": "preview"
+      "distribution": "internal"
+    },
+    "test": {
+      "distribution": "internal"
     },
     "production": {
       "autoIncrement": true
