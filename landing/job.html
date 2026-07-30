@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <title>LocJobs</title>
+  <link rel="icon" type="image/png" href="icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -22,6 +23,16 @@
       width: 100%;
       max-width: 500px;
       padding: 12px 0 8px;
+    }
+    .top-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .top-bar .logo-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
     }
     .top-bar h1 {
       font-size: 22px;
@@ -278,6 +289,7 @@
 </head>
 <body>
   <div class="top-bar">
+    <img class="logo-icon" src="icon.png" alt="LocJobs">
     <h1>LocJobs</h1>
   </div>
 
@@ -303,16 +315,11 @@
     var content = document.getElementById('content');
 
     var DEEP_LINK = jobId ? 'locjobs://job/' + jobId : null;
+    var DOWNLOAD_URL = 'https://expo.dev/accounts/phyothant_0/projects/loc-jobs/builds/ec669684-1e37-4c7d-8bc2-4d52fb23bec1';
 
     function tryOpenApp() {
       if (!DEEP_LINK) return;
-      var iframe = document.createElement('iframe');
-      iframe.style.display = 'none';
-      iframe.src = DEEP_LINK;
-      document.body.appendChild(iframe);
-      setTimeout(function() {
-        window.location.href = DEEP_LINK;
-      }, 200);
+      window.location.href = DEEP_LINK;
     }
 
     function relativeTime(dateStr) {
@@ -437,6 +444,7 @@
             <p>Get the full experience — apply, chat, and manage your jobs on the go.</p>
             <div class="btn-row">
               <button class="btn" onclick="tryOpenApp()">Open in App</button>
+              <a class="btn btn-outline" href="${DOWNLOAD_URL}" target="_blank">Download App</a>
             </div>
           </div>
         </div>
@@ -471,11 +479,9 @@
           .then(function(userData) {
             var uploader = userData && userData.length > 0 ? userData[0] : null;
             renderCard(job, uploader);
-            tryOpenApp();
           })
           .catch(function() {
             renderCard(job, null);
-            tryOpenApp();
           });
         } else {
           content.innerHTML = '<div class="card"><div class="error-state"><h2>Job not found</h2><p>This job may have been removed or the link is invalid.</p></div></div>';
