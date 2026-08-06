@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useCallback, useContext, useMemo, useState, ReactNode } from "react";
 
 interface FilterCounts {
   nearby: number;
@@ -19,11 +19,12 @@ const FilterCountContext = createContext<FilterCountContextValue>({
 
 export function FilterCountProvider({ children }: { children: ReactNode }) {
   const [counts, setCounts] = useState<FilterCounts>({ nearby: 0, explore: 0, chat: 0, notifications: 0 });
-  const setCount = (tab: keyof FilterCounts, count: number) => {
+  const setCount = useCallback((tab: keyof FilterCounts, count: number) => {
     setCounts((prev) => ({ ...prev, [tab]: count }));
-  };
+  }, []);
+  const value = useMemo(() => ({ counts, setCount }), [counts, setCount]);
   return (
-    <FilterCountContext.Provider value={{ counts, setCount }}>
+    <FilterCountContext.Provider value={value}>
       {children}
     </FilterCountContext.Provider>
   );

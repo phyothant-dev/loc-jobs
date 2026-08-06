@@ -37,7 +37,7 @@ import {
     EMPLOYMENT_TYPES,
     SALARY_PERIOD_LABELS,
 } from "@/lib/categories";
-import { formatPrice } from "@/lib/currency";
+import { CURRENCIES, currencyLabel, formatPrice } from "@/lib/currency";
 import { REGIONS } from "@/lib/regions";
 import { supabase } from "@/lib/supabase";
 import { useBrand } from "@/contexts/ThemeContext";
@@ -120,6 +120,8 @@ export default function AllJobsScreen() {
   >(null);
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
+  const [priceCurrency, setPriceCurrency] = useState("MMK");
+  const [currencyFilterActive, setCurrencyFilterActive] = useState(false);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -128,6 +130,7 @@ export default function AllJobsScreen() {
   const [showEmployTypePicker, setShowEmployTypePicker] = useState(false);
   const [showRegionPicker, setShowRegionPicker] = useState(false);
   const [showCityPicker, setShowCityPicker] = useState(false);
+  const [showPriceCurrencyPicker, setShowPriceCurrencyPicker] = useState(false);
   const [savedJobIds, setSavedJobIds] = useState<Set<string>>(new Set());
   const [savedSearches, setSavedSearches] = useState<{ id: string; name: string; filters: Record<string, any> }[]>([]);
   const [showSaveSearchModal, setShowSaveSearchModal] = useState(false);
@@ -151,6 +154,8 @@ export default function AllJobsScreen() {
       selectedEmploymentType,
       minPrice,
       maxPrice,
+      priceCurrency,
+      currencyFilterActive,
       search,
     }
     const entry = { id: Date.now().toString(), name, filters }
@@ -169,6 +174,8 @@ export default function AllJobsScreen() {
     setSelectedEmploymentType(entry.filters.selectedEmploymentType ?? null)
     setMinPrice(entry.filters.minPrice ?? "")
     setMaxPrice(entry.filters.maxPrice ?? "")
+    setPriceCurrency(entry.filters.priceCurrency ?? "MMK")
+    setCurrencyFilterActive(entry.filters.currencyFilterActive ?? false)
     setSearch(entry.filters.search ?? "")
   }
 
@@ -289,19 +296,38 @@ export default function AllJobsScreen() {
     if (selectedEmploymentType) count++;
     if (minPrice) count++;
     if (maxPrice) count++;
+    if (currencyFilterActive) count++;
     if (search) count++;
     setCount('explore', count);
-  }, [selectedCity, selectedRegion, selectedWorkType, selectedCategory, selectedEmploymentType, minPrice, maxPrice, search]);
+  }, [selectedCity, selectedRegion, selectedWorkType, selectedCategory, selectedEmploymentType, minPrice, maxPrice, currencyFilterActive, search]);
+
+  const priceLow = minPrice ? parseInt(minPrice, 10) : null;
+  const priceHigh = maxPrice ? parseInt(maxPrice, 10) : null;
+
+  const jobMatchesPriceFilter = (j: Job): boolean => {
+    if (priceLow == null && priceHigh == null) return true;
+    const inRange = (v: number) =>
+      (priceLow == null || v >= priceLow) &&
+      (priceHigh == null || v <= priceHigh);
+    if (j.price != null && inRange(j.price)) return true;
+    const lo = j.salary_min;
+    const hi = j.salary_max;
+    if (lo != null && hi != null) {
+      return (hi >= (priceLow ?? -Infinity)) && (lo <= (priceHigh ?? Infinity));
+    }
+    if (lo != null && inRange(lo)) return true;
+    if (hi != null && inRange(hi)) return true;
+    return false;
+  };
 
   const filtered = jobs.filter((j) => {
     const matchCity = !selectedCity || j.city === selectedCity;
     const matchRegion = !selectedRegion || j.region === selectedRegion;
     const matchWorkType = !selectedWorkType || j.work_type === selectedWorkType;
     const matchCategory = !selectedCategory || j.category === selectedCategory;
-    const matchMinPrice =
-      !minPrice || (j.price != null && j.price >= parseInt(minPrice, 10));
-    const matchMaxPrice =
-      !maxPrice || (j.price != null && j.price <= parseInt(maxPrice, 10));
+    const matchCurrency =
+      !currencyFilterActive ? true : j.currency === priceCurrency;
+    const matchMinPrice = jobMatchesPriceFilter(j);
     const matchSearch =
       !search || j.title.toLowerCase().includes(search.toLowerCase());
     const matchEmployType =
@@ -311,8 +337,8 @@ export default function AllJobsScreen() {
       matchRegion &&
       matchWorkType &&
       matchCategory &&
+      matchCurrency &&
       matchMinPrice &&
-      matchMaxPrice &&
       matchSearch &&
       matchEmployType
     );
@@ -326,6 +352,7 @@ export default function AllJobsScreen() {
     selectedEmploymentType ||
     minPrice ||
     maxPrice ||
+    currencyFilterActive ||
     search;
 
   const groupedByType = useMemo(() => {
@@ -412,6 +439,15 @@ export default function AllJobsScreen() {
           setSelectedCity(key);
         }}
         onClose={() => setShowCityPicker(false)}
+      />
+
+      <PickerModal
+        visible={showPriceCurrencyPicker}
+        title={t("post.selectCurrency")}
+        options={[...CURRENCIES]}
+        selected={priceCurrency}
+        onSelect={(val) => { setPriceCurrency(val); setCurrencyFilterActive(true); }}
+        onClose={() => setShowPriceCurrencyPicker(false)}
       />
 
       <Modal visible={showSaveSearchModal} transparent animationType="fade">
@@ -511,6 +547,8 @@ export default function AllJobsScreen() {
                       setSelectedEmploymentType(null);
                       setMinPrice("");
                       setMaxPrice("");
+                      setPriceCurrency("MMK");
+                      setCurrencyFilterActive(false);
                       setSearch("");
                     }}
                   >
@@ -767,12 +805,15 @@ export default function AllJobsScreen() {
                     onChangeText={(v) => setMaxPrice(v.replace(/\D/g, ''))}
                     keyboardType="number-pad"
                   />
-                  <ThemedText
-                    type="small"
-                    style={{ color: Brand.textSecondary, marginLeft: 4 }}
+                  <Pressable
+                    style={[styles.priceCurrencyBtn, { borderColor: Brand.border, backgroundColor: Brand.white }]}
+                    onPress={() => setShowPriceCurrencyPicker(true)}
                   >
-                    MMK
-                  </ThemedText>
+                    <ThemedText type="small" style={{ color: Brand.text, fontWeight: 600 }}>
+                      {currencyLabel(priceCurrency)}
+                    </ThemedText>
+                    <Ionicons name="chevron-down" size={12} color={Brand.textSecondary} />
+                  </Pressable>
                 </View>
               </View>
             </View>
@@ -1101,6 +1142,15 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 12,
     fontSize: FontSize.sm,
+  },
+  priceCurrencyBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    borderWidth: 1,
+    borderRadius: BorderRadius.md,
+    paddingVertical: 10,
+    paddingHorizontal: 10,
   },
   savedSearchChip: {
     flexDirection: 'row',

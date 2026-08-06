@@ -718,14 +718,14 @@ export default function JobDetailScreen() {
               {[job.region ? t(`regions.${job.region}`) : "", job.city ? t(`cities.${job.city}`) : ""].filter(Boolean).join(", ")}
             </ThemedText>
           </View>
-          {job.price && !job.employment_type && (
+          {job.price ? (
             <ThemedText
               type="price"
               style={{ marginTop: 8, padding: Spacing.one }}
             >
               {formatPrice(job.price, job.currency)}
             </ThemedText>
-          )}
+          ) : null}
           {job.salary_min && job.employment_type && (
             <ThemedText
               type="price"
@@ -1221,7 +1221,7 @@ export default function JobDetailScreen() {
           !reviewedUserIds.has(job?.uploader_id ?? "") && (
             <Pressable
               onPress={() =>
-                openReviewModal(job.uploader_id, uploaderName || "Uploader")
+                openReviewModal(job.uploader_id, uploaderName || t("jobDetail.uploader"))
               }
               style={[
                 styles.reviewFullBtn,
@@ -1229,7 +1229,7 @@ export default function JobDetailScreen() {
               ]}
             >
               <ThemedText style={styles.reviewFullBtnText}>
-                Leave a Review for {uploaderName || "Uploader"}
+                {t("jobDetail.leaveReview")}{uploaderName || t("jobDetail.uploader")}
               </ThemedText>
             </Pressable>
           )}

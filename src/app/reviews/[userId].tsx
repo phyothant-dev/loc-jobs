@@ -37,7 +37,7 @@ export default function ReviewsScreen() {
         let mapped = (data as any[]).map((r) => ({
           id: r.id,
           reviewer_id: r.reviewer_id,
-          reviewer_name: r.reviewer?.display_name || 'Anonymous',
+          reviewer_name: r.reviewer?.display_name || t('common.anonymous'),
           reviewer_avatar: r.reviewer?.avatar_url || null,
           rating: r.rating,
           comment: r.comment,
