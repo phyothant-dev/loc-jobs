@@ -8,6 +8,7 @@ import { ThemedText } from '@/components/themed-text'
 import { Skeleton } from '@/components/skeleton'
 import { BorderRadius, Brand, FontSize, Shadow, Spacing } from '@/constants/theme'
 import { supabase } from '@/lib/supabase'
+import { formatPrice } from '@/lib/currency'
 import { useLocale } from '@/contexts/LocaleContext'
 import { useBrand } from "@/contexts/ThemeContext";
 
@@ -31,6 +32,7 @@ interface JobItem {
   region: string | null
   employment_type: string
   created_at: string
+  currency: string | null
 }
 
 export default function UserJobsScreen() {
@@ -49,7 +51,7 @@ export default function UserJobsScreen() {
       try {
         const [userRes, jobRes] = await Promise.all([
           supabase.from('users').select('display_name, avatar_url').eq('id', id).single(),
-          supabase.from('jobs').select('id, title, price, city, region, employment_type, created_at').eq('uploader_id', id).eq('deleted', false).in('status', ['open', 'full']).order('created_at', { ascending: false }),
+          supabase.from('jobs').select('id, title, price, city, region, employment_type, created_at, currency').eq('uploader_id', id).eq('deleted', false).in('status', ['open', 'full']).order('created_at', { ascending: false }),
         ])
         const { data: userRow } = userRes
         if (userRow) {
@@ -140,18 +142,18 @@ export default function UserJobsScreen() {
                 {[item.region, item.city].filter(Boolean).length ? (
                   <View style={styles.chip}>
                     <Ionicons name="location-outline" size={12} color={Brand.textSecondary} />
-                    <ThemedText type="caption" style={{ color: Brand.textSecondary }}>{[item.region, item.city].filter(Boolean).join(", ")}</ThemedText>
+                    <ThemedText type="caption" style={{ color: Brand.textSecondary }}>{[item.region ? t(`regions.${item.region}`) : "", item.city ? t(`cities.${item.city}`) : ""].filter(Boolean).join(", ")}</ThemedText>
                   </View>
                 ) : null}
                 <View style={styles.chip}>
                   <ThemedText type="caption" style={{ color: Brand.textSecondary }}>
-                    {t(`categories.${item.employment_type}`)}
+                    {t(`employmentTypes.${item.employment_type}`)}
                   </ThemedText>
                 </View>
               </View>
             </View>
             {item.price ? (
-              <ThemedText style={styles.price}>{item.price.toLocaleString()} MMK</ThemedText>
+              <ThemedText style={styles.price}>{formatPrice(item.price, item.currency)}</ThemedText>
             ) : null}
             <ThemedText
               type="caption"

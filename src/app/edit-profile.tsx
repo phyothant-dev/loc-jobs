@@ -43,6 +43,8 @@ export default function EditProfileScreen() {
 
   const regionList = Object.keys(REGIONS).sort()
   const cityList = region ? (REGIONS[region] || []).sort() : Object.values(REGIONS).flat().sort()
+  const regionOptions = regionList.map((r) => t(`regions.${r}`))
+  const cityOptions = cityList.map((c) => t(`cities.${c}`))
 
   useEffect(() => {
     if (!user) return
@@ -232,17 +234,17 @@ export default function EditProfileScreen() {
           <View style={styles.formGroup}>
             <ThemedText type="caption" style={styles.label}>{t('profile.region')}</ThemedText>
             <Pressable style={[styles.pickerBtn, { backgroundColor: Brand.white, borderColor: Brand.borderLight }]} onPress={() => setShowRegionPicker(true)}>
-              <ThemedText type="small" style={!region ? { color: Brand.placeholder } : {}}>{region || t('post.selectRegion')}</ThemedText>
+              <ThemedText type="small" style={!region ? { color: Brand.placeholder } : {}}>{region ? t(`regions.${region}`) : t('post.selectRegion')}</ThemedText>
             </Pressable>
-            <PickerModal visible={showRegionPicker} title={t('post.selectRegion')} options={regionList} selected={region} onSelect={setRegion} onClose={() => setShowRegionPicker(false)} />
+            <PickerModal visible={showRegionPicker} title={t('post.selectRegion')} options={regionOptions} selected={region ? t(`regions.${region}`) : ""} onSelect={(v) => { const key = regionList.find((r) => t(`regions.${r}`) === v); setRegion(key || v); setCity(''); }} onClose={() => setShowRegionPicker(false)} />
           </View>
 
           <View style={styles.formGroup}>
             <ThemedText type="caption" style={styles.label}>{t('profile.city')}</ThemedText>
             <Pressable style={[styles.pickerBtn, { backgroundColor: Brand.white, borderColor: Brand.borderLight }]} onPress={() => setShowCityPicker(true)}>
-              <ThemedText type="small" style={!city ? { color: Brand.placeholder } : {}}>{city || t('post.selectCity')}</ThemedText>
+              <ThemedText type="small" style={!city ? { color: Brand.placeholder } : {}}>{city ? t(`cities.${city}`) : t('post.selectCity')}</ThemedText>
             </Pressable>
-            <PickerModal visible={showCityPicker} title={t('post.selectCity')} options={cityList} selected={city} onSelect={setCity} onClose={() => setShowCityPicker(false)} />
+            <PickerModal visible={showCityPicker} title={t('post.selectCity')} options={cityOptions} selected={city ? t(`cities.${city}`) : ""} onSelect={(v) => { const key = cityList.find((c) => t(`cities.${c}`) === v); setCity(key || v); }} onClose={() => setShowCityPicker(false)} />
           </View>
 
           <View style={styles.formGroup}>

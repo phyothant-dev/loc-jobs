@@ -31,9 +31,9 @@ import { useLocale } from "@/contexts/LocaleContext";
 import { useBrand } from "@/contexts/ThemeContext";
 import {
     CATEGORIES,
-    EMPLOYMENT_TYPE_LABELS,
     SALARY_PERIOD_LABELS,
 } from "@/lib/categories";
+import { formatPrice } from "@/lib/currency";
 import { supabase } from "@/lib/supabase";
 
 interface Job {
@@ -57,6 +57,7 @@ interface Job {
   salary_min: number | null;
   salary_max: number | null;
   salary_period: string | null;
+  currency: string | null;
 }
 
 function parseCoords(job: {
@@ -551,7 +552,7 @@ export default function NearbyJobsScreen() {
                                 : {}
                             }
                           >
-                            {cat}
+                            {t(`categories.${cat}`)}
                           </ThemedText>
                         </Pressable>
                       ))}
@@ -672,7 +673,7 @@ export default function NearbyJobsScreen() {
                             type="caption"
                             style={styles.categoryBadgeText}
                           >
-                            {item.category}
+                            {t(`categories.${item.category}`)}
                           </ThemedText>
                         </View>
                       )}
@@ -688,10 +689,10 @@ export default function NearbyJobsScreen() {
                     )}
                     <View style={styles.jobMetaRow}>
                       <ThemedText type="caption" numberOfLines={1}>
-                        {[item.region, item.city].filter(Boolean).join(", ")} ·{" "}
+                        {[item.region ? t(`regions.${item.region}`) : "", item.city ? t(`cities.${item.city}`) : ""].filter(Boolean).join(", ")} ·{" "}
                         {t(`workTypes.${item.work_type}`)}
                         {item.employment_type
-                          ? ` · ${EMPLOYMENT_TYPE_LABELS[item.employment_type]}`
+                          ? ` · ${t(`employmentTypes.${item.employment_type}`)}`
                           : ""}
                         {distance !== null &&
                           ` · ${distance < 1 ? (distance * 1000).toFixed(0) + t("nearby.m") : distance.toFixed(1) + t("nearby.km")}`}
@@ -733,16 +734,15 @@ export default function NearbyJobsScreen() {
                     >
                       {item.price && !item.employment_type && (
                         <ThemedText type="price">
-                          {item.price.toLocaleString()} MMK
+                          {formatPrice(item.price, item.currency)}
                         </ThemedText>
                       )}
                       {item.salary_min != null && item.employment_type && (
                         <ThemedText type="price">
-                          {item.salary_min.toLocaleString()} -{" "}
+                          {formatPrice(item.salary_min, item.currency)} -{" "}
                           {item.salary_max != null
-                            ? item.salary_max.toLocaleString()
-                            : ""}{" "}
-                          MMK
+                            ? formatPrice(item.salary_max, item.currency)
+                            : ""}
                           {item.salary_period
                             ? `/${SALARY_PERIOD_LABELS[item.salary_period] || ""}`
                             : ""}

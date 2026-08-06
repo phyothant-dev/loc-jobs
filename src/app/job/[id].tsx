@@ -34,7 +34,8 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { useLocale } from "@/contexts/LocaleContext";
 import { useBrand } from "@/contexts/ThemeContext";
-import { EMPLOYMENT_TYPE_LABELS, SALARY_PERIOD_LABELS } from "@/lib/categories";
+import { SALARY_PERIOD_LABELS } from "@/lib/categories";
+import { formatPrice } from "@/lib/currency";
 import { supabase } from "@/lib/supabase";
 import * as Location from "expo-location";
 
@@ -203,9 +204,9 @@ export default function JobDetailScreen() {
       job.description
         ? `\n${job.description.slice(0, 200)}${job.description.length > 200 ? "..." : ""}`
         : "",
-      job.price ? `\nPrice: ${job.price.toLocaleString()} MMK` : "",
+      job.price ? `\nPrice: ${formatPrice(job.price, job.currency)}` : "",
       job.city || job.region
-        ? `\nLocation: ${[job.city, job.region].filter(Boolean).join(", ")}`
+        ? `\nLocation: ${[job.city ? t(`cities.${job.city}`) : "", job.region ? t(`regions.${job.region}`) : ""].filter(Boolean).join(", ")}`
         : "",
       `\n\n${webUrl}`,
     ].join("");
@@ -699,7 +700,7 @@ export default function JobDetailScreen() {
                   type="caption"
                   style={{ color: Brand.primary, fontWeight: 600 }}
                 >
-                  {EMPLOYMENT_TYPE_LABELS[job.employment_type]}
+                  {t(`employmentTypes.${job.employment_type}`)}
                 </ThemedText>
               </View>
             )}
@@ -714,7 +715,7 @@ export default function JobDetailScreen() {
               color={Brand.textSecondary}
             />
             <ThemedText type="caption" style={{ color: Brand.textSecondary }}>
-              {[job.region, job.city].filter(Boolean).join(", ")}
+              {[job.region ? t(`regions.${job.region}`) : "", job.city ? t(`cities.${job.city}`) : ""].filter(Boolean).join(", ")}
             </ThemedText>
           </View>
           {job.price && !job.employment_type && (
@@ -722,7 +723,7 @@ export default function JobDetailScreen() {
               type="price"
               style={{ marginTop: 8, padding: Spacing.one }}
             >
-              {job.price.toLocaleString()} MMK
+              {formatPrice(job.price, job.currency)}
             </ThemedText>
           )}
           {job.salary_min && job.employment_type && (
@@ -730,8 +731,8 @@ export default function JobDetailScreen() {
               type="price"
               style={{ marginTop: 8, padding: Spacing.one }}
             >
-              {job.salary_min.toLocaleString()} -{" "}
-              {job.salary_max?.toLocaleString()} MMK
+              {formatPrice(job.salary_min, job.currency)} -{" "}
+              {formatPrice(job.salary_max, job.currency)}
               {job.salary_period
                 ? `/${SALARY_PERIOD_LABELS[job.salary_period] || ""}`
                 : ""}
@@ -831,7 +832,7 @@ export default function JobDetailScreen() {
           {hasLocation ? (
             <>
               <ThemedText style={styles.infoLine}>
-                {[job.region, job.city].filter(Boolean).join(", ")}
+                {[job.region ? t(`regions.${job.region}`) : "", job.city ? t(`cities.${job.city}`) : ""].filter(Boolean).join(", ")}
               </ThemedText>
               <MapView
                 style={styles.map}

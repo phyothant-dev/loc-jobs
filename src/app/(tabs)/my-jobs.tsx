@@ -15,7 +15,8 @@ import {
     Shadow,
     Spacing,
 } from "@/constants/theme";
-import { EMPLOYMENT_TYPE_LABELS, SALARY_PERIOD_LABELS } from "@/lib/categories";
+import { SALARY_PERIOD_LABELS } from "@/lib/categories";
+import { formatPrice } from "@/lib/currency";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLocale } from "@/contexts/LocaleContext";
 import { supabase } from "@/lib/supabase";
@@ -36,6 +37,7 @@ interface JobWithMeta {
   salary_min: number | null;
   salary_max: number | null;
   salary_period: string | null;
+  currency: string | null;
 }
 
 interface SearcherInfo {
@@ -451,19 +453,19 @@ export default function MyJobsScreen() {
                         </ThemedText>
                       </View>
                       <ThemedText type="caption">
-                        {[item.region, item.city].filter(Boolean).join(", ")} ·{" "}
+                        {[item.region ? t(`regions.${item.region}`) : "", item.city ? t(`cities.${item.city}`) : ""].filter(Boolean).join(", ")} ·{" "}
                         {t(`workTypes.${item.work_type}`)}
-                        {item.employment_type ? ` · ${EMPLOYMENT_TYPE_LABELS[item.employment_type]}` : ''}
+                        {item.employment_type ? ` · ${t(`employmentTypes.${item.employment_type}`)}` : ''}
                       </ThemedText>
                     </View>
                     {item.price && !item.employment_type && (
                       <ThemedText type="price" style={{ marginTop: 8 }}>
-                        {item.price.toLocaleString()} MMK
+                        {formatPrice(item.price, item.currency)}
                       </ThemedText>
                     )}
                     {item.salary_min != null && item.employment_type && (
                         <ThemedText type="price">
-                          {item.salary_min.toLocaleString()} - {item.salary_max != null ? item.salary_max.toLocaleString() : ''} MMK{item.salary_period ? `/${SALARY_PERIOD_LABELS[item.salary_period] || ''}` : ''}
+                          {formatPrice(item.salary_min, item.currency)} - {item.salary_max != null ? formatPrice(item.salary_max, item.currency) : ''}{item.salary_period ? `/${SALARY_PERIOD_LABELS[item.salary_period] || ''}` : ''}
                         </ThemedText>
                       )}
 

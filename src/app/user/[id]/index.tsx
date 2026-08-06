@@ -10,6 +10,7 @@ import { ReviewCard } from '@/components/review-card'
 import { StarRating } from '@/components/star-rating'
 import { BorderRadius, Brand, Shadow, Spacing, FontSize } from '@/constants/theme'
 import { supabase } from '@/lib/supabase'
+import { formatPrice } from '@/lib/currency'
 import { useAuth } from '@/contexts/AuthContext'
 import { useLocale } from '@/contexts/LocaleContext'
 import { useBrand } from "@/contexts/ThemeContext";
@@ -43,7 +44,7 @@ export default function UserProfileScreen() {
         supabase.from('users').select('*').eq('id', id).single(),
         supabase.from('reviews').select('rating').eq('reviewee_id', id),
         supabase.from('reviews').select('*, reviewer:users!reviewer_id(display_name, avatar_url)').eq('reviewee_id', id).order('created_at', { ascending: false }).limit(3),
-        supabase.from('jobs').select('id, title, price, city, region, employment_type, created_at').eq('uploader_id', id).eq('deleted', false).in('status', ['open', 'full']).order('created_at', { ascending: false }).limit(5),
+        supabase.from('jobs').select('id, title, price, city, region, employment_type, created_at, currency').eq('uploader_id', id).eq('deleted', false).in('status', ['open', 'full']).order('created_at', { ascending: false }).limit(5),
       ])
 
       const { data } = userRes
@@ -222,12 +223,12 @@ export default function UserProfileScreen() {
               <View style={[styles.divider, { backgroundColor: Brand.borderLight }]} />
               <View style={styles.infoRow}>
                 <ThemedText type="caption" style={styles.infoLabel}>{t('userProfile.city')}</ThemedText>
-                <ThemedText style={styles.infoValue}>{city || t('userProfile.emDash')}</ThemedText>
+                <ThemedText style={styles.infoValue}>{city ? t(`cities.${city}`) : t('userProfile.emDash')}</ThemedText>
               </View>
               <View style={[styles.divider, { backgroundColor: Brand.borderLight }]} />
               <View style={styles.infoRow}>
                 <ThemedText type="caption" style={styles.infoLabel}>{t('userProfile.region')}</ThemedText>
-                <ThemedText style={styles.infoValue}>{region || t('userProfile.emDash')}</ThemedText>
+                <ThemedText style={styles.infoValue}>{region ? t(`regions.${region}`) : t('userProfile.emDash')}</ThemedText>
               </View>
             </View>
 
@@ -265,7 +266,7 @@ export default function UserProfileScreen() {
                       <View style={{ flex: 1 }}>
                         <ThemedText style={styles.jobTitle} numberOfLines={1}>{job.title}</ThemedText>
                         <ThemedText type="caption" style={{ color: Brand.textSecondary }}>
-                          {[job.region, job.city].filter(Boolean).join(", ")}{[job.region, job.city].filter(Boolean).length && job.price ? ' · ' : ''}{job.price ? `${job.price.toLocaleString()} MMK` : ''}
+                          {[job.region ? t(`regions.${job.region}`) : "", job.city ? t(`cities.${job.city}`) : ""].filter(Boolean).join(", ")}{[job.region || job.city, job.price].filter(Boolean).length === 2 ? ' · ' : ''}{job.price ? formatPrice(job.price, job.currency) : ''}
                         </ThemedText>
                       </View>
                       <Ionicons name="chevron-forward" size={16} color={Brand.textSecondary} />

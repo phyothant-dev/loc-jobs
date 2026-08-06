@@ -20,6 +20,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { useLocale } from "@/contexts/LocaleContext";
 import { supabase } from "@/lib/supabase";
+import { formatPrice } from "@/lib/currency";
 import { useBrand, useToggleTheme, useIsDark } from "@/contexts/ThemeContext";
 
 export default function ProfileScreen() {
@@ -143,7 +144,7 @@ export default function ProfileScreen() {
         setReviews((reviewRows as any[]).map((r) => ({
           id: r.id,
           reviewer_id: r.reviewer_id,
-          reviewer_name: (r as any).reviewer?.display_name || 'Anonymous',
+          reviewer_name: (r as any).reviewer?.display_name || t('common.anonymous'),
           reviewer_avatar: (r as any).reviewer?.avatar_url || null,
           rating: r.rating,
           comment: r.comment,
@@ -299,7 +300,7 @@ export default function ProfileScreen() {
                     {t('profile.city')}
                   </ThemedText>
                   <ThemedText style={styles.infoValue}>
-                    {city || t('profile.emDash')}
+                    {city ? t(`cities.${city}`) : t('profile.emDash')}
                   </ThemedText>
                 </View>
                 <View style={[styles.divider, { backgroundColor: Brand.borderLight }]} />
@@ -308,7 +309,7 @@ export default function ProfileScreen() {
                     {t('profile.region')}
                   </ThemedText>
                   <ThemedText style={styles.infoValue}>
-                    {region || t('profile.emDash')}
+                    {region ? t(`regions.${region}`) : t('profile.emDash')}
                   </ThemedText>
                 </View>
               </View>
@@ -374,7 +375,7 @@ export default function ProfileScreen() {
                           <View style={[styles.jobRow, i < completedJobs.length - 1 && styles.jobRowBorder, { borderBottomColor: Brand.borderLight }]}>
                             <View style={{ flex: 1 }}>
                               <ThemedText style={styles.jobTitle}>{job.title}</ThemedText>
-                              {job.price ? <ThemedText type="caption" style={{ color: Brand.textSecondary }}>{job.price.toLocaleString()} MMK</ThemedText> : null}
+                              {job.price ? <ThemedText type="caption" style={{ color: Brand.textSecondary }}>{formatPrice(job.price, job.currency)}</ThemedText> : null}
                             </View>
                             <Ionicons name="chevron-forward" size={18} color={Brand.textSecondary} />
                           </View>
@@ -408,7 +409,7 @@ export default function ProfileScreen() {
                           <View style={[styles.jobRow, i < savedJobs.length - 1 && styles.jobRowBorder, { borderBottomColor: Brand.borderLight }]}>
                             <View style={{ flex: 1 }}>
                               <ThemedText style={styles.jobTitle}>{job.title}</ThemedText>
-                              {job.price ? <ThemedText type="caption" style={{ color: Brand.textSecondary }}>{job.price.toLocaleString()} MMK</ThemedText> : null}
+                              {job.price ? <ThemedText type="caption" style={{ color: Brand.textSecondary }}>{formatPrice(job.price, job.currency)}</ThemedText> : null}
                             </View>
                             <Ionicons name="chevron-forward" size={18} color={Brand.textSecondary} />
                           </View>

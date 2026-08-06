@@ -31,7 +31,8 @@ import {
 } from "@/constants/theme";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLocale } from "@/contexts/LocaleContext";
-import { CATEGORIES, EMPLOYMENT_TYPES, EMPLOYMENT_TYPE_LABELS } from "@/lib/categories";
+import { CATEGORIES, EMPLOYMENT_TYPES } from "@/lib/categories";
+import { CURRENCIES, currencyLabel } from "@/lib/currency";
 import { REGIONS } from "@/lib/regions";
 import { supabase } from "@/lib/supabase";
 import { useBrand } from "@/contexts/ThemeContext";
@@ -49,6 +50,8 @@ export default function PostJobScreen() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
+  const [currency, setCurrency] = useState("MMK");
+  const [showCurrencyPicker, setShowCurrencyPicker] = useState(false);
   const [workType, setWorkType] = useState<string>("onsite");
   const [city, setCity] = useState("");
   const [region, setRegion] = useState("");
@@ -74,6 +77,10 @@ export default function PostJobScreen() {
   const cityList = region
     ? (REGIONS[region] || []).sort()
     : Object.values(REGIONS).flat().sort();
+  const regionOptions = regionList.map((r) => t(`regions.${r}`));
+  const cityOptions = cityList.map((c) => t(`cities.${c}`));
+  const categoryOptions = CATEGORIES.map((c) => t(`categories.${c}`));
+  const employmentOptions = EMPLOYMENT_TYPES.map((e) => t(`employmentTypes.${e}`));
 
   useEffect(() => {
     if (!isEditing || !id) return;
@@ -88,6 +95,7 @@ export default function PostJobScreen() {
         setTitle(j.title);
         setDescription(j.description || "");
         setPrice(j.price ? String(j.price) : "");
+        setCurrency(j.currency || "MMK");
         setWorkType(j.work_type);
         setCity(j.city || "");
         setRegion(j.region || "");
@@ -206,6 +214,7 @@ export default function PostJobScreen() {
     };
     if (description) params.p_description = description;
     if (price) params.p_price = parseInt(price, 10);
+    params.p_currency = currency || "MMK";
     if (workType) params.p_work_type = workType;
     if (city) params.p_city = city;
     if (region) params.p_region = region;
@@ -229,6 +238,7 @@ export default function PostJobScreen() {
         vacancies,
         category: category || null,
         employment_type: employmentType || null,
+        currency: currency || "MMK",
       };
       if (lat && lng) {
         updates.lat = lat;
@@ -317,17 +327,35 @@ export default function PostJobScreen() {
             <ThemedText type="caption" style={styles.label}>
               {t('post.priceLabel')}
             </ThemedText>
-            <TextInput
-              style={[styles.input, { backgroundColor: Brand.white, borderColor: Brand.borderLight, color: Brand.text }]}
-              placeholder={t('post.pricePlaceholder')}
-              placeholderTextColor={Brand.placeholder}
-              value={price}
-              onChangeText={(v) => { setPrice(v.replace(/\D/g, '')); clearError("price"); }}
-              keyboardType="number-pad"
-            />
+            <View style={{ flexDirection: 'row', gap: Spacing.two }}>
+              <TextInput
+                style={[styles.input, { flex: 1, backgroundColor: Brand.white, borderColor: Brand.borderLight, color: Brand.text }]}
+                placeholder={t('post.pricePlaceholder')}
+                placeholderTextColor={Brand.placeholder}
+                value={price}
+                onChangeText={(v) => { setPrice(v.replace(/\D/g, '')); clearError("price"); }}
+                keyboardType="number-pad"
+              />
+              <Pressable
+                style={[styles.pickerBtn, { width: 130, backgroundColor: Brand.white, borderColor: Brand.borderLight }]}
+                onPress={() => setShowCurrencyPicker(true)}
+              >
+                <ThemedText type="small" style={!currency ? { color: Brand.placeholder } : {}}>
+                  {currency ? currencyLabel(currency) : t('post.selectCurrency')}
+                </ThemedText>
+              </Pressable>
+            </View>
             {validationErrors.price && (
               <ThemedText type="caption" style={{ color: '#E53935', marginTop: 4 }}>{validationErrors.price}</ThemedText>
             )}
+            <PickerModal
+              visible={showCurrencyPicker}
+              title={t('post.selectCurrency')}
+              options={[...CURRENCIES]}
+              selected={currency}
+              onSelect={setCurrency}
+              onClose={() => setShowCurrencyPicker(false)}
+            />
           </View>
 
           <View style={styles.formGroup}>
@@ -394,15 +422,18 @@ export default function PostJobScreen() {
                 type="small"
                 style={!category ? { color: Brand.placeholder } : {}}
               >
-                {category || t('post.selectCategoryLabel')}
+                {category ? t(`categories.${category}`) : t('post.selectCategoryLabel')}
               </ThemedText>
             </Pressable>
             <PickerModal
               visible={showCategoryPicker}
               title={t('post.selectCategory')}
-              options={[...CATEGORIES]}
-              selected={category}
-              onSelect={setCategory}
+              options={categoryOptions}
+              selected={category ? t(`categories.${category}`) : ""}
+              onSelect={(v) => {
+                const key = CATEGORIES.find((c) => t(`categories.${c}`) === v);
+                setCategory(key || "");
+              }}
               onClose={() => setShowCategoryPicker(false)}
             />
           </View>
@@ -419,18 +450,18 @@ export default function PostJobScreen() {
                 type="small"
                 style={!employmentType ? { color: Brand.placeholder } : {}}
               >
-                {employmentType ? EMPLOYMENT_TYPE_LABELS[employmentType] : t('post.selectTypeLabel')}
+                {employmentType ? t(`employmentTypes.${employmentType}`) : t('post.selectTypeLabel')}
               </ThemedText>
             </Pressable>
             <PickerModal
               visible={showEmployTypePicker}
               title={t('post.employmentType')}
-              options={["", ...EMPLOYMENT_TYPES.map((t) => EMPLOYMENT_TYPE_LABELS[t])]}
-              selected={employmentType ? EMPLOYMENT_TYPE_LABELS[employmentType] : ""}
+              options={["", ...employmentOptions]}
+              selected={employmentType ? t(`employmentTypes.${employmentType}`) : ""}
               onSelect={(val) => {
                 if (!val) { setEmploymentType(""); return }
-                const key = Object.entries(EMPLOYMENT_TYPE_LABELS).find(([, v]) => v === val)?.[0] || ""
-                setEmploymentType(key)
+                const key = EMPLOYMENT_TYPES.find((e) => t(`employmentTypes.${e}`) === val)
+                setEmploymentType(key || "")
               }}
               onClose={() => setShowEmployTypePicker(false)}
             />
@@ -448,7 +479,7 @@ export default function PostJobScreen() {
                 type="small"
                 style={!region ? { color: Brand.placeholder } : {}}
               >
-                {region || t('post.selectRegion')}
+                {region ? t(`regions.${region}`) : t('post.selectRegion')}
               </ThemedText>
             </Pressable>
             {validationErrors.region && (
@@ -457,10 +488,11 @@ export default function PostJobScreen() {
             <PickerModal
               visible={showRegionPicker}
               title={t('post.selectRegion')}
-              options={regionList}
-              selected={region}
+              options={regionOptions}
+              selected={region ? t(`regions.${region}`) : ""}
               onSelect={(v) => {
-                setRegion(v);
+                const key = regionList.find((r) => t(`regions.${r}`) === v);
+                setRegion(key || v);
                 setCity("");
               }}
               onClose={() => setShowRegionPicker(false)}
@@ -479,7 +511,7 @@ export default function PostJobScreen() {
                 type="small"
                 style={!city ? { color: Brand.placeholder } : {}}
               >
-                {city || t('post.selectCity')}
+                {city ? t(`cities.${city}`) : t('post.selectCity')}
               </ThemedText>
             </Pressable>
             {validationErrors.city && (
@@ -488,9 +520,12 @@ export default function PostJobScreen() {
             <PickerModal
               visible={showCityPicker}
               title={t('post.selectCity')}
-              options={cityList}
-              selected={city}
-              onSelect={setCity}
+              options={cityOptions}
+              selected={city ? t(`cities.${city}`) : ""}
+              onSelect={(v) => {
+                const key = cityList.find((c) => t(`cities.${c}`) === v);
+                setCity(key || v);
+              }}
               onClose={() => setShowCityPicker(false)}
             />
           </View>

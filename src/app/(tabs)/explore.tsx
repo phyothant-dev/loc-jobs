@@ -35,9 +35,9 @@ import { useLocale } from "@/contexts/LocaleContext";
 import {
     CATEGORIES,
     EMPLOYMENT_TYPES,
-    EMPLOYMENT_TYPE_LABELS,
     SALARY_PERIOD_LABELS,
 } from "@/lib/categories";
+import { formatPrice } from "@/lib/currency";
 import { REGIONS } from "@/lib/regions";
 import { supabase } from "@/lib/supabase";
 import { useBrand } from "@/contexts/ThemeContext";
@@ -56,6 +56,7 @@ interface Job {
   salary_min: number | null;
   salary_max: number | null;
   salary_period: string | null;
+  currency: string | null;
   created_at: string;
 }
 
@@ -346,19 +347,18 @@ export default function AllJobsScreen() {
         title={t("explore.selectType")}
         options={[
           t("explore.allTypes"),
-          ...WORK_TYPES.map((w) => w.charAt(0).toUpperCase() + w.slice(1)),
+          ...WORK_TYPES.map((w) => t(`workTypes.${w}`)),
         ]}
         selected={
           selectedWorkType
-            ? selectedWorkType.charAt(0).toUpperCase() +
-              selectedWorkType.slice(1)
+            ? t(`workTypes.${selectedWorkType}`)
             : t("explore.allTypes")
         }
-        onSelect={(val) =>
-          setSelectedWorkType(
-            val === t("explore.allTypes") ? null : val.toLowerCase(),
-          )
-        }
+        onSelect={(val) => {
+          if (val === t("explore.allTypes")) { setSelectedWorkType(null); return }
+          const key = WORK_TYPES.find((w) => t(`workTypes.${w}`) === val) || null;
+          setSelectedWorkType(key);
+        }}
         onClose={() => setShowWorkTypePicker(false)}
       />
 
@@ -367,11 +367,11 @@ export default function AllJobsScreen() {
         title={t("explore.employmentType")}
         options={[
           t("common.all"),
-          ...EMPLOYMENT_TYPES.map((et) => EMPLOYMENT_TYPE_LABELS[et]),
+          ...EMPLOYMENT_TYPES.map((et) => t(`employmentTypes.${et}`)),
         ]}
         selected={
           selectedEmploymentType
-            ? EMPLOYMENT_TYPE_LABELS[selectedEmploymentType]
+            ? t(`employmentTypes.${selectedEmploymentType}`)
             : t("common.all")
         }
         onSelect={(val) => {
@@ -380,9 +380,8 @@ export default function AllJobsScreen() {
             return;
           }
           const key =
-            Object.entries(EMPLOYMENT_TYPE_LABELS).find(
-              ([, v]) => v === val,
-            )?.[0] || null;
+            EMPLOYMENT_TYPES.find((et) => t(`employmentTypes.${et}`) === val) ||
+            null;
           setSelectedEmploymentType(key);
         }}
         onClose={() => setShowEmployTypePicker(false)}
@@ -391,10 +390,12 @@ export default function AllJobsScreen() {
       <PickerModal
         visible={showRegionPicker}
         title={t("explore.selectRegion")}
-        options={[t("explore.allRegions"), ...allRegions]}
-        selected={selectedRegion || t("explore.allRegions")}
+        options={[t("explore.allRegions"), ...allRegions.map((r) => t(`regions.${r}`))]}
+        selected={selectedRegion ? t(`regions.${selectedRegion}`) : t("explore.allRegions")}
         onSelect={(val) => {
-          setSelectedRegion(val === t("explore.allRegions") ? null : val);
+          if (val === t("explore.allRegions")) { setSelectedRegion(null); setSelectedCity(null); return }
+          const key = allRegions.find((r) => t(`regions.${r}`) === val) || null;
+          setSelectedRegion(key);
           setSelectedCity(null);
         }}
         onClose={() => setShowRegionPicker(false)}
@@ -403,11 +404,13 @@ export default function AllJobsScreen() {
       <PickerModal
         visible={showCityPicker}
         title={t("explore.selectCity")}
-        options={[t("common.all"), ...allCities]}
-        selected={selectedCity || t("common.all")}
-        onSelect={(val) =>
-          setSelectedCity(val === t("common.all") ? null : val)
-        }
+        options={[t("common.all"), ...allCities.map((c) => t(`cities.${c}`))]}
+        selected={selectedCity ? t(`cities.${selectedCity}`) : t("common.all")}
+        onSelect={(val) => {
+          if (val === t("common.all")) { setSelectedCity(null); return }
+          const key = allCities.find((c) => t(`cities.${c}`) === val) || null;
+          setSelectedCity(key);
+        }}
         onClose={() => setShowCityPicker(false)}
       />
 
@@ -626,7 +629,7 @@ export default function AllJobsScreen() {
                         }
                       >
                         {selectedEmploymentType
-                          ? EMPLOYMENT_TYPE_LABELS[selectedEmploymentType]
+                          ? t(`employmentTypes.${selectedEmploymentType}`)
                           : t("explore.allEmployment")}
                       </ThemedText>
                     </Pressable>
@@ -652,7 +655,9 @@ export default function AllJobsScreen() {
                             : { color: Brand.text, fontWeight: 700 }
                         }
                       >
-                        {selectedRegion || t("explore.allRegions")}
+                        {selectedRegion
+                          ? t(`regions.${selectedRegion}`)
+                          : t("explore.allRegions")}
                       </ThemedText>
                     </Pressable>
                   </View>
@@ -677,7 +682,9 @@ export default function AllJobsScreen() {
                             : { color: Brand.text, fontWeight: 700 }
                         }
                       >
-                        {selectedCity || t("common.all")}
+                        {selectedCity
+                          ? t(`cities.${selectedCity}`)
+                          : t("common.all")}
                       </ThemedText>
                     </Pressable>
                   </View>
@@ -730,7 +737,7 @@ export default function AllJobsScreen() {
                             type="small"
                             style={selectedCategory === cat ? { color: '#FFFFFF', fontWeight: '700' } : {}}
                           >
-                            {cat}
+                            {t(`categories.${cat}`)}
                           </ThemedText>
                         </Pressable>
                       ))}
@@ -780,7 +787,7 @@ export default function AllJobsScreen() {
                     style={[styles.sectionDot, { backgroundColor: color }]}
                   />
                   <ThemedText style={styles.sectionTitle}>
-                    {type.charAt(0).toUpperCase() + type.slice(1)}
+                    {t(`workTypes.${type}`)}
                   </ThemedText>
                   <ThemedText
                     type="caption"
@@ -826,7 +833,7 @@ export default function AllJobsScreen() {
                               type="caption"
                               style={styles.categoryBadgeText}
                             >
-                              {job.category}
+                              {t(`categories.${job.category}`)}
                             </ThemedText>
                           </View>
                         )}
@@ -835,12 +842,12 @@ export default function AllJobsScreen() {
                         </ThemedText>
                         <View style={styles.cardLocation}>
                           <ThemedText type="caption" numberOfLines={1}>
-                            {[job.region, job.city].filter(Boolean).join(", ")}
+                            {[job.region ? t(`regions.${job.region}`) : "", job.city ? t(`cities.${job.city}`) : ""].filter(Boolean).join(", ")}
                             {job.work_type
                               ? ` · ${t(`workTypes.${job.work_type}`)}`
                               : ""}
                             {job.employment_type
-                              ? ` · ${EMPLOYMENT_TYPE_LABELS[job.employment_type]}`
+                              ? ` · ${t(`employmentTypes.${job.employment_type}`)}`
                               : ""}
                           </ThemedText>
                         </View>
@@ -856,19 +863,15 @@ export default function AllJobsScreen() {
                               {job.employment_type
                                 ? job.salary_min != null &&
                                   job.salary_max != null
-                                  ? `${job.salary_min.toLocaleString()} — ${job.salary_max.toLocaleString()} ${SALARY_PERIOD_LABELS[job.salary_period || "month"]}`
+                                  ? `${formatPrice(job.salary_min, job.currency)} — ${formatPrice(job.salary_max, job.currency)}${job.salary_period ? `/${SALARY_PERIOD_LABELS[job.salary_period] || ""}` : ""}`
                                   : job.salary_min != null
-                                    ? `From ${job.salary_min.toLocaleString()} ${SALARY_PERIOD_LABELS[job.salary_period || "month"]}`
+                                    ? `${t("explore.from")} ${formatPrice(job.salary_min, job.currency)}${job.salary_period ? `/${SALARY_PERIOD_LABELS[job.salary_period] || ""}` : ""}`
                                     : job.salary_max != null
-                                      ? `Up to ${job.salary_max.toLocaleString()} ${SALARY_PERIOD_LABELS[job.salary_period || "month"]}`
-                                      : EMPLOYMENT_TYPE_LABELS[
-                                          job.employment_type
-                                        ]
+                                      ? `${t("explore.upTo")} ${formatPrice(job.salary_max, job.currency)}${job.salary_period ? `/${SALARY_PERIOD_LABELS[job.salary_period] || ""}` : ""}`
+                                      : t(`employmentTypes.${job.employment_type}`)
                                 : job.price != null
-                                  ? `${job.price.toLocaleString()} MMK`
-                                  : EMPLOYMENT_TYPE_LABELS[
-                                      job.employment_type || "full_time"
-                                    ]}
+                                  ? formatPrice(job.price, job.currency)
+                                  : t(`employmentTypes.${job.employment_type || "full_time"}`)}
                             </ThemedText>
                           </View>
                           <View style={styles.cardStatus}>

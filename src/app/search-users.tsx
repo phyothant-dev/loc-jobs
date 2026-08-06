@@ -126,7 +126,7 @@ export default function SearchUsersScreen() {
                   {item.display_name || t('common.anonymous')}
                 </ThemedText>
                 <ThemedText type="caption" style={{ color: Brand.textSecondary }}>
-                  {item.city || t('userSearch.noLocation')} · {t(`profile.role_${item.role}`)}
+                  {item.city ? t(`cities.${item.city}`) : t('userSearch.noLocation')} · {t(`profile.role_${item.role}`)}
                 </ThemedText>
               </View>
               <View style={{ alignItems: 'flex-end' }}>
