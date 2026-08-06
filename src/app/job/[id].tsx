@@ -1,10 +1,8 @@
+import { Skeleton } from "@/components/skeleton";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
-import LottieView from "lottie-react-native";
-import { useCallback, useEffect, useRef, useState } from "react";
-import MapView, { Marker } from "react-native-maps";
-import { Skeleton } from "@/components/skeleton";
+import { useCallback, useEffect, useState } from "react";
 import {
     ActivityIndicator,
     Alert,
@@ -20,11 +18,12 @@ import {
     TextInput,
     View,
 } from "react-native";
+import MapView, { Marker } from "react-native-maps";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import ImageGallery from "@/components/image-gallery";
-import { ThemedText } from "@/components/themed-text";
 import { StarRating } from "@/components/star-rating";
+import { ThemedText } from "@/components/themed-text";
 import {
     BorderRadius,
     Brand,
@@ -34,9 +33,9 @@ import {
 } from "@/constants/theme";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLocale } from "@/contexts/LocaleContext";
-import { supabase } from "@/lib/supabase";
-import { EMPLOYMENT_TYPE_LABELS, SALARY_PERIOD_LABELS } from "@/lib/categories";
 import { useBrand } from "@/contexts/ThemeContext";
+import { EMPLOYMENT_TYPE_LABELS, SALARY_PERIOD_LABELS } from "@/lib/categories";
+import { supabase } from "@/lib/supabase";
 import * as Location from "expo-location";
 
 interface Applicant {
@@ -77,103 +76,141 @@ export default function JobDetailScreen() {
   const [error, setError] = useState<string | null>(null);
   const [myApplication, setMyApplication] = useState<Applicant | null>(null);
   const [savedJobIds, setSavedJobIds] = useState<Set<string>>(new Set());
-  const [reviewedUserIds, setReviewedUserIds] = useState<Set<string>>(new Set());
+  const [reviewedUserIds, setReviewedUserIds] = useState<Set<string>>(
+    new Set(),
+  );
   const [showReviewModal, setShowReviewModal] = useState(false);
-  const [reviewTarget, setReviewTarget] = useState<{ id: string; name: string } | null>(null);
+  const [reviewTarget, setReviewTarget] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
   const [reviewRating, setReviewRating] = useState(0);
-  const [reviewComment, setReviewComment] = useState('');
+  const [reviewComment, setReviewComment] = useState("");
   const [submittingReview, setSubmittingReview] = useState(false);
   const [galleryIndex, setGalleryIndex] = useState(0);
   const [showGallery, setShowGallery] = useState(false);
   const [showApplyModal, setShowApplyModal] = useState(false);
-  const [applyMessage, setApplyMessage] = useState('');
+  const [applyMessage, setApplyMessage] = useState("");
 
   const loadSavedJobs = async () => {
-    if (!user) return
-    const { data } = await supabase.from('saved_jobs').select('job_id').eq('user_id', user.id)
-    setSavedJobIds(new Set((data ?? []).map((r: any) => r.job_id)))
-  }
+    if (!user) return;
+    const { data } = await supabase
+      .from("saved_jobs")
+      .select("job_id")
+      .eq("user_id", user.id);
+    setSavedJobIds(new Set((data ?? []).map((r: any) => r.job_id)));
+  };
 
   const toggleSave = async (jobId: string) => {
-    if (!user) return
-    const isSaved = savedJobIds.has(jobId)
+    if (!user) return;
+    const isSaved = savedJobIds.has(jobId);
     if (isSaved) {
-      setSavedJobIds((prev) => { const next = new Set(prev); next.delete(jobId); return next })
-      await supabase.from('saved_jobs').delete().eq('user_id', user.id).eq('job_id', jobId)
+      setSavedJobIds((prev) => {
+        const next = new Set(prev);
+        next.delete(jobId);
+        return next;
+      });
+      await supabase
+        .from("saved_jobs")
+        .delete()
+        .eq("user_id", user.id)
+        .eq("job_id", jobId);
     } else {
-      setSavedJobIds((prev) => { const next = new Set(prev); next.add(jobId); return next })
-      await supabase.from('saved_jobs').insert({ user_id: user.id, job_id: jobId })
+      setSavedJobIds((prev) => {
+        const next = new Set(prev);
+        next.add(jobId);
+        return next;
+      });
+      await supabase
+        .from("saved_jobs")
+        .insert({ user_id: user.id, job_id: jobId });
     }
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {})
-  }
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+  };
 
   const loadReviews = async () => {
-    if (!job || !user) return
+    if (!job || !user) return;
     const { data } = await supabase
-      .from('reviews')
-      .select('reviewee_id')
-      .eq('job_id', job.id)
-      .eq('reviewer_id', user.id)
-    setReviewedUserIds(new Set((data ?? []).map((r: any) => r.reviewee_id)))
-  }
+      .from("reviews")
+      .select("reviewee_id")
+      .eq("job_id", job.id)
+      .eq("reviewer_id", user.id);
+    setReviewedUserIds(new Set((data ?? []).map((r: any) => r.reviewee_id)));
+  };
 
   const openReviewModal = (targetId: string, targetName: string) => {
-    setReviewTarget({ id: targetId, name: targetName })
-    setReviewRating(0)
-    setReviewComment('')
-    setShowReviewModal(true)
-  }
+    setReviewTarget({ id: targetId, name: targetName });
+    setReviewRating(0);
+    setReviewComment("");
+    setShowReviewModal(true);
+  };
 
   const handleSubmitReview = async () => {
-    if (!job || !user || !reviewTarget || reviewRating === 0) return
-    setSubmittingReview(true)
-    await supabase.from('reviews').insert({
+    if (!job || !user || !reviewTarget || reviewRating === 0) return;
+    setSubmittingReview(true);
+    await supabase.from("reviews").insert({
       job_id: job.id,
       reviewer_id: user.id,
       reviewee_id: reviewTarget.id,
       rating: reviewRating,
       comment: reviewComment.trim() || null,
-    })
-    setSubmittingReview(false)
-    setShowReviewModal(false)
-    setReviewTarget(null)
-    setReviewRating(0)
-    setReviewComment('')
-    loadReviews()
-  }
+    });
+    setSubmittingReview(false);
+    setShowReviewModal(false);
+    setReviewTarget(null);
+    setReviewRating(0);
+    setReviewComment("");
+    loadReviews();
+  };
 
   const handleReport = () => {
-    if (!job || !user) return
-    Alert.alert(t('jobDetail.reportTitle'), t('jobDetail.reportPrompt'), [
-      { text: t('common.cancel'), style: 'cancel' },
-      { text: t('jobDetail.reportSpam'), onPress: () => submitReport(t('jobDetail.reportSpam')) },
-      { text: t('jobDetail.reportInappropriate'), onPress: () => submitReport(t('jobDetail.reportInappropriate')) },
-      { text: t('jobDetail.reportFake'), onPress: () => submitReport(t('jobDetail.reportFake')) },
-      { text: t('jobDetail.reportWrongCategory'), onPress: () => submitReport(t('jobDetail.reportWrongCategory')) },
-    ])
-  }
+    if (!job || !user) return;
+    Alert.alert(t("jobDetail.reportTitle"), t("jobDetail.reportPrompt"), [
+      { text: t("common.cancel"), style: "cancel" },
+      {
+        text: t("jobDetail.reportSpam"),
+        onPress: () => submitReport(t("jobDetail.reportSpam")),
+      },
+      {
+        text: t("jobDetail.reportInappropriate"),
+        onPress: () => submitReport(t("jobDetail.reportInappropriate")),
+      },
+      {
+        text: t("jobDetail.reportFake"),
+        onPress: () => submitReport(t("jobDetail.reportFake")),
+      },
+      {
+        text: t("jobDetail.reportWrongCategory"),
+        onPress: () => submitReport(t("jobDetail.reportWrongCategory")),
+      },
+    ]);
+  };
 
   const submitReport = async (reason: string) => {
-    if (!job || !user) return
-    await supabase.from('reports').insert({
+    if (!job || !user) return;
+    await supabase.from("reports").insert({
       job_id: job.id,
       reporter_id: user.id,
       reason,
-    })
-  }
+    });
+  };
 
   const handleShare = async () => {
-    if (!job) return
-    const webUrl = `https://locjobs-landing.netlify.app/job.html?id=${job.id}`
+    if (!job) return;
+    const webUrl = `https://locjobs-landing.netlify.app/?id=${job.id}`;
     const details = [
       `Check out this job on LocJobs: ${job.title}`,
-      job.description ? `\n${job.description.slice(0, 200)}${job.description.length > 200 ? '...' : ''}` : '',
-      job.price ? `\nPrice: ${job.price.toLocaleString()} MMK` : '',
-      job.city || job.region ? `\nLocation: ${[job.city, job.region].filter(Boolean).join(', ')}` : '',
+      job.description
+        ? `\n${job.description.slice(0, 200)}${job.description.length > 200 ? "..." : ""}`
+        : "",
+      job.price ? `\nPrice: ${job.price.toLocaleString()} MMK` : "",
+      job.city || job.region
+        ? `\nLocation: ${[job.city, job.region].filter(Boolean).join(", ")}`
+        : "",
       `\n\n${webUrl}`,
-    ].join('')
-    await Share.share({ message: details })
-  }
+    ].join("");
+    await Share.share({ message: details });
+  };
 
   const loadJob = useCallback(async () => {
     if (!id) return;
@@ -233,10 +270,10 @@ export default function JobDetailScreen() {
         }
         setApplicants(applicantList);
       }
-      loadSavedJobs()
-      loadReviews()
+      loadSavedJobs();
+      loadReviews();
     } catch (error) {
-      console.error('Failed to load job', error);
+      console.error("Failed to load job", error);
     } finally {
       setLoading(false);
     }
@@ -276,16 +313,22 @@ export default function JobDetailScreen() {
     setError(null);
     const { error: applyErr } = await supabase
       .from("applications")
-      .insert({ job_id: job.id, searcher_id: user.id, message: message || null });
+      .insert({
+        job_id: job.id,
+        searcher_id: user.id,
+        message: message || null,
+      });
     if (applyErr) {
       setError(applyErr.message);
       setApplying(false);
       return;
     }
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
+      () => {},
+    );
     setApplying(false);
     setShowApplyModal(false);
-    setApplyMessage('');
+    setApplyMessage("");
     loadJob();
   };
 
@@ -308,16 +351,35 @@ export default function JobDetailScreen() {
   };
 
   const handleReject = async (applicationUserId: string, reason?: string) => {
-    if (!job) return
+    if (!job) return;
     if (!reason) {
-      Alert.alert(t('jobDetail.rejectTitle'), t('jobDetail.rejectPrompt'), [
-        { text: t('common.cancel'), style: 'cancel' },
-        { text: t('jobDetail.rejectNotAvailable'), onPress: () => handleReject(applicationUserId, t('jobDetail.rejectNotAvailable')) },
-        { text: t('jobDetail.rejectNotQualified'), onPress: () => handleReject(applicationUserId, t('jobDetail.rejectNotQualified')) },
-        { text: t('jobDetail.rejectPositionFilled'), onPress: () => handleReject(applicationUserId, t('jobDetail.rejectPositionFilled')) },
-        { text: t('jobDetail.rejectOther'), onPress: () => handleReject(applicationUserId, t('jobDetail.rejectOther')) },
-      ])
-      return
+      Alert.alert(t("jobDetail.rejectTitle"), t("jobDetail.rejectPrompt"), [
+        { text: t("common.cancel"), style: "cancel" },
+        {
+          text: t("jobDetail.rejectNotAvailable"),
+          onPress: () =>
+            handleReject(applicationUserId, t("jobDetail.rejectNotAvailable")),
+        },
+        {
+          text: t("jobDetail.rejectNotQualified"),
+          onPress: () =>
+            handleReject(applicationUserId, t("jobDetail.rejectNotQualified")),
+        },
+        {
+          text: t("jobDetail.rejectPositionFilled"),
+          onPress: () =>
+            handleReject(
+              applicationUserId,
+              t("jobDetail.rejectPositionFilled"),
+            ),
+        },
+        {
+          text: t("jobDetail.rejectOther"),
+          onPress: () =>
+            handleReject(applicationUserId, t("jobDetail.rejectOther")),
+        },
+      ]);
+      return;
     }
     const { data: app } = await supabase
       .from("applications")
@@ -328,7 +390,7 @@ export default function JobDetailScreen() {
     if (!app) return;
     const { error } = await supabase
       .from("applications")
-      .update({ status: 'rejected', reject_reason: reason })
+      .update({ status: "rejected", reject_reason: reason })
       .eq("id", (app as any).id);
     if (error) {
       setError(error.message);
@@ -345,9 +407,13 @@ export default function JobDetailScreen() {
       .update({ status: "completed" })
       .eq("id", job.id);
     if (updateErr) setError(updateErr.message);
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
+      () => {},
+    );
     // check verification for uploader and accepted applicants
-    await supabase.rpc("check_user_verification", { p_user_id: job.uploader_id });
+    await supabase.rpc("check_user_verification", {
+      p_user_id: job.uploader_id,
+    });
     const { data: acceptedApps } = await supabase
       .from("applications")
       .select("searcher_id")
@@ -355,7 +421,9 @@ export default function JobDetailScreen() {
       .eq("status", "accepted");
     if (acceptedApps) {
       for (const app of acceptedApps as any[]) {
-        await supabase.rpc("check_user_verification", { p_user_id: app.searcher_id });
+        await supabase.rpc("check_user_verification", {
+          p_user_id: app.searcher_id,
+        });
       }
     }
     setCompleting(false);
@@ -381,11 +449,20 @@ export default function JobDetailScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: Brand.bg }} edges={["top"]}>
+      <SafeAreaView
+        style={{ flex: 1, backgroundColor: Brand.bg }}
+        edges={["top"]}
+      >
         <View style={styles.header}>
           <Skeleton width={36} height={36} borderRadius={18} />
           <Skeleton width="50%" height={22} />
-          <View style={{ flexDirection: 'row', gap: Spacing.two, alignItems: 'center' }}>
+          <View
+            style={{
+              flexDirection: "row",
+              gap: Spacing.two,
+              alignItems: "center",
+            }}
+          >
             <Skeleton width={36} height={36} borderRadius={18} />
           </View>
         </View>
@@ -396,13 +473,15 @@ export default function JobDetailScreen() {
           <View style={{ height: Spacing.two }} />
           <Skeleton width="60%" height={14} />
           <View style={{ height: Spacing.two }} />
-          <View style={{ flexDirection: 'row', gap: Spacing.two }}>
+          <View style={{ flexDirection: "row", gap: Spacing.two }}>
             <Skeleton width={80} height={24} />
             <Skeleton width={80} height={24} />
             <Skeleton width={60} height={24} />
           </View>
           <View style={{ height: Spacing.four }} />
-          <View style={{ width: '100%', height: 1, backgroundColor: Brand.border }} />
+          <View
+            style={{ width: "100%", height: 1, backgroundColor: Brand.border }}
+          />
           <View style={{ height: Spacing.four }} />
           <Skeleton width={100} height={14} />
           <View style={{ height: Spacing.two }} />
@@ -412,7 +491,9 @@ export default function JobDetailScreen() {
           <View style={{ height: Spacing.two }} />
           <Skeleton width="80%" height={14} />
           <View style={{ height: Spacing.four }} />
-          <View style={{ width: '100%', height: 1, backgroundColor: Brand.border }} />
+          <View
+            style={{ width: "100%", height: 1, backgroundColor: Brand.border }}
+          />
           <View style={{ height: Spacing.four }} />
           <Skeleton width={80} height={14} />
           <View style={{ height: Spacing.two }} />
@@ -420,11 +501,19 @@ export default function JobDetailScreen() {
           <View style={{ height: Spacing.two }} />
           <Skeleton width="100%" height={150} borderRadius={BorderRadius.md} />
           <View style={{ height: Spacing.four }} />
-          <View style={{ width: '100%', height: 1, backgroundColor: Brand.border }} />
+          <View
+            style={{ width: "100%", height: 1, backgroundColor: Brand.border }}
+          />
           <View style={{ height: Spacing.four }} />
           <Skeleton width={100} height={14} />
           <View style={{ height: Spacing.two }} />
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.two }}>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: Spacing.two,
+            }}
+          >
             <Skeleton width={36} height={36} borderRadius={18} />
             <Skeleton width="30%" height={14} />
             <Skeleton width={60} height={24} />
@@ -443,10 +532,13 @@ export default function JobDetailScreen() {
         <View
           style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
         >
-			<ThemedText type="small" style={{ color: Brand.textSecondary }}>
-				{t('jobDetail.jobNotFound')}
-			</ThemedText>
-          <Pressable onPress={() => router.back()} style={[styles.backBtn, { backgroundColor: Brand.primaryLight }]}>
+          <ThemedText type="small" style={{ color: Brand.textSecondary }}>
+            {t("jobDetail.jobNotFound")}
+          </ThemedText>
+          <Pressable
+            onPress={() => router.back()}
+            style={[styles.backBtn, { backgroundColor: Brand.primaryLight }]}
+          >
             <Ionicons name="chevron-back" size={22} color={Brand.primary} />
           </Pressable>
         </View>
@@ -460,16 +552,29 @@ export default function JobDetailScreen() {
       edges={["top"]}
     >
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={[styles.backBtn, { backgroundColor: Brand.primaryLight }]}>
+        <Pressable
+          onPress={() => router.back()}
+          style={[styles.backBtn, { backgroundColor: Brand.primaryLight }]}
+        >
           <Ionicons name="chevron-back" size={22} color={Brand.primary} />
         </Pressable>
-        <View style={{ flexDirection: 'row', gap: Spacing.two, alignItems: 'center' }}>
+        <View
+          style={{
+            flexDirection: "row",
+            gap: Spacing.two,
+            alignItems: "center",
+          }}
+        >
           <Pressable
             style={[styles.flagBtn, { backgroundColor: Brand.borderLight }]}
             onPress={handleReport}
             hitSlop={8}
           >
-            <Ionicons name="flag-outline" size={18} color={Brand.textSecondary} />
+            <Ionicons
+              name="flag-outline"
+              size={18}
+              color={Brand.textSecondary}
+            />
           </Pressable>
           <Pressable
             style={[styles.shareBtn, { backgroundColor: Brand.primaryLight }]}
@@ -481,25 +586,38 @@ export default function JobDetailScreen() {
           {isUploader && (
             <>
               <Pressable
-                style={[styles.editBtn, { backgroundColor: Brand.primaryLight }]}
+                style={[
+                  styles.editBtn,
+                  { backgroundColor: Brand.primaryLight },
+                ]}
                 onPress={() => router.push(`/post?id=${job.id}` as any)}
               >
                 <Ionicons name="pencil" size={18} color={Brand.primary} />
               </Pressable>
               <Pressable
-                style={[styles.deleteBtn, { backgroundColor: Brand.dangerLight }]}
+                style={[
+                  styles.deleteBtn,
+                  { backgroundColor: Brand.dangerLight },
+                ]}
                 onPress={() => {
                   Alert.alert(
-                    t('jobDetail.deleteJob'),
-                    t('common.deleteWarning'),
+                    t("jobDetail.deleteJob"),
+                    t("common.deleteWarning"),
                     [
-                      { text: t('common.cancel'), style: 'cancel' },
-                      { text: t('common.delete'), style: 'destructive', onPress: async () => {
-                        await supabase.from('jobs').update({ deleted: true }).eq('id', job.id)
-                        router.back()
-                      }},
+                      { text: t("common.cancel"), style: "cancel" },
+                      {
+                        text: t("common.delete"),
+                        style: "destructive",
+                        onPress: async () => {
+                          await supabase
+                            .from("jobs")
+                            .update({ deleted: true })
+                            .eq("id", job.id);
+                          router.back();
+                        },
+                      },
                     ],
-                  )
+                  );
                 }}
               >
                 <Ionicons name="trash-outline" size={18} color={Brand.danger} />
@@ -507,19 +625,27 @@ export default function JobDetailScreen() {
             </>
           )}
           <Pressable
-            style={[styles.headerSaveBtn, { backgroundColor: Brand.primaryLight }]}
+            style={[
+              styles.headerSaveBtn,
+              { backgroundColor: Brand.primaryLight },
+            ]}
             onPress={() => toggleSave(job.id)}
             hitSlop={8}
           >
             <Ionicons
               name={savedJobIds.has(job.id) ? "heart" : "heart-outline"}
               size={22}
-              color={savedJobIds.has(job.id) ? Brand.danger : Brand.textSecondary}
+              color={
+                savedJobIds.has(job.id) ? Brand.danger : Brand.textSecondary
+              }
             />
           </Pressable>
         </View>
       </View>
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={styles.titleSection}>
           <ThemedText style={styles.title}>{job.title}</ThemedText>
           <View style={styles.titleMeta}>
@@ -557,13 +683,27 @@ export default function JobDetailScreen() {
             </View>
             <ThemedText type="caption">{job.work_type}</ThemedText>
             {job.employment_type && (
-              <View style={{ backgroundColor: Brand.primaryLight, paddingHorizontal: 8, paddingVertical: 2, borderRadius: BorderRadius.sm, alignSelf: 'flex-start', marginTop: 4 }}>
-                <ThemedText type="caption" style={{ color: Brand.primary, fontWeight: 600 }}>{EMPLOYMENT_TYPE_LABELS[job.employment_type]}</ThemedText>
+              <View
+                style={{
+                  backgroundColor: Brand.primaryLight,
+                  paddingHorizontal: 8,
+                  paddingVertical: 2,
+                  borderRadius: BorderRadius.sm,
+                  alignSelf: "flex-start",
+                  marginTop: 4,
+                }}
+              >
+                <ThemedText
+                  type="caption"
+                  style={{ color: Brand.primary, fontWeight: 600 }}
+                >
+                  {EMPLOYMENT_TYPE_LABELS[job.employment_type]}
+                </ThemedText>
               </View>
             )}
-          <ThemedText type="caption" style={{ color: Brand.textSecondary }}>
-            {vacanciesFilled}/{vacanciesTotal} {t('jobDetail.filled')}
-          </ThemedText>
+            <ThemedText type="caption" style={{ color: Brand.textSecondary }}>
+              {vacanciesFilled}/{vacanciesTotal} {t("jobDetail.filled")}
+            </ThemedText>
           </View>
           {job.price && !job.employment_type && (
             <ThemedText
@@ -578,7 +718,11 @@ export default function JobDetailScreen() {
               type="price"
               style={{ marginTop: 8, padding: Spacing.one }}
             >
-              {job.salary_min.toLocaleString()} - {job.salary_max?.toLocaleString()} MMK{job.salary_period ? `/${SALARY_PERIOD_LABELS[job.salary_period] || ''}` : ''}
+              {job.salary_min.toLocaleString()} -{" "}
+              {job.salary_max?.toLocaleString()} MMK
+              {job.salary_period
+                ? `/${SALARY_PERIOD_LABELS[job.salary_period] || ""}`
+                : ""}
             </ThemedText>
           )}
         </View>
@@ -591,11 +735,19 @@ export default function JobDetailScreen() {
               pagingEnabled
               showsHorizontalScrollIndicator={false}
               onMomentumScrollEnd={(e) => {
-                const idx = Math.round(e.nativeEvent.contentOffset.x / (Dimensions.get("window").width - Spacing.four * 2))
-                setGalleryIndex(idx)
+                const idx = Math.round(
+                  e.nativeEvent.contentOffset.x /
+                    (Dimensions.get("window").width - Spacing.four * 2),
+                );
+                setGalleryIndex(idx);
               }}
               renderItem={({ item, index: imgIdx }) => (
-                <Pressable onPress={() => { setGalleryIndex(imgIdx); setShowGallery(true) }}>
+                <Pressable
+                  onPress={() => {
+                    setGalleryIndex(imgIdx);
+                    setShowGallery(true);
+                  }}
+                >
                   <Image
                     source={{ uri: item }}
                     style={{
@@ -610,7 +762,14 @@ export default function JobDetailScreen() {
               keyExtractor={(_, i) => String(i)}
             />
             {job.image_urls.length > 1 && (
-              <View style={{ flexDirection: "row", justifyContent: "center", gap: 6, marginTop: Spacing.two }}>
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "center",
+                  gap: 6,
+                  marginTop: Spacing.two,
+                }}
+              >
                 {job.image_urls.map((_: string, i: number) => (
                   <View
                     key={i}
@@ -618,7 +777,8 @@ export default function JobDetailScreen() {
                       width: 6,
                       height: 6,
                       borderRadius: 3,
-                      backgroundColor: i === galleryIndex ? Brand.primary : Brand.border,
+                      backgroundColor:
+                        i === galleryIndex ? Brand.primary : Brand.border,
                     }}
                   />
                 ))}
@@ -680,9 +840,15 @@ export default function JobDetailScreen() {
                   title={job.title}
                 />
               </MapView>
-              <Pressable style={[styles.directionsBtn, { backgroundColor: Brand.primaryLight }]} onPress={handleDirections}>
+              <Pressable
+                style={[
+                  styles.directionsBtn,
+                  { backgroundColor: Brand.primaryLight },
+                ]}
+                onPress={handleDirections}
+              >
                 <ThemedText style={styles.directionsBtnText}>
-                  {t('jobDetail.getDirections')}
+                  {t("jobDetail.getDirections")}
                 </ThemedText>
               </Pressable>
             </>
@@ -703,7 +869,13 @@ export default function JobDetailScreen() {
             Uploader
           </ThemedText>
           <Pressable
-            onPress={() => router.push(job.uploader_id === user?.id ? '/(tabs)/profile' : `/user/${job.uploader_id}`)}
+            onPress={() =>
+              router.push(
+                job.uploader_id === user?.id
+                  ? "/(tabs)/profile"
+                  : `/user/${job.uploader_id}`,
+              )
+            }
             style={{
               flexDirection: "row",
               alignItems: "center",
@@ -728,12 +900,18 @@ export default function JobDetailScreen() {
               </View>
             )}
             <View style={{ flex: 1 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <View
+                style={{ flexDirection: "row", alignItems: "center", gap: 4 }}
+              >
                 <ThemedText style={[styles.infoLine, { color: Brand.primary }]}>
                   {uploaderName || "Anonymous"}
                 </ThemedText>
                 {uploaderVerified && (
-                  <Ionicons name="checkmark-circle" size={16} color={Brand.primary} />
+                  <Ionicons
+                    name="checkmark-circle"
+                    size={16}
+                    color={Brand.primary}
+                  />
                 )}
               </View>
               {uploaderPhone && (
@@ -748,10 +926,19 @@ export default function JobDetailScreen() {
             {!isUploader && user && (
               <Pressable
                 hitSlop={8}
-                onPress={() => router.push(`/chat/${job?.id}/${job?.uploader_id}`)}
-                style={[styles.chatIconBtn, { backgroundColor: Brand.primaryLight }]}
+                onPress={() =>
+                  router.push(`/chat/${job?.id}/${job?.uploader_id}`)
+                }
+                style={[
+                  styles.chatIconBtn,
+                  { backgroundColor: Brand.primaryLight },
+                ]}
               >
-                <Ionicons name="chatbubble-outline" size={18} color={Brand.primary} />
+                <Ionicons
+                  name="chatbubble-outline"
+                  size={18}
+                  color={Brand.primary}
+                />
               </Pressable>
             )}
           </Pressable>
@@ -809,78 +996,206 @@ export default function JobDetailScreen() {
               return (
                 <View
                   key={i}
-                  style={[styles.applicantCard, { backgroundColor: Brand.white }]}
+                  style={[
+                    styles.applicantCard,
+                    { backgroundColor: Brand.white },
+                  ]}
                 >
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: Spacing.one }}>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: Spacing.one,
+                    }}
+                  >
                     {a.avatarUrl ? (
                       <Image
                         source={{ uri: a.avatarUrl }}
                         style={styles.applicantAvatar}
                       />
                     ) : (
-                      <View style={[styles.applicantAvatarPlaceholder, { backgroundColor: Brand.primaryLight }]}>
+                      <View
+                        style={[
+                          styles.applicantAvatarPlaceholder,
+                          { backgroundColor: Brand.primaryLight },
+                        ]}
+                      >
                         <ThemedText style={styles.applicantAvatarText}>
                           {(a.name.charAt(0) || "?").toUpperCase()}
                         </ThemedText>
                       </View>
                     )}
                     <View style={{ flex: 1 }}>
-                      <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-                        <Pressable onPress={() => router.push(a.id === user?.id ? '/(tabs)/profile' : `/user/${a.id}`)}>
-                          <ThemedText style={[styles.infoLine, { color: Brand.primary }]}>
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: 4,
+                        }}
+                      >
+                        <Pressable
+                          onPress={() =>
+                            router.push(
+                              a.id === user?.id
+                                ? "/(tabs)/profile"
+                                : `/user/${a.id}`,
+                            )
+                          }
+                        >
+                          <ThemedText
+                            style={[styles.infoLine, { color: Brand.primary }]}
+                          >
                             {a.name || "Anonymous"}
                           </ThemedText>
                         </Pressable>
-                        <View style={[styles.miniBadge, { backgroundColor: sc.bg }]}>
-                          <ThemedText type="caption" style={{ fontWeight: 700, color: sc.color }}>
-                            {a.status.charAt(0).toUpperCase() + a.status.slice(1)}
+                        <View
+                          style={[styles.miniBadge, { backgroundColor: sc.bg }]}
+                        >
+                          <ThemedText
+                            type="caption"
+                            style={{ fontWeight: 700, color: sc.color }}
+                          >
+                            {a.status.charAt(0).toUpperCase() +
+                              a.status.slice(1)}
                           </ThemedText>
                         </View>
                       </View>
                       {a.phone ? (
-                        <ThemedText type="caption" style={{ color: Brand.textSecondary }}>
+                        <ThemedText
+                          type="caption"
+                          style={{ color: Brand.textSecondary }}
+                        >
                           {a.phone}
                         </ThemedText>
                       ) : null}
                     </View>
                   </View>
                   {a.message && isUploader && (
-                    <ThemedText type="caption" style={{ color: Brand.textSecondary, marginTop: Spacing.half, fontStyle: 'italic' }} numberOfLines={2}>
+                    <ThemedText
+                      type="caption"
+                      style={{
+                        color: Brand.textSecondary,
+                        marginTop: Spacing.half,
+                        fontStyle: "italic",
+                      }}
+                      numberOfLines={2}
+                    >
                       "{a.message}"
                     </ThemedText>
                   )}
                   {a.reject_reason && a.status === "rejected" && (
-                    <ThemedText type="caption" style={{ color: Brand.danger, marginTop: Spacing.half }}>
+                    <ThemedText
+                      type="caption"
+                      style={{ color: Brand.danger, marginTop: Spacing.half }}
+                    >
                       Reason: {a.reject_reason}
                     </ThemedText>
                   )}
-                  <View style={{ flexDirection: "row", gap: 6, marginTop: Spacing.two }}>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      gap: 6,
+                      marginTop: Spacing.two,
+                    }}
+                  >
                     {isUploader && a.cvUrl && (
-                      <Pressable onPress={() => Linking.openURL(a.cvUrl!)} style={[styles.applicantActionBtn, { backgroundColor: Brand.borderLight }]}>
-                        <Ionicons name="document-text-outline" size={14} color={Brand.text} />
-                        <ThemedText style={[styles.applicantActionBtnText, { color: Brand.text }]}>View CV</ThemedText>
+                      <Pressable
+                        onPress={() => Linking.openURL(a.cvUrl!)}
+                        style={[
+                          styles.applicantActionBtn,
+                          { backgroundColor: Brand.borderLight },
+                        ]}
+                      >
+                        <Ionicons
+                          name="document-text-outline"
+                          size={14}
+                          color={Brand.text}
+                        />
+                        <ThemedText
+                          style={[
+                            styles.applicantActionBtnText,
+                            { color: Brand.text },
+                          ]}
+                        >
+                          View CV
+                        </ThemedText>
                       </Pressable>
                     )}
                     {isUploader && a.status === "pending" && (
                       <>
-                        <Pressable onPress={() => handleAccept(a.id)} style={[styles.applicantActionBtn, { backgroundColor: Brand.successLight }]}>
-                          <ThemedText style={[styles.applicantActionBtnText, { color: Brand.success }]}>{t('jobDetail.accept')}</ThemedText>
+                        <Pressable
+                          onPress={() => handleAccept(a.id)}
+                          style={[
+                            styles.applicantActionBtn,
+                            { backgroundColor: Brand.successLight },
+                          ]}
+                        >
+                          <ThemedText
+                            style={[
+                              styles.applicantActionBtnText,
+                              { color: Brand.success },
+                            ]}
+                          >
+                            {t("jobDetail.accept")}
+                          </ThemedText>
                         </Pressable>
-                        <Pressable onPress={() => handleReject(a.id)} style={[styles.applicantActionBtn, { backgroundColor: Brand.dangerLight }]}>
-                          <ThemedText style={[styles.applicantActionBtnText, { color: Brand.danger }]}>{t('jobDetail.reject')}</ThemedText>
+                        <Pressable
+                          onPress={() => handleReject(a.id)}
+                          style={[
+                            styles.applicantActionBtn,
+                            { backgroundColor: Brand.dangerLight },
+                          ]}
+                        >
+                          <ThemedText
+                            style={[
+                              styles.applicantActionBtnText,
+                              { color: Brand.danger },
+                            ]}
+                          >
+                            {t("jobDetail.reject")}
+                          </ThemedText>
                         </Pressable>
                       </>
                     )}
                     {isUploader && a.status !== "pending" && (
-                      <Pressable onPress={() => router.push(`/chat/${job.id}/${a.id}`)} style={[styles.applicantActionBtn, { backgroundColor: Brand.primaryLight }]}>
-                        <ThemedText style={[styles.applicantActionBtnText, { color: Brand.primary }]}>{t('tabs.chat')}</ThemedText>
+                      <Pressable
+                        onPress={() => router.push(`/chat/${job.id}/${a.id}`)}
+                        style={[
+                          styles.applicantActionBtn,
+                          { backgroundColor: Brand.primaryLight },
+                        ]}
+                      >
+                        <ThemedText
+                          style={[
+                            styles.applicantActionBtnText,
+                            { color: Brand.primary },
+                          ]}
+                        >
+                          {t("tabs.chat")}
+                        </ThemedText>
                       </Pressable>
                     )}
-                    {isCompleted && isUploader && a.status === "accepted" && !reviewedUserIds.has(a.id) && (
-                      <Pressable onPress={() => openReviewModal(a.id, a.name)} style={[styles.applicantActionBtn, { backgroundColor: Brand.warningLight }]}>
-                        <ThemedText style={[styles.applicantActionBtnText, { color: Brand.warning }]}>Review</ThemedText>
-                      </Pressable>
-                    )}
+                    {isCompleted &&
+                      isUploader &&
+                      a.status === "accepted" &&
+                      !reviewedUserIds.has(a.id) && (
+                        <Pressable
+                          onPress={() => openReviewModal(a.id, a.name)}
+                          style={[
+                            styles.applicantActionBtn,
+                            { backgroundColor: Brand.warningLight },
+                          ]}
+                        >
+                          <ThemedText
+                            style={[
+                              styles.applicantActionBtnText,
+                              { color: Brand.warning },
+                            ]}
+                          >
+                            Review
+                          </ThemedText>
+                        </Pressable>
+                      )}
                   </View>
                 </View>
               );
@@ -888,22 +1203,42 @@ export default function JobDetailScreen() {
           </View>
         )}
 
-        {isCompleted && !isUploader && myApplication?.status === "accepted" && !reviewedUserIds.has(job?.uploader_id ?? '') && (
-          <Pressable
-            onPress={() => openReviewModal(job.uploader_id, uploaderName || 'Uploader')}
-            style={[styles.reviewFullBtn, { backgroundColor: Brand.warningLight }]}
-          >
-            <ThemedText style={styles.reviewFullBtnText}>Leave a Review for {uploaderName || 'Uploader'}</ThemedText>
-          </Pressable>
-        )}
+        {isCompleted &&
+          !isUploader &&
+          myApplication?.status === "accepted" &&
+          !reviewedUserIds.has(job?.uploader_id ?? "") && (
+            <Pressable
+              onPress={() =>
+                openReviewModal(job.uploader_id, uploaderName || "Uploader")
+              }
+              style={[
+                styles.reviewFullBtn,
+                { backgroundColor: Brand.warningLight },
+              ]}
+            >
+              <ThemedText style={styles.reviewFullBtnText}>
+                Leave a Review for {uploaderName || "Uploader"}
+              </ThemedText>
+            </Pressable>
+          )}
 
         {canApply && (
           <Pressable
-            style={[styles.primaryBtn, applying && { opacity: 0.6 }, { backgroundColor: Brand.primary }]}
+            style={[
+              styles.primaryBtn,
+              applying && { opacity: 0.6 },
+              { backgroundColor: Brand.primary },
+            ]}
             onPress={() => setShowApplyModal(true)}
             disabled={applying}
           >
-            {applying ? <ActivityIndicator size="small" color={Brand.white} /> : <ThemedText style={styles.primaryBtnText}>{t('jobDetail.apply')}</ThemedText>}
+            {applying ? (
+              <ActivityIndicator size="small" color={Brand.white} />
+            ) : (
+              <ThemedText style={styles.primaryBtnText}>
+                {t("jobDetail.apply")}
+              </ThemedText>
+            )}
           </Pressable>
         )}
 
@@ -912,11 +1247,19 @@ export default function JobDetailScreen() {
             style={[
               styles.primaryBtn,
               { backgroundColor: Brand.success },
-              completing && { opacity: 0.6 }, { backgroundColor: Brand.primary }]}
+              completing && { opacity: 0.6 },
+              { backgroundColor: Brand.primary },
+            ]}
             onPress={handleComplete}
             disabled={completing}
           >
-            {completing ? <ActivityIndicator size="small" color={Brand.white} /> : <ThemedText style={styles.primaryBtnText}>Mark as Completed</ThemedText>}
+            {completing ? (
+              <ActivityIndicator size="small" color={Brand.white} />
+            ) : (
+              <ThemedText style={styles.primaryBtnText}>
+                Mark as Completed
+              </ThemedText>
+            )}
           </Pressable>
         )}
 
@@ -936,9 +1279,16 @@ export default function JobDetailScreen() {
       <Modal visible={showReviewModal} transparent animationType="fade">
         <View style={[styles.modalOverlay, { backgroundColor: Brand.overlay }]}>
           <View style={[styles.modalContent, { backgroundColor: Brand.white }]}>
-            <ThemedText style={styles.modalTitle}>Rate {reviewTarget?.name || 'User'}</ThemedText>
-            <View style={{ alignItems: 'center', marginBottom: Spacing.four }}>
-              <StarRating rating={reviewRating} size={36} interactive onChange={setReviewRating} />
+            <ThemedText style={styles.modalTitle}>
+              Rate {reviewTarget?.name || "User"}
+            </ThemedText>
+            <View style={{ alignItems: "center", marginBottom: Spacing.four }}>
+              <StarRating
+                rating={reviewRating}
+                size={36}
+                interactive
+                onChange={setReviewRating}
+              />
             </View>
             <TextInput
               style={[styles.modalInput, { borderColor: Brand.border }]}
@@ -949,12 +1299,22 @@ export default function JobDetailScreen() {
               multiline
               maxLength={500}
             />
-            <View style={{ flexDirection: 'row', gap: Spacing.two, marginTop: Spacing.three }}>
+            <View
+              style={{
+                flexDirection: "row",
+                gap: Spacing.two,
+                marginTop: Spacing.three,
+              }}
+            >
               <Pressable
                 onPress={() => setShowReviewModal(false)}
                 style={[styles.modalBtn, { backgroundColor: Brand.border }]}
               >
-                <ThemedText style={[styles.modalBtnText, { color: Brand.text }]}>Cancel</ThemedText>
+                <ThemedText
+                  style={[styles.modalBtnText, { color: Brand.text }]}
+                >
+                  Cancel
+                </ThemedText>
               </Pressable>
               <Pressable
                 onPress={handleSubmitReview}
@@ -965,7 +1325,11 @@ export default function JobDetailScreen() {
                   (reviewRating === 0 || submittingReview) && { opacity: 0.6 },
                 ]}
               >
-                {submittingReview ? <ActivityIndicator size="small" color={Brand.white} /> : <ThemedText style={styles.modalBtnText}>Submit</ThemedText>}
+                {submittingReview ? (
+                  <ActivityIndicator size="small" color={Brand.white} />
+                ) : (
+                  <ThemedText style={styles.modalBtnText}>Submit</ThemedText>
+                )}
               </Pressable>
             </View>
           </View>
@@ -975,25 +1339,47 @@ export default function JobDetailScreen() {
       <Modal visible={showApplyModal} transparent animationType="fade">
         <View style={[styles.modalOverlay, { backgroundColor: Brand.overlay }]}>
           <View style={[styles.modalContent, { backgroundColor: Brand.white }]}>
-            <ThemedText style={styles.modalTitle}>{t('jobDetail.applyingModalTitle')}</ThemedText>
-            <ThemedText type="small" style={{ color: Brand.textSecondary, textAlign: 'center', marginBottom: Spacing.four }}>
-                {t('jobDetail.applyingModalHelper')}
+            <ThemedText style={styles.modalTitle}>
+              {t("jobDetail.applyingModalTitle")}
+            </ThemedText>
+            <ThemedText
+              type="small"
+              style={{
+                color: Brand.textSecondary,
+                textAlign: "center",
+                marginBottom: Spacing.four,
+              }}
+            >
+              {t("jobDetail.applyingModalHelper")}
             </ThemedText>
             <TextInput
               style={[styles.modalInput, { borderColor: Brand.border }]}
-                placeholder={t('jobDetail.applyingModalPlaceholder')}
+              placeholder={t("jobDetail.applyingModalPlaceholder")}
               placeholderTextColor={Brand.textSecondary}
               value={applyMessage}
               onChangeText={setApplyMessage}
               multiline
               maxLength={500}
             />
-            <View style={{ flexDirection: 'row', gap: Spacing.two, marginTop: Spacing.three }}>
+            <View
+              style={{
+                flexDirection: "row",
+                gap: Spacing.two,
+                marginTop: Spacing.three,
+              }}
+            >
               <Pressable
-                onPress={() => { setShowApplyModal(false); setApplyMessage('') }}
+                onPress={() => {
+                  setShowApplyModal(false);
+                  setApplyMessage("");
+                }}
                 style={[styles.modalBtn, { backgroundColor: Brand.border }]}
               >
-                <ThemedText style={[styles.modalBtnText, { color: Brand.text }]}>Cancel</ThemedText>
+                <ThemedText
+                  style={[styles.modalBtnText, { color: Brand.text }]}
+                >
+                  Cancel
+                </ThemedText>
               </Pressable>
               <Pressable
                 onPress={() => handleApply(applyMessage)}
@@ -1004,7 +1390,13 @@ export default function JobDetailScreen() {
                   applying && { opacity: 0.6 },
                 ]}
               >
-                {applying ? <ActivityIndicator size="small" color={Brand.white} /> : <ThemedText style={styles.modalBtnText}>Send Application</ThemedText>}
+                {applying ? (
+                  <ActivityIndicator size="small" color={Brand.white} />
+                ) : (
+                  <ThemedText style={styles.modalBtnText}>
+                    Send Application
+                  </ThemedText>
+                )}
               </Pressable>
             </View>
           </View>
@@ -1060,7 +1452,6 @@ const styles = StyleSheet.create({
   },
   infoLine: {
     fontSize: FontSize.base,
-
   },
   detailImage: {
     width: 200,
@@ -1094,7 +1485,7 @@ const styles = StyleSheet.create({
   primaryBtnText: {
     fontSize: FontSize.base,
     fontWeight: 700,
-    color: '#FFFFFF',
+    color: "#FFFFFF",
   },
   header: {
     flexDirection: "row",
@@ -1197,7 +1588,7 @@ const styles = StyleSheet.create({
   reviewFullBtn: {
     paddingVertical: 14,
     borderRadius: BorderRadius.md,
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: Spacing.three,
   },
   reviewFullBtnText: {
@@ -1207,21 +1598,21 @@ const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
 
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     padding: Spacing.four,
   },
   modalContent: {
     borderRadius: BorderRadius.lg,
     padding: Spacing.five,
-    width: '100%',
+    width: "100%",
     maxWidth: 340,
   },
   modalTitle: {
     fontSize: FontSize.lg,
     fontWeight: 700,
 
-    textAlign: 'center',
+    textAlign: "center",
     marginBottom: Spacing.four,
   },
   modalInput: {
@@ -1232,17 +1623,17 @@ const styles = StyleSheet.create({
     fontSize: FontSize.base,
 
     minHeight: 80,
-    textAlignVertical: 'top',
+    textAlignVertical: "top",
   },
   modalBtn: {
     flex: 1,
     paddingVertical: 12,
     borderRadius: BorderRadius.md,
-    alignItems: 'center',
+    alignItems: "center",
   },
   modalBtnText: {
     fontWeight: 700,
     fontSize: FontSize.base,
-    color: '#fff',
+    color: "#fff",
   },
 });

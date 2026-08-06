@@ -25,7 +25,7 @@ flowchart TB
     end
 
     subgraph Backend["Supabase"]
-        DB[("PostgreSQL<br/>26 migrations")]
+        DB[("PostgreSQL<br/>27 migrations")]
         AuthSvc["Auth Service<br/>Email/Password + Google OAuth"]
         Realtime["Realtime<br/>(jobs, chat, notifications)"]
         Storage["Storage<br/>(job images, avatars, chat images)"]
@@ -35,7 +35,7 @@ flowchart TB
     subgraph External["External"]
         Maps["react-native-maps<br/>Markers + Directions"]
         OAuth["Google OAuth"]
-        Web["Landing Page<br/>landing/job.html"]
+        Web["Landing Page<br/>landing/index.html"]
     end
 
     Root --> Providers
@@ -160,8 +160,8 @@ flowchart TD
 
 ```mermaid
 flowchart LR
-    A["User shares job in app"] --> B["Link:<br/>https://locjobs.netlify.app/?id={jobId}"]
-    B --> C["landing/job.html<br/>fetches job via Supabase REST"]
+    A["User shares job in app"] --> B["Link:<br/>https://locjobs-landing.netlify.app/?id={jobId}"]
+    B --> C["landing/index.html<br/>fetches job via Supabase REST"]
     C --> D["Render job card<br/>+ posted-by + photos"]
     D --> E{"User has app?"}
     E -- "Yes" --> F["Open in App →<br/>locjobs://job/{id} deep link"]

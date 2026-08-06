@@ -34,6 +34,8 @@ Extends `auth.users` (Supabase Auth).
 | `avatar_url` | `text` | nullable | |
 | `bio` | `text` | nullable | |
 | `verified` | `boolean` | NOT NULL DEFAULT `false` | Auto-set after 3 completed jobs |
+| `cv_url` | `text` | nullable | Public CV URL — added in migration 00027 |
+| `cv_name` | `text` | nullable | Original PDF filename — added in migration 00027 |
 | `deleted_at` | `timestamptz` | nullable | Soft delete timestamp |
 | `created_at` | `timestamptz` | NOT NULL DEFAULT `now()` | |
 | `updated_at` | `timestamptz` | NOT NULL DEFAULT `now()` | Auto-updated via trigger |
@@ -318,6 +320,24 @@ sequenceDiagram
     DB-->>SB: OK
     SB-->>App: Job ID
     App->>App: Navigate to job detail
+```
+
+### 3a. CV Upload Flow
+
+```mermaid
+sequenceDiagram
+    participant App as Mobile App
+    participant P as expo-document-picker
+    participant SB as Supabase Storage REST
+    participant DB as PostgreSQL
+
+    App->>P: getDocumentAsync(.pdf only)
+    P-->>App: File (cache copy)
+    App->>SB: PUT /storage/v1/object/cvs/{userId}/cv.pdf
+    SB-->>App: Public URL
+    App->>DB: UPDATE users SET cv_url, cv_name
+    DB->>DB: RLS: owner writes folder cvs/{userId}/
+    App->>App: CV card on profile (View CV)
 ```
 
 ### 4. Job Application Flow (Apply → Accept/Reject)
@@ -667,7 +687,7 @@ flowchart LR
         REST[Supabase REST API]
         RT[Realtime WebSocket]
         DB[(PostgreSQL)]
-        S3[Storage<br/>job-images bucket]
+        S3[Storage<br/>job-images + cvs buckets]
     end
 
     subgraph External
@@ -765,3 +785,4 @@ Used for job image uploads. Uploaded via `expo-file-system/legacy` `uploadAsync`
 | 00024 | `chat_features.sql` | `reply_to_id` and `read_at` columns on messages, UPDATE RLS for read receipts |
 | 00025 | `chat_query_index.sql` | Composite index `(job_id, sender_id, receiver_id)` + index on `reply_to_id` for chat query performance |
 | 00026 | `review_notification.sql` | Trigger to notify reviewee when a review is created |
+| 00027 | `cv_upload.sql` | `cv_url`/`cv_name` on users, public `cvs` bucket with owner-write RLS policies |

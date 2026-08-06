@@ -111,7 +111,7 @@ To develop a mobile application that facilitates the posting and finding of loca
 
 ### Database Migrations
 
-All migrations are in `supabase/migrations/` (`00001`–`00021`). Run manually via the Supabase Dashboard SQL Editor. Key migrations:
+All migrations are in `supabase/migrations/` (`00001`–`00027`). Run manually via the Supabase Dashboard SQL Editor. Key migrations:
 
 - `00001_schema.sql` — Core tables, enums, RLS policies, triggers
 - `00005_messages.sql` — Chat messages table + real-time
@@ -122,6 +122,10 @@ All migrations are in `supabase/migrations/` (`00001`–`00021`). Run manually v
 - `00013_category.sql` — Category column on jobs
 - `00015_verified.sql` — Verified badge logic + RPC
 - `00021_employment_type.sql` — Employment type, salary range/period columns
+- `00024_chat_metadata.sql` — Reply (`reply_to_id`) + read receipts (`read_at`) on messages
+- `00025_chat_query_index.sql` — Chat query composite index
+- `00026_review_notification.sql` — Notify reviewee when a review is created
+- `00027_cv_upload.sql` — `cv_url`/`cv_name` on users + public `cvs` bucket (owner-write RLS)
 
 ### Auth Flow
 
@@ -132,3 +136,7 @@ All migrations are in `supabase/migrations/` (`00001`–`00021`). Run manually v
 ### Storage
 
 Bucket `job-images` is public. Uploads use `expo-file-system/legacy` `uploadAsync` with `BINARY_CONTENT` + `PUT` method + auth Bearer token. Files are namespaced by user ID.
+
+Bucket `cvs` is public for reads, but only the owner (`cvs/{userId}/`) can insert/update/delete — enforced by RLS policies in migration `00027`. CVs are PDF-only, selected via `expo-document-picker`.
+
+Job share links point at `landing/index.html` (root of `https://locjobs-landing.netlify.app`); old `/job.html` links redirect via `landing/_redirects`.

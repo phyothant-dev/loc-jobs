@@ -37,6 +37,7 @@ Copy `.env.example` to `.env` and fill in:
 - **Categories** — 29 categories spanning gig services and professional fields
 - **Real-time chat** — per-job messaging with image sharing, unread indicators, reply, read receipts, pagination, and optimized performance (indexed queries, `InteractionManager` deferred state)
 - **Saved jobs** — bookmark jobs with toggle from any listing
+- **CV / Resume** — upload a PDF from Edit Profile; posters can view applicant CVs in the applicant list and on public profiles
 - **Reviews & ratings** — star ratings on completed jobs
 - **Verified badges** — auto-granted after 3 completed jobs
 - **Notifications** — in-app notification bell with real-time updates
@@ -56,8 +57,12 @@ Copy `.env.example` to `.env` and fill in:
 
 ## Migrations
 
-All migrations are in `supabase/migrations/` (`00001`–`00026`). Run them manually via the Supabase Dashboard SQL Editor.
+All migrations are in `supabase/migrations/` (`00001`–`00027`). Run them manually via the Supabase Dashboard SQL Editor.
 
 ## Storage
 
 Bucket `job-images` is public. Uploads use `expo-file-system/legacy` `uploadAsync` with `BINARY_CONTENT` + `PUT` method.
+
+Bucket `cvs` is public for reads, but only the owner (`cvs/{userId}/`) can upload, update or delete. CVs are PDF-only, picked via `expo-document-picker`.
+
+Job sharing links use the landing page `landing/index.html` at `https://locjobs-landing.netlify.app/?id={jobId}` (Netlify serves `index.html` at the root; `_redirects` maps old `/job.html` links).
