@@ -62,12 +62,12 @@ export default function RegisterScreen() {
   const handleRegister = async () => {
     const trimmedEmail = email.trim();
     const errors: Record<string, string> = {};
-    if (!fullName.trim()) errors.fullName = "Full name is required";
-    if (!trimmedEmail) errors.email = "Email is required";
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) errors.email = "Enter a valid email";
-    if (password.length < 6) errors.password = "Password must be at least 6 characters";
-    if (password !== confirmPassword) errors.confirmPassword = "Passwords do not match";
-    if (!agreeTerms) errors.agreeTerms = "Please agree to the Terms of Service";
+    if (!fullName.trim()) errors.fullName = t('auth.fullNameRequired');
+    if (!trimmedEmail) errors.email = t('auth.emailRequired');
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) errors.email = t('auth.emailInvalid');
+    if (password.length < 6) errors.password = t('auth.passwordMinLength');
+    if (password !== confirmPassword) errors.confirmPassword = t('auth.passwordsDontMatch');
+    if (!agreeTerms) errors.agreeTerms = t('auth.termsRequired');
     setValidationErrors(errors);
     if (Object.keys(errors).length > 0) return;
 
@@ -191,7 +191,7 @@ export default function RegisterScreen() {
                 textAlign: "center",
               }}
             >
-              Find your place in the local workforce.
+              {t('auth.registerTagline')}
             </ThemedText>
           </View>
 
@@ -271,13 +271,13 @@ export default function RegisterScreen() {
                 type="caption"
                 style={{ color: Brand.textSecondary, flex: 1 }}
               >
-                I agree to the{" "}
+                {t('auth.agreeToTerms')}{" "}
                 <ThemedText type="caption" style={{ color: Brand.primary }}>
-                  Terms of Service
+                  {t('auth.termsOfService')}
                 </ThemedText>{" "}
-                and{" "}
+                {t('auth.and')}{" "}
                 <ThemedText type="caption" style={{ color: Brand.primary }}>
-                  Privacy Policy
+                  {t('auth.privacyPolicy')}
                 </ThemedText>
               </ThemedText>
             </Pressable>
@@ -322,7 +322,7 @@ export default function RegisterScreen() {
                 textTransform: "uppercase",
               }}
             >
-              Trusted by leading local employers
+              {t('auth.trustedBy')}
             </ThemedText>
             <View style={styles.trustRow}>
               <View style={[styles.trustBar, { backgroundColor: Brand.borderLight }]} />

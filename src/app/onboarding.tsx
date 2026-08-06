@@ -16,31 +16,29 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { ThemedText } from "@/components/themed-text";
 import { BorderRadius, FontSize, Shadow, Spacing } from "@/constants/theme";
 import { useBrand } from "@/contexts/ThemeContext";
+import { useLocale } from "@/contexts/LocaleContext";
 
 const { width } = Dimensions.get("window");
 
 const PAGES = [
   {
     icon: "locate" as const,
-    title: "Find Local Jobs",
-    description:
-      "Browse jobs posted by people near you. Filter by type, category, location, and price.",
+    titleKey: "page1Title",
+    descriptionKey: "page1Description",
     color: "#FF6B35",
     bg: "#FFF4ED",
   },
   {
     icon: "chatbubbles" as const,
-    title: "Chat & Apply",
-    description:
-      "Apply to jobs you like, chat with job posters, and negotiate directly in the app.",
+    titleKey: "page2Title",
+    descriptionKey: "page2Description",
     color: "#6366F1",
     bg: "#EEF2FF",
   },
   {
     icon: "checkmark-circle" as const,
-    title: "Get Hired or Hire",
-    description:
-      "Complete jobs, earn money, and build your reputation with ratings and reviews.",
+    titleKey: "page3Title",
+    descriptionKey: "page3Description",
     color: "#2ECC71",
     bg: "#E8F8F0",
   },
@@ -121,6 +119,7 @@ function PageAnimation({
 
 export default function OnboardingScreen({ onDone }: { onDone?: () => void }) {
   const Brand = useBrand();
+  const { t } = useLocale();
 
   const [page, setPage] = useState(0);
   const listRef = useRef<FlatList>(null);
@@ -180,11 +179,11 @@ export default function OnboardingScreen({ onDone }: { onDone?: () => void }) {
             />
             <Animated.View style={{ opacity: index === page ? 1 : 0 }}>
               <ThemedText style={[styles.title, { color: item.color }]}>
-                {item.title}
+                {t(`onboarding.${item.titleKey}`)}
               </ThemedText>
             </Animated.View>
             <ThemedText style={styles.description}>
-              {item.description}
+              {t(`onboarding.${item.descriptionKey}`)}
             </ThemedText>
           </View>
         )}
@@ -214,14 +213,14 @@ export default function OnboardingScreen({ onDone }: { onDone?: () => void }) {
           {page < PAGES.length - 1 ? (
             <>
               <Pressable onPress={onComplete} style={[styles.skipBtn]}>
-                <ThemedText style={styles.skipText}>Skip</ThemedText>
+                <ThemedText style={styles.skipText}>{t('onboarding.skip')}</ThemedText>
               </Pressable>
               <Pressable
                 onPress={onNext}
                 style={[styles.btn, { backgroundColor: PAGES[page].color }]}
               >
                 <ThemedText style={[styles.btnText, { color: PAGES[page].bg }]}>
-                  Next
+                  {t('onboarding.next')}
                 </ThemedText>
                 <Ionicons name="arrow-forward" size={18} color="#fff" />
               </Pressable>
@@ -236,7 +235,7 @@ export default function OnboardingScreen({ onDone }: { onDone?: () => void }) {
               ]}
             >
               <ThemedText style={[styles.btnText, { color: "white" }]}>
-                Get Started
+                {t('onboarding.getStarted')}
               </ThemedText>
               <Ionicons name="checkmark" size={20} color="#fff" />
             </Pressable>

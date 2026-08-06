@@ -455,7 +455,7 @@ export default function ProfileScreen() {
                   style={styles.settingRow}
                   onPress={() => router.push('/onboarding')}
                 >
-                  <ThemedText style={styles.settingLabel}>Onboarding</ThemedText>
+                  <ThemedText style={styles.settingLabel}>{t('profile.onboarding')}</ThemedText>
                   <Ionicons name="chevron-forward" size={16} color={Brand.textSecondary} />
                 </Pressable>
               <View style={[styles.settingDivider, { backgroundColor: Brand.borderLight }]} />

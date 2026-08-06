@@ -25,11 +25,11 @@ export default function ResetPasswordScreen() {
 
   const handleReset = async () => {
     if (password.length < 6) {
-      setToast({ visible: true, message: "Password must be at least 6 characters", type: "error" });
+      setToast({ visible: true, message: t('auth.passwordMinLength'), type: "error" });
       return;
     }
     if (password !== confirm) {
-      setToast({ visible: true, message: "Passwords do not match", type: "error" });
+      setToast({ visible: true, message: t('auth.passwordsDontMatch'), type: "error" });
       return;
     }
     setLoading(true);
@@ -38,7 +38,7 @@ export default function ResetPasswordScreen() {
     if (error) {
       setToast({ visible: true, message: error.message, type: "error" });
     } else {
-      setToast({ visible: true, message: "Password updated successfully", type: "success" });
+      setToast({ visible: true, message: t('auth.passwordUpdated'), type: "success" });
       setTimeout(() => router.replace("/(auth)/login"), 1200);
     }
   };

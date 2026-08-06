@@ -587,7 +587,7 @@ export default function NearbyJobsScreen() {
                     }}
                   >
                     <ThemedText style={{ color: "#fff", fontWeight: 700 }}>
-                      Retry
+                      {t("common.retry")}
                     </ThemedText>
                   </Pressable>
                 </View>

@@ -233,7 +233,7 @@ export default function UserProfileScreen() {
 
             {cvUrl && (
               <View style={[styles.sectionCard, { backgroundColor: Brand.white }]}>
-                <ThemedText style={styles.sectionTitle}>CV / Resume</ThemedText>
+                <ThemedText style={styles.sectionTitle}>{t('profile.cvResume')}</ThemedText>
                 <Pressable
                   style={[styles.cvRow, { borderTopColor: Brand.borderLight }]}
                   onPress={() => Linking.openURL(cvUrl)}
@@ -245,7 +245,7 @@ export default function UserProfileScreen() {
                     <ThemedText style={styles.cvName} numberOfLines={1}>{cvName || 'cv.pdf'}</ThemedText>
                     <ThemedText type="caption" style={{ color: Brand.textSecondary }}>PDF</ThemedText>
                   </View>
-                  <ThemedText style={styles.cvView}>View</ThemedText>
+                  <ThemedText style={styles.cvView}>{t('common.view')}</ThemedText>
                 </Pressable>
               </View>
             )}

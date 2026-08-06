@@ -14,10 +14,12 @@ import { BorderRadius, Brand, Shadow, Spacing, FontSize } from '@/constants/them
 import { REGIONS } from '@/lib/regions'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
+import { useLocale } from '@/contexts/LocaleContext'
 import { useBrand } from "@/contexts/ThemeContext";
 
 export default function EditProfileScreen() {
   const Brand = useBrand();
+  const { t } = useLocale();
 
   const { user } = useAuth()
   const [displayName, setDisplayName] = useState('')
@@ -79,7 +81,7 @@ export default function EditProfileScreen() {
       const fileName = `${user.id}/avatar.${ext}`
       const { data: sessionData } = await supabase.auth.getSession()
       const token = sessionData.session?.access_token
-      if (!token) { setError('Not authenticated'); setImageUploading(false); return }
+      if (!token) { setError(t('common.notAuthenticated')); setImageUploading(false); return }
       const uploadRes = await FileSystem.uploadAsync(
         `https://axuroixwxueufgvodnde.supabase.co/storage/v1/object/job-images/${fileName}?upsert=true`,
         uri,
@@ -87,13 +89,13 @@ export default function EditProfileScreen() {
       )
       if (uploadRes.status < 200 || uploadRes.status >= 300) {
         console.error('Avatar upload failed:', uploadRes.status, uploadRes.body)
-        setError('Upload failed')
+        setError(t('common.uploadFailed'))
       } else {
         const publicUrl = `${process.env.EXPO_PUBLIC_SUPABASE_URL}/storage/v1/object/public/job-images/${fileName}`
         setAvatarUrl(publicUrl)
       }
     } catch (e: any) {
-      setError('Upload failed')
+      setError(t('common.uploadFailed'))
     }
     setImageUploading(false)
   }
@@ -112,7 +114,7 @@ export default function EditProfileScreen() {
       const fileName = `${user.id}/cv.pdf`
       const { data: sessionData } = await supabase.auth.getSession()
       const token = sessionData.session?.access_token
-      if (!token) { setError('Not authenticated'); setCvUploading(false); return }
+      if (!token) { setError(t('common.notAuthenticated')); setCvUploading(false); return }
       const uploadRes = await FileSystem.uploadAsync(
         `${process.env.EXPO_PUBLIC_SUPABASE_URL}/storage/v1/object/cvs/${fileName}?upsert=true`,
         asset.uri,
@@ -120,14 +122,14 @@ export default function EditProfileScreen() {
       )
       if (uploadRes.status < 200 || uploadRes.status >= 300) {
         console.error('CV upload failed:', uploadRes.status, uploadRes.body)
-        setError('CV upload failed')
+        setError(t('profile.cvUploadFailed'))
       } else {
         const publicUrl = `${process.env.EXPO_PUBLIC_SUPABASE_URL}/storage/v1/object/public/cvs/${fileName}`
         setCvUrl(publicUrl)
         setCvName(asset.name || 'cv.pdf')
       }
     } catch (e: any) {
-      setError('CV upload failed')
+      setError(t('profile.cvUploadFailed'))
     }
     setCvUploading(false)
   }
@@ -151,7 +153,7 @@ export default function EditProfileScreen() {
     if (!user) return
 
     const errors: Record<string, string> = {};
-    if (!displayName.trim()) errors.displayName = "Display name is required";
+    if (!displayName.trim()) errors.displayName = t('profile.displayNameRequired');
     setValidationErrors(errors);
     if (Object.keys(errors).length > 0) return;
 
@@ -189,7 +191,7 @@ export default function EditProfileScreen() {
           <Pressable onPress={() => router.back()} style={[styles.backBtn, { backgroundColor: Brand.primaryLight }]}>
             <Ionicons name="close" size={22} color={Brand.primary} />
           </Pressable>
-          <ThemedText style={styles.headerTitle}>Edit Profile</ThemedText>
+          <ThemedText style={styles.headerTitle}>{t('profile.editProfile')}</ThemedText>
           <View style={{ width: 50 }} />
         </View>
 
@@ -205,46 +207,46 @@ export default function EditProfileScreen() {
               </View>
             )}
             <ThemedText type="caption" style={{ color: Brand.primary, fontWeight: 600, marginTop: Spacing.two }}>
-              {imageUploading ? 'Uploading...' : 'Tap to change photo'}
+              {imageUploading ? t('common.uploading') : t('profile.tapToChangePhoto')}
             </ThemedText>
           </Pressable>
 
           <View style={styles.formGroup}>
-            <ThemedText type="caption" style={styles.label}>Display Name</ThemedText>
-            <TextInput style={[styles.input, { backgroundColor: Brand.white, borderColor: Brand.borderLight, color: Brand.text }]} placeholder="Your name" placeholderTextColor={Brand.placeholder} value={displayName} onChangeText={(v) => { setDisplayName(v); clearError("displayName"); }} />
+            <ThemedText type="caption" style={styles.label}>{t('profile.displayName')}</ThemedText>
+            <TextInput style={[styles.input, { backgroundColor: Brand.white, borderColor: Brand.borderLight, color: Brand.text }]} placeholder={t('profile.displayNamePlaceholder')} placeholderTextColor={Brand.placeholder} value={displayName} onChangeText={(v) => { setDisplayName(v); clearError("displayName"); }} />
             {validationErrors.displayName && (
               <ThemedText type="caption" style={{ color: '#E53935', marginTop: 4 }}>{validationErrors.displayName}</ThemedText>
             )}
           </View>
 
           <View style={styles.formGroup}>
-            <ThemedText type="caption" style={styles.label}>Bio</ThemedText>
-            <TextInput style={[styles.input, { minHeight: 80, textAlignVertical: 'top' }, { backgroundColor: Brand.white, borderColor: Brand.borderLight, color: Brand.text }]} placeholder="Tell people about yourself..." placeholderTextColor={Brand.placeholder} value={bio} onChangeText={setBio} multiline />
+            <ThemedText type="caption" style={styles.label}>{t('profile.bio')}</ThemedText>
+            <TextInput style={[styles.input, { minHeight: 80, textAlignVertical: 'top' }, { backgroundColor: Brand.white, borderColor: Brand.borderLight, color: Brand.text }]} placeholder={t('profile.bioPlaceholder')} placeholderTextColor={Brand.placeholder} value={bio} onChangeText={setBio} multiline />
           </View>
 
           <View style={styles.formGroup}>
-            <ThemedText type="caption" style={styles.label}>Phone</ThemedText>
-            <TextInput style={[styles.input, { backgroundColor: Brand.white, borderColor: Brand.borderLight, color: Brand.text }]} placeholder="Phone number" placeholderTextColor={Brand.placeholder} value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
+            <ThemedText type="caption" style={styles.label}>{t('profile.phone')}</ThemedText>
+            <TextInput style={[styles.input, { backgroundColor: Brand.white, borderColor: Brand.borderLight, color: Brand.text }]} placeholder={t('profile.phonePlaceholder')} placeholderTextColor={Brand.placeholder} value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
           </View>
 
           <View style={styles.formGroup}>
-            <ThemedText type="caption" style={styles.label}>Region</ThemedText>
+            <ThemedText type="caption" style={styles.label}>{t('profile.region')}</ThemedText>
             <Pressable style={[styles.pickerBtn, { backgroundColor: Brand.white, borderColor: Brand.borderLight }]} onPress={() => setShowRegionPicker(true)}>
-              <ThemedText type="small" style={!region ? { color: Brand.placeholder } : {}}>{region || 'Select region'}</ThemedText>
+              <ThemedText type="small" style={!region ? { color: Brand.placeholder } : {}}>{region || t('post.selectRegion')}</ThemedText>
             </Pressable>
-            <PickerModal visible={showRegionPicker} title="Select Region" options={regionList} selected={region} onSelect={setRegion} onClose={() => setShowRegionPicker(false)} />
+            <PickerModal visible={showRegionPicker} title={t('post.selectRegion')} options={regionList} selected={region} onSelect={setRegion} onClose={() => setShowRegionPicker(false)} />
           </View>
 
           <View style={styles.formGroup}>
-            <ThemedText type="caption" style={styles.label}>City</ThemedText>
+            <ThemedText type="caption" style={styles.label}>{t('profile.city')}</ThemedText>
             <Pressable style={[styles.pickerBtn, { backgroundColor: Brand.white, borderColor: Brand.borderLight }]} onPress={() => setShowCityPicker(true)}>
-              <ThemedText type="small" style={!city ? { color: Brand.placeholder } : {}}>{city || 'Select city'}</ThemedText>
+              <ThemedText type="small" style={!city ? { color: Brand.placeholder } : {}}>{city || t('post.selectCity')}</ThemedText>
             </Pressable>
-            <PickerModal visible={showCityPicker} title="Select City" options={cityList} selected={city} onSelect={setCity} onClose={() => setShowCityPicker(false)} />
+            <PickerModal visible={showCityPicker} title={t('post.selectCity')} options={cityList} selected={city} onSelect={setCity} onClose={() => setShowCityPicker(false)} />
           </View>
 
           <View style={styles.formGroup}>
-            <ThemedText type="caption" style={styles.label}>CV / Resume</ThemedText>
+            <ThemedText type="caption" style={styles.label}>{t('profile.cvResume')}</ThemedText>
             {cvUrl ? (
               <View style={[styles.cvCard, { backgroundColor: Brand.white, borderColor: Brand.borderLight }]}>
                 <Ionicons name="document-text" size={28} color={Brand.primary} />
@@ -267,22 +269,22 @@ export default function EditProfileScreen() {
               >
                 <Ionicons name="cloud-upload-outline" size={22} color={Brand.primary} />
                 <ThemedText type="small" style={{ color: Brand.primary, fontWeight: 600, marginTop: 4 }}>
-                  {cvUploading ? 'Uploading...' : 'Upload CV (PDF)'}
+                  {cvUploading ? t('common.uploading') : t('profile.uploadCvPdf')}
                 </ThemedText>
                 <ThemedText type="caption" style={{ color: Brand.textSecondary, marginTop: 2 }}>
-                  Only .pdf files are accepted
+                  {t('profile.pdfOnly')}
                 </ThemedText>
               </Pressable>
             )}
           </View>
 
-          {saved && <ThemedText type="small" style={{ color: Brand.success, textAlign: 'center', fontWeight: 700 }}>Saved!</ThemedText>}
+          {saved && <ThemedText type="small" style={{ color: Brand.success, textAlign: 'center', fontWeight: 700 }}>{t('profile.saved')}</ThemedText>}
 
           <Pressable style={({pressed}) => [styles.saveBtn, { opacity: saving ? 0.6 : pressed ? 0.7 : 1 }, { backgroundColor: Brand.primary }]} onPress={handleSave} disabled={saving}>
             {saving ? (
               <ActivityIndicator size="small" color={Brand.white} />
             ) : (
-              <ThemedText style={styles.saveBtnText}>Save</ThemedText>
+              <ThemedText style={styles.saveBtnText}>{t('common.save')}</ThemedText>
             )}
           </Pressable>
         </ScrollView>

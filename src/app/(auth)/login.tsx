@@ -59,10 +59,10 @@ export default function LoginScreen() {
   const handleLogin = async () => {
     setError(null);
     const errors: Record<string, string> = {};
-    if (!email.trim()) errors.email = "Email is required";
+    if (!email.trim()) errors.email = t('auth.emailRequired');
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()))
-      errors.email = "Enter a valid email";
-    if (!password) errors.password = "Password is required";
+      errors.email = t('auth.emailInvalid');
+    if (!password) errors.password = t('auth.passwordRequired');
     setValidationErrors(errors);
     if (Object.keys(errors).length > 0) return;
 
@@ -87,7 +87,7 @@ export default function LoginScreen() {
       } else {
         setToast({
           visible: true,
-          message: "Signed in with Google",
+          message: t('auth.googleSignedIn'),
           type: "success",
         });
       }
@@ -192,7 +192,7 @@ export default function LoginScreen() {
             <View style={styles.logoSection}>
               <ThemedText style={styles.appName}>LocJobs</ThemedText>
               <ThemedText style={styles.subtitle}>
-                Finding local talent, simplified.
+                {t('auth.tagline')}
               </ThemedText>
             </View>
 

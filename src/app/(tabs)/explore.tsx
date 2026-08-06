@@ -899,7 +899,7 @@ export default function AllJobsScreen() {
                   style={{ marginTop: 12, paddingVertical: 10, paddingHorizontal: 20, backgroundColor: Brand.primary, borderRadius: BorderRadius.md }}
                   onPress={async () => { await fetchJobs(); await loadSavedJobs(); await loadSavedSearches(); }}
                 >
-                  <ThemedText style={{ color: '#fff', fontWeight: 700 }}>Retry</ThemedText>
+                  <ThemedText style={{ color: '#fff', fontWeight: 700 }}>{t('common.retry')}</ThemedText>
                 </Pressable>
               </View>
             ) : (

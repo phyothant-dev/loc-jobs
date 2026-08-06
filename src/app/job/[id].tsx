@@ -809,9 +809,8 @@ export default function JobDetailScreen() {
                 marginBottom: 6,
               }}
             >
-              Description
-            </ThemedText>
-            <ThemedText style={{ lineHeight: 22, color: Brand.text }}>
+              {t("common.description")}
+            </ThemedText>            <ThemedText style={{ lineHeight: 22, color: Brand.text }}>
               {job.description}
             </ThemedText>
           </View>
@@ -826,7 +825,7 @@ export default function JobDetailScreen() {
               marginBottom: 8,
             }}
           >
-            Location
+            {t("jobDetail.location")}
           </ThemedText>
           {hasLocation ? (
             <>
@@ -864,7 +863,7 @@ export default function JobDetailScreen() {
               </Pressable>
             </>
           ) : (
-            <ThemedText style={styles.infoLine}>Remote</ThemedText>
+            <ThemedText style={styles.infoLine}>{t("workTypes.remote")}</ThemedText>
           )}
         </View>
 
@@ -877,7 +876,7 @@ export default function JobDetailScreen() {
               marginBottom: 8,
             }}
           >
-            Uploader
+            {t("jobDetail.uploader")}
           </ThemedText>
           <Pressable
             onPress={() =>
@@ -965,7 +964,7 @@ export default function JobDetailScreen() {
                 marginBottom: 6,
               }}
             >
-              My Application
+              {t("jobDetail.myApplication")}
             </ThemedText>
             <View
               style={[
@@ -1128,7 +1127,7 @@ export default function JobDetailScreen() {
                             { color: Brand.text },
                           ]}
                         >
-                          View CV
+                          {t("profile.viewCv")}
                         </ThemedText>
                       </Pressable>
                     )}
@@ -1203,7 +1202,7 @@ export default function JobDetailScreen() {
                               { color: Brand.warning },
                             ]}
                           >
-                            Review
+                            {t("jobDetail.review")}
                           </ThemedText>
                         </Pressable>
                       )}
@@ -1268,7 +1267,7 @@ export default function JobDetailScreen() {
               <ActivityIndicator size="small" color={Brand.white} />
             ) : (
               <ThemedText style={styles.primaryBtnText}>
-                Mark as Completed
+                {t("jobDetail.markAsCompleted")}
               </ThemedText>
             )}
           </Pressable>
@@ -1291,7 +1290,7 @@ export default function JobDetailScreen() {
         <View style={[styles.modalOverlay, { backgroundColor: Brand.overlay }]}>
           <View style={[styles.modalContent, { backgroundColor: Brand.white }]}>
             <ThemedText style={styles.modalTitle}>
-              Rate {reviewTarget?.name || "User"}
+              {t("jobDetail.rateUser")}{reviewTarget?.name || t("common.anonymous")}
             </ThemedText>
             <View style={{ alignItems: "center", marginBottom: Spacing.four }}>
               <StarRating
@@ -1303,7 +1302,7 @@ export default function JobDetailScreen() {
             </View>
             <TextInput
               style={[styles.modalInput, { borderColor: Brand.border }]}
-              placeholder="Write a comment (optional)"
+              placeholder={t("jobDetail.reviewCommentPlaceholder")}
               placeholderTextColor={Brand.textSecondary}
               value={reviewComment}
               onChangeText={setReviewComment}
@@ -1324,7 +1323,7 @@ export default function JobDetailScreen() {
                 <ThemedText
                   style={[styles.modalBtnText, { color: Brand.text }]}
                 >
-                  Cancel
+                  {t("common.cancel")}
                 </ThemedText>
               </Pressable>
               <Pressable
@@ -1339,7 +1338,7 @@ export default function JobDetailScreen() {
                 {submittingReview ? (
                   <ActivityIndicator size="small" color={Brand.white} />
                 ) : (
-                  <ThemedText style={styles.modalBtnText}>Submit</ThemedText>
+                  <ThemedText style={styles.modalBtnText}>{t("common.submit")}</ThemedText>
                 )}
               </Pressable>
             </View>
@@ -1389,7 +1388,7 @@ export default function JobDetailScreen() {
                 <ThemedText
                   style={[styles.modalBtnText, { color: Brand.text }]}
                 >
-                  Cancel
+                  {t("common.cancel")}
                 </ThemedText>
               </Pressable>
               <Pressable
@@ -1404,9 +1403,9 @@ export default function JobDetailScreen() {
                 {applying ? (
                   <ActivityIndicator size="small" color={Brand.white} />
                 ) : (
-                  <ThemedText style={styles.modalBtnText}>
-                    Send Application
-                  </ThemedText>
+                <ThemedText style={styles.modalBtnText}>
+                  {t("jobDetail.sendApplication")}
+                </ThemedText>
                 )}
               </Pressable>
             </View>

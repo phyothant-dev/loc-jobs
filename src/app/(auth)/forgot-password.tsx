@@ -23,7 +23,7 @@ export default function ForgotPasswordScreen() {
 
   const handleReset = async () => {
     if (!email.trim()) {
-      setToast({ visible: true, message: "Enter your email address", type: "error" });
+      setToast({ visible: true, message: t('auth.enterEmail'), type: "error" });
       return;
     }
     setLoading(true);
