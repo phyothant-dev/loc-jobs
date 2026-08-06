@@ -44,7 +44,7 @@ function relativeTime(dateStr: string, t?: (key: string) => string) {
   return new Date(dateStr).toLocaleDateString();
 }
 
-function buildConversations(msgs: any[], userId: string, lastReadAt: Map<string, number>): Conversation[] {
+function buildConversations(msgs: any[], userId: string, lastReadAt: Map<string, number>, anonymousName: string): Conversation[] {
   const seen = new Map<string, any>();
   for (const m of msgs) {
     const otherId = m.sender_id === userId ? m.receiver_id : m.sender_id;
@@ -66,7 +66,7 @@ function buildConversations(msgs: any[], userId: string, lastReadAt: Map<string,
         jobId: m.job_id,
         jobTitle: m.job?.title || "",
         otherUserId: otherId,
-        otherUserName: otherName || "Anonymous",
+        otherUserName: otherName || anonymousName,
         otherAvatarUrl: otherAvatar,
         lastMessage: m.content || '',
         lastMessageTime: m.created_at,
@@ -117,7 +117,7 @@ export default function ChatScreen() {
         .order("created_at", { ascending: false })
         .limit(100);
       if (msgs) {
-        const convs = buildConversations(msgs as any[], user.id, lastReadAt.current)
+        const convs = buildConversations(msgs as any[], user.id, lastReadAt.current, t('common.anonymous'))
         setConversations(convs);
       }
     } catch (error) {
@@ -167,7 +167,7 @@ export default function ChatScreen() {
               jobId: msg.job_id,
               jobTitle: msg.job?.title || "",
               otherUserId: otherId,
-              otherUserName: otherName || "Anonymous",
+              otherUserName: otherName || t('common.anonymous'),
               otherAvatarUrl: otherAvatar,
               lastMessage: msg.content || '',
               lastMessageTime: msg.created_at,

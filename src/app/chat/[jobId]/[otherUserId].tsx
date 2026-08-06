@@ -183,7 +183,7 @@ export default function ChatDetailScreen() {
       }
       if (jobRes.data) setJobTitle((jobRes.data as any).title || '')
       if (otherRes.data) {
-        setOtherName((otherRes.data as any).display_name || 'Anonymous')
+        setOtherName((otherRes.data as any).display_name || t('common.anonymous'))
         setOtherAvatarUrl((otherRes.data as any).avatar_url || null)
       }
     } catch (e) {
@@ -502,7 +502,7 @@ export default function ChatDetailScreen() {
                   {t('chat.replyingTo', { name: otherName })}
                 </ThemedText>
                 <ThemedText style={[styles.replyBarContent, { color: Brand.textSecondary }]} numberOfLines={1}>
-                  {replyingTo.content || (replyingTo.image_url ? 'Photo' : '')}
+                  {replyingTo.content || (replyingTo.image_url ? t('chat.photo') : '')}
                 </ThemedText>
               </View>
               <Pressable onPress={() => setReplyingTo(null)} style={styles.replyBarClose}>

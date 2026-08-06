@@ -810,7 +810,8 @@ export default function JobDetailScreen() {
               }}
             >
               {t("common.description")}
-            </ThemedText>            <ThemedText style={{ lineHeight: 22, color: Brand.text }}>
+            </ThemedText>
+            <ThemedText style={{ lineHeight: 22, color: Brand.text }}>
               {job.description}
             </ThemedText>
           </View>
