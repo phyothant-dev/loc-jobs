@@ -55,6 +55,28 @@ Read the exact versioned docs at https://docs.expo.dev/versions/v56.0.0/ before 
 ## Salary Fields Removed from Post Job
 - `salaryMin`, `salaryMax`, `salaryPeriod` states, validation, submit params, picker, and `SALARY_PERIODS`/`SALARY_PERIOD_LABELS` import removed from `src/app/post.tsx`
 
+## Multi-Currency Jobs
+- `src/lib/currency.ts` — `CURRENCIES` (`['MMK','USD','EUR','GBP','SGD','THB','JPY','KRW','CNY','INR']`), `CURRENCY_SYMBOLS` (MMK→`Ks`, USD→`$`, …), `currencyLabel(code)` → `"MMK (Ks)"`, `formatPrice(amount, currency)` → `"1,000 Ks"` (defaults to MMK)
+- Migration `00028_currency.sql` — `jobs.currency text NOT NULL DEFAULT 'MMK'` + `post_job` RPC accepts `p_currency` (drop + recreate). NOT yet applied in Supabase (apply manually)
+- `post.tsx` — currency picker button (next to price input) + `PickerModal` of `CURRENCIES`; edit mode loads `j.currency || 'MMK'`; params include `p_currency`
+- Every price/salary display across `explore.tsx`, `index.tsx`, `my-jobs.tsx`, `job/[id].tsx`, `profile.tsx`, `user/[id]/jobs.tsx`, `user/[id]/index.tsx` uses `formatPrice(job.price, job.currency)` (Job interfaces include `currency: string | null`; queries select `currency`)
+
+## Explore Price + Currency Filter
+- Price filter UI: min/max inputs + selectable currency picker button (`priceCurrency`, default `MMK`)
+- `currencyFilterActive` state — set to true when the user picks a currency (so selecting USD alone filters to USD jobs even without min/max); reset on Reset
+- `jobMatchesPriceFilter` matches a job if `price` is in range, OR `salary_min`/`salary_max` endpoint is in range, OR the salary interval overlaps the range
+- Currency filter applies only when `currencyFilterActive` (default: show all currencies)
+- Saved searches persist `priceCurrency` + `currencyFilterActive`; badge count and `hasAnyFilter` include `currencyFilterActive`
+
+## Localization Sweep
+- Categories, employment types, regions (~15), cities (~290), work types all render via `t()` — keys under `categories.*`, `employmentTypes.*`, `regions.*`, `cities.*` in `src/lib/i18n/en.ts` + `my.ts` (both locales MUST keep identical keys or typecheck fails)
+- DB stores English values; screens translate at display time with reverse lookup (e.g. `CATEGORIES.find((c) => t(\`categories.\${c}\`) === v)`) so pickers still save English keys
+- `EMPLOYMENT_TYPE_LABELS` replaced by `employmentTypes.*` in screens; `SALARY_PERIOD_LABELS` still used (already localized)
+
+## FilterCountContext — stable setCount (render-loop fix)
+- `setCount` is wrapped in `useCallback` and the context value in `useMemo` — keeps `setCount` identity stable across provider re-renders
+- Without this, `chat.tsx` effect `[conversations, setCount]` re-fires on every provider re-render → infinite setState loop → "Maximum update depth exceeded" (surfaced as errors in `PickerModal`/`onSelect` when using the explore currency filter)
+
 ## Posted Time Labels
 - "Posted X ago" labels (e.g. "Posted 3h ago", "Posted 2d ago") shown on job cards in:
   - `src/app/(tabs)/explore.tsx`

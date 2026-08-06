@@ -59,6 +59,7 @@ Extends `auth.users` (Supabase Auth).
 | `region` | `text` | nullable | |
 | `status` | `job_status` | NOT NULL DEFAULT `'open'` | |
 | `price` | `numeric(10,2)` | nullable | |
+| `currency` | `text` | NOT NULL DEFAULT `'MMK'` | ISO code: `MMK`, `USD`, `EUR`, `GBP`, `SGD`, `THB`, `JPY`, `KRW`, `CNY`, `INR` |
 | `image_urls` | `text[]` | DEFAULT `'{}'` | |
 | `lat` | `double precision` | nullable | Client-side haversine used |
 | `lng` | `double precision` | nullable | Client-side haversine used |
@@ -539,6 +540,7 @@ classDiagram
         +string region
         +enum status
         +numeric price
+        +string currency
         +string[] image_urls
         +float lat
         +float lng
@@ -786,3 +788,4 @@ Used for job image uploads. Uploaded via `expo-file-system/legacy` `uploadAsync`
 | 00025 | `chat_query_index.sql` | Composite index `(job_id, sender_id, receiver_id)` + index on `reply_to_id` for chat query performance |
 | 00026 | `review_notification.sql` | Trigger to notify reviewee when a review is created |
 | 00027 | `cv_upload.sql` | `cv_url`/`cv_name` on users, public `cvs` bucket with owner-write RLS policies |
+| 00028 | `currency.sql` | `currency` column on jobs (default `MMK`) + `post_job` RPC accepts `p_currency` |

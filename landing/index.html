@@ -385,6 +385,10 @@
       temporary: 'Temporary'
     };
     var SALARY_PERIOD_LABELS = { month: '/month', week: '/week', day: '/day', hour: '/hour', year: '/year' };
+    var CURRENCY_SYMBOLS = {
+      MMK: 'Ks', USD: '$', EUR: '€', GBP: '£', SGD: 'S$', THB: '฿',
+      JPY: '¥', KRW: '₩', CNY: '¥', INR: '₹'
+    };
 
     var params = new URLSearchParams(window.location.search);
     var jobId = params.get('id');
@@ -411,11 +415,20 @@
       return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     }
 
-    function formatSalary(min, max, period) {
-      var s = min ? min.toLocaleString() : '';
-      if (max) s += ' - ' + max.toLocaleString();
+    function formatPrice(amount, currency) {
+      if (amount == null) return null;
+      var code = currency || 'MMK';
+      var symbol = CURRENCY_SYMBOLS[code] || code;
+      return amount.toLocaleString() + ' ' + symbol;
+    }
+
+    function formatSalary(min, max, period, currency) {
+      var s = min != null ? min.toLocaleString() : '';
+      if (max != null) s += ' - ' + max.toLocaleString();
       if (period) s += ' ' + (SALARY_PERIOD_LABELS[period] || '/' + period);
-      return s ? s + ' MMK' : null;
+      var code = currency || 'MMK';
+      var symbol = CURRENCY_SYMBOLS[code] || code;
+      return s ? s + ' ' + symbol : null;
     }
 
     function parseUrls(urls) {
@@ -448,12 +461,16 @@
         tagsHtml += '<span class="tag">' + job.vacancies + ' openings</span>';
       }
 
+      var currency = job.currency || 'MMK';
+
       var priceHtml = '';
-      if (job.price && !job.employment_type) {
-        priceHtml = '<div class="price">' + job.price.toLocaleString() + ' MMK</div>';
-      } else if (job.salary_min != null && job.employment_type) {
-        var formatted = formatSalary(job.salary_min, job.salary_max, job.salary_period);
-        if (formatted) priceHtml = '<div class="price">' + formatted + '</div>';
+      if (job.price != null) {
+        var priceText = formatPrice(job.price, currency);
+        if (priceText) priceHtml += '<div class="price">' + priceText + '</div>';
+      }
+      if (job.salary_min != null && job.employment_type) {
+        var formatted = formatSalary(job.salary_min, job.salary_max, job.salary_period, currency);
+        if (formatted) priceHtml += '<div class="price">' + formatted + '</div>';
       }
 
       var postedHtml = '<div class="posted">Posted ' + relativeTime(job.created_at || job.createdAt) + '</div>';

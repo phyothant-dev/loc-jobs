@@ -100,7 +100,7 @@ flowchart LR
 
 ```mermaid
 flowchart TD
-    P1["Poster creates job<br/>(gig price or salary)"] --> P2["Job status: open"]
+    P1["Poster creates job<br/>(gig price or salary,<br/>per-job currency)"] --> P2["Job status: open"]
     P2 --> P3["Job appears in<br/>Nearby + Explore"]
 
     S1["Seeker sees job"] --> S2{"Interested?"}

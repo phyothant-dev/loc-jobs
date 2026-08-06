@@ -88,7 +88,7 @@
 - Grouped 2-column grid by work type (onsite/remote/hybrid) with color-coded sections
 - Search bar, work type dropdown, employment type dropdown, region dropdown, city pill chips
 - Category horizontal scroll with multi-select chips
-- Price range inputs (min–max MMK)
+- Price range inputs (min–max) with selectable currency picker (filters `price` + salary fields, by currency)
 - Cards: work type bar, category badge, title, location, price or salary range, status badge, save button, vacancies
 - Real-time insert/update/delete subscription
 
@@ -141,6 +141,7 @@
 - Title, description, employment type picker, category picker
 - Category picker (29 categories: gig + professional)
 - Work type picker dropdown (onsite/remote/hybrid), region/city pickers
+- Currency picker next to price input (MMK, USD, EUR, GBP, SGD, THB, JPY, KRW, CNY, INR)
 - Onsite/hybrid: toggle exact location + "Use My Current Location"
 - Vacancies stepper (1–50) with orange +/- buttons, multiple image upload with X-remove overlay
 - Submits via `post_job` RPC (new) or direct update (edit mode)
@@ -149,7 +150,7 @@
 ### Job Detail (`job/[id].tsx`)
 - Header: back, share (Netlify landing page URL), edit (uploader), delete (uploader), save toggle
 - Title, status badge, work type, vacancies filled count
-- Price (gig) or salary range (permanent) display
+- Price (gig) and salary range (permanent) display, both formatted in the job's currency — price shows whenever present, salary range shows alongside when set
 - Image carousel (horizontal scroll, full-width)
 - Description card, location card (address + directions button), uploader info card
 - Accept button (open jobs), Mark Complete (accepted/uploader), Cancel

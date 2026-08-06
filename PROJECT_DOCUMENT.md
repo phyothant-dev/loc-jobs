@@ -25,7 +25,7 @@ To develop a mobile application that facilitates the posting and finding of loca
 
 2. **Dual-Role User System** — Implement a flexible role system where a single user can act as both uploader and seeker, with RLS-enforced permissions.
 
-3. **Job Posting with Rich Metadata** — Enable job listings with title, description, work type (onsite/remote/hybrid), employment type (full-time, part-time, contract, permanent, freelance, internship, temporary), salary range and period (hourly–yearly), category (29 options spanning gig and professional fields), price (gig), vacancies, and optional images.
+3. **Job Posting with Rich Metadata** — Enable job listings with title, description, work type (onsite/remote/hybrid), employment type (full-time, part-time, contract, permanent, freelance, internship, temporary), salary range and period (hourly–yearly), category (29 options spanning gig and professional fields), price (gig), per-job currency (MMK, USD, EUR, GBP, SGD, THB, JPY, KRW, CNY, INR), vacancies, and optional images.
 
 4. **Job Lifecycle Management** — Full workflow: post → apply/accept → complete/cancel, with status tracking, reject reasons, and soft delete.
 
@@ -45,7 +45,7 @@ To develop a mobile application that facilitates the posting and finding of loca
 
 - User authentication: email/password + Google OAuth (iOS)
 - Location-based job discovery with map view and bottom sheet list
-- Job posting: title, description, work type, employment type, salary (range + period), category, price, vacancies, location, images
+- Job posting: title, description, work type, employment type, salary (range + period), category, price, currency, vacancies, location, images
 - Image upload to Supabase Storage via `expo-file-system/legacy`
 - Job lifecycle: open, full, accepted, completed, cancelled; uploader reject with reason
 - Saved jobs with toggle from listings and detail
@@ -55,7 +55,9 @@ To develop a mobile application that facilitates the posting and finding of loca
 - Verified badge auto-granted at 3 completed jobs
 - User profiles with avatar, bio, phone, email, city, region, ratings
 - Report/flag inappropriate jobs
-- All Jobs browsing: search, work type, employment type, region, city, category, price range filters
+- All Jobs browsing: search, work type, employment type, region, city, category, price + currency filters
+- Multi-currency display: every price/salary shows the job's currency symbol via `formatPrice` (`src/lib/currency.ts`); price filter matches `price`, `salary_min`/`salary_max`, and the selected currency
+- Full i18n (English + Burmese): categories, employment types, regions, cities, work types, and all UI strings via `src/lib/i18n/`
 - My Jobs dashboard: posted + accepted tabs with edit/delete actions
 - Edit profile: avatar upload, display name, phone, bio, region, city
 - Password reset via email + deep link (`locjobs://reset-password`)
@@ -111,7 +113,7 @@ To develop a mobile application that facilitates the posting and finding of loca
 
 ### Database Migrations
 
-All migrations are in `supabase/migrations/` (`00001`–`00027`). Run manually via the Supabase Dashboard SQL Editor. Key migrations:
+All migrations are in `supabase/migrations/` (`00001`–`00028`). Run manually via the Supabase Dashboard SQL Editor. Key migrations:
 
 - `00001_schema.sql` — Core tables, enums, RLS policies, triggers
 - `00005_messages.sql` — Chat messages table + real-time
@@ -126,6 +128,7 @@ All migrations are in `supabase/migrations/` (`00001`–`00027`). Run manually v
 - `00025_chat_query_index.sql` — Chat query composite index
 - `00026_review_notification.sql` — Notify reviewee when a review is created
 - `00027_cv_upload.sql` — `cv_url`/`cv_name` on users + public `cvs` bucket (owner-write RLS)
+- `00028_currency.sql` — `currency` column on jobs (default `MMK`) + `post_job` RPC accepts `p_currency`
 
 ### Auth Flow
 

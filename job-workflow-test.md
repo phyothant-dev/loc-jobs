@@ -14,7 +14,9 @@
 
 | # | Test Case | Precondition | Steps | Expected |
 |---|-----------|-------------|-------|----------|
-| 1.1 | Post a gig job (fixed price) | User A logged in | 1. Go to My Jobs tab<br>2. Tap "+" button<br>3. Fill title, description<br>4. Select work type (e.g. Onsite)<br>5. Set category (e.g. Cleaning)<br>6. Enter price (e.g. 50000)<br>7. Select region + city<br>8. Set vacancies (e.g. 2)<br>9. Tap Submit | Toast "Job posted!" appears. Auto-navigates back to My Jobs. Job appears in Posted tab. |
+| 1.1 | Post a gig job (fixed price) | User A logged in | 1. Go to My Jobs tab<br>2. Tap "+" button<br>3. Fill title, description<br>4. Select work type (e.g. Onsite)<br>5. Set category (e.g. Cleaning)<br>6. Select currency (e.g. MMK) and enter price (e.g. 50000)<br>7. Select region + city<br>8. Set vacancies (e.g. 2)<br>9. Tap Submit | Toast "Job posted!" appears. Auto-navigates back to My Jobs. Job appears in Posted tab. |
+| 1.8 | Post a job in a foreign currency | User A logged in | 1. Tap "+"<br>2. Fill required fields<br>3. Tap the currency picker next to price<br>4. Select "USD"<br>5. Enter price (e.g. 100)<br>6. Submit | Job posts. Price displays as "100 $" everywhere (Explore, My Jobs, Job detail). |
+| 1.9 | Edit — change currency | Own open job | 1. Edit the job<br>2. Tap currency picker, select "THB"<br>3. Save | Job price displays in THB (฿). |
 | 1.2 | Post a salaried job (employment type) | User A logged in | 1. Tap "+"<br>2. Fill title, description<br>3. Select work type (e.g. Remote)<br>4. Select employment type (e.g. Full-Time)<br>5. Set category (e.g. Software Development)<br>6. Select region + city<br>7. Tap Submit | Job posts successfully. My Jobs shows the new job. |
 | 1.3 | Post with images | User A logged in | 1. Tap "+"<br>2. Fill required fields<br>3. Tap "+" on image picker<br>4. Select 2-3 images from gallery<br>5. Tap Submit | Images upload. Job detail shows image carousel. |
 | 1.4 | Post with exact location | User A logged in, GPS on | 1. Tap "+"<br>2. Select work type "Onsite"<br>3. Toggle "Exact location" ON<br>4. Tap "Use My Current Location"<br>5. Fill other fields<br>5. Submit | Job is geotagged. Appears on Nearby map. |
@@ -41,6 +43,10 @@
 | 2.8 | Explore tab — filter by region | Jobs exist in various regions | 1. Open "Region" dropdown<br>2. Select a region | City chips update. Jobs filtered by region. |
 | 2.9 | Explore tab — filter by city | Jobs exist in various cities | 1. Tap a city chip (e.g. "Yangon") | Only Yangon jobs shown. |
 | 2.10 | Explore tab — price range filter | Jobs with prices exist | 1. Enter min price "10000"<br>2. Enter max price "50000" | Only jobs in that price range shown. |
+| 2.18 | Explore tab — currency filter | Jobs in multiple currencies exist | 1. Tap the currency picker beside min/max<br>2. Select "USD"<br>3. Do NOT enter a price | Only USD jobs shown. MMK jobs hidden. |
+| 2.19 | Explore tab — currency + price filter | USD jobs exist | 1. Select currency "USD"<br>2. Enter min "50", max "200" | Only USD jobs priced 50–200 shown. |
+| 2.20 | Explore tab — price filter matches salary | Salaried jobs exist | 1. Enter min "300000"<br>2. Enter max "500000" | Jobs with price in range OR salary_min/salary_max overlapping the range shown. |
+| 2.21 | Explore tab — reset clears currency | Currency filter active | 1. Tap "Reset" | Currency returns to MMK, all currencies shown again. |
 | 2.11 | Explore tab — category chips | Jobs exist | 1. Tap a category chip (e.g. "Cleaning") | Jobs filtered. Multi-select works. |
 | 2.12 | Explore tab — grid layout | Jobs exist | 1. Scroll the results | Jobs grouped by work type (Onsite/Remote/Hybrid). Collapsible sections. |
 | 2.13 | Explore tab — filter badge updates | Any filter active | 1. Look at Explore tab icon | Badge shows count of active filters. |
@@ -58,8 +64,9 @@
 |---|-----------|-------------|-------|----------|
 | 3.1 | Job detail — all info displayed | A job exists | 1. Tap any job card | Title, description, price/salary, work type, employment type, location, uploader info, posted time, category displayed. |
 | 3.2 | Job detail — image carousel | Job has images | 1. Open job with images<br>2. Swipe left/right on images | Images scroll horizontally. |
-| 3.3 | Job detail — gig price display | Gig job (fixed price) | 1. Open a gig job | Price shown prominently (e.g. "50,000 MMK"). |
-| 3.4 | Job detail — salary range display | Salaried job | 1. Open a salaried job | Salary range displayed (e.g. "300,000 – 500,000 MMK/month"). |
+| 3.3 | Job detail — gig price display | Gig job (fixed price) | 1. Open a gig job | Price shown prominently (e.g. "50,000 Ks" for MMK, "100 $" for USD). |
+| 3.4 | Job detail — salary range display | Salaried job | 1. Open a salaried job | Salary range displayed (e.g. "300,000 – 500,000 Ks/month"), formatted in the job's currency. |
+| 3.5 | Job detail — price + salary both shown | Job with price and employment type | 1. Open the job | Both the fixed price and the salary range appear, formatted in the job's currency. |
 | 3.5 | Job detail — status badge | Job has a status | 1. Open a job | Badge shows "Open" (green), "Full" (orange), "Completed" (primary), or "Cancelled" (red). |
 | 3.6 | Job detail — uploader info | — | 1. Open a job<br>2. Find uploader section | Shows uploader name, avatar, rating, verified badge (if applicable). |
 | 3.7 | Job detail — share | — | 1. Tap share icon | Native share sheet opens with job link (Netlify landing page). |

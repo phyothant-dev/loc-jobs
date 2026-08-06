@@ -80,6 +80,12 @@
 | 4.21 | Price range — max field | — | 1. Type a number in "Max" | Input accepts numbers only |
 | 4.22 | Price range — both fields | — | 1. Set min to 50000, max to 200000 | Jobs filtered to show only jobs within that price range |
 | 4.23 | Price range — clear | Values set | 1. Clear both fields | No price filter applied |
+| 4.32 | Currency picker — shows code + symbol | — | 1. Observe the button beside min/max | Shows e.g. "MMK (Ks)". Tap opens currency list (10 codes). |
+| 4.33 | Currency filter — select alone | Jobs in multiple currencies | 1. Tap currency picker<br>2. Select "USD" (no min/max) | Only USD jobs shown; badge count increases. |
+| 4.34 | Currency filter — with price range | USD jobs exist | 1. Select currency "USD"<br>2. Set min 50, max 200 | Only USD jobs priced 50–200 shown. |
+| 4.35 | Price filter — matches salary range | Salaried jobs exist | 1. Set min 300000, max 500000 | Jobs with price in range or salary_min/salary_max overlapping the range shown. |
+| 4.36 | Currency filter — reset | Currency active | 1. Tap "Reset" | Currency back to "MMK (Ks)", all jobs shown again. |
+| 4.37 | Currency filter — saved search persists | — | 1. Select currency + price range<br>2. Save search<br>3. Apply later | Currency and range both restore. |
 | 4.24 | Saved searches — save | — | 1. Set some filters<br>2. Tap bookmark icon (+)<br>3. Enter a name<br>4. Tap Save | Saved search appears as a chip below the search bar |
 | 4.25 | Saved searches — apply | Saved searches exist | 1. Tap a saved search chip | All filters restore to the saved state. Job list updates. |
 | 4.26 | Saved searches — delete (long-press) | Saved searches exist | 1. Long-press a saved search chip<br>2. Tap "Delete" | Saved search chip disappears |

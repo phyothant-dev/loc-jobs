@@ -34,6 +34,7 @@ Copy `.env.example` to `.env` and fill in:
 
 - **Dual-role system** — users can post and/or apply for jobs
 - **Job types** — gig (fixed-price) and salaried (employment type)
+- **Multi-currency** — poster picks the job's currency (MMK, USD, EUR, GBP, SGD, THB, JPY, KRW, CNY, INR); all price/salary displays format with the job's currency, and the Explore price filter has a selectable currency
 - **Categories** — 29 categories spanning gig services and professional fields
 - **Real-time chat** — per-job messaging with image sharing, unread indicators, reply, read receipts, pagination, and optimized performance (indexed queries, `InteractionManager` deferred state)
 - **Saved jobs** — bookmark jobs with toggle from any listing
@@ -57,7 +58,7 @@ Copy `.env.example` to `.env` and fill in:
 
 ## Migrations
 
-All migrations are in `supabase/migrations/` (`00001`–`00027`). Run them manually via the Supabase Dashboard SQL Editor.
+All migrations are in `supabase/migrations/` (`00001`–`00028`). Run them manually via the Supabase Dashboard SQL Editor.
 
 ## Storage
 
