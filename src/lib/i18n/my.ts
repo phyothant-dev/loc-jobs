@@ -330,6 +330,7 @@ const my: TranslationKeys = {
     signOut: 'ထွက်ရန်',
     completedJobs: 'ပြီးဆုံးသောအလုပ်များ ({count})',
     savedJobs: 'သိမ်းထားသောအလုပ်များ ({count})',
+    viewCv: 'CV ကြည့်ရန်',
     emDash: '—',
   },
   userProfile: {

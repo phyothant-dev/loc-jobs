@@ -1,29 +1,40 @@
-import BottomSheet, { BottomSheetFlatList } from "@gorhom/bottom-sheet";
-import * as Location from "expo-location";
-import * as Haptics from "expo-haptics";
-import { router, useFocusEffect } from "expo-router";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Image, Linking, Platform, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useFilterCount } from "@/contexts/FilterCountContext";
 import { Ionicons } from "@expo/vector-icons";
+import BottomSheet, { BottomSheetFlatList } from "@gorhom/bottom-sheet";
+import * as Haptics from "expo-haptics";
+import * as Location from "expo-location";
+import { router, useFocusEffect } from "expo-router";
+import LottieView from "lottie-react-native";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+    Image,
+    Linking,
+    Platform,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    View,
+} from "react-native";
 import MapView, { Marker } from "react-native-maps";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import LottieView from 'lottie-react-native';
 
 import { ThemedText } from "@/components/themed-text";
 import {
-  BorderRadius,
-  BottomTabInset,
-  Brand,
-  Shadow,
-  Spacing,
-  FontSize,
+    BorderRadius,
+    Brand,
+    FontSize,
+    Shadow,
+    Spacing,
 } from "@/constants/theme";
-import { CATEGORIES, EMPLOYMENT_TYPE_LABELS, SALARY_PERIOD_LABELS } from "@/lib/categories";
-import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLocale } from "@/contexts/LocaleContext";
 import { useBrand } from "@/contexts/ThemeContext";
+import {
+    CATEGORIES,
+    EMPLOYMENT_TYPE_LABELS,
+    SALARY_PERIOD_LABELS,
+} from "@/lib/categories";
+import { supabase } from "@/lib/supabase";
 
 interface Job {
   id: string;
@@ -48,43 +59,64 @@ interface Job {
   salary_period: string | null;
 }
 
-function parseCoords(job: { location: unknown; lat?: number | null; lng?: number | null }): { latitude: number; longitude: number } | null {
-  if (job.lat != null && job.lng != null) return { latitude: job.lat, longitude: job.lng };
+function parseCoords(job: {
+  location: unknown;
+  lat?: number | null;
+  lng?: number | null;
+}): { latitude: number; longitude: number } | null {
+  if (job.lat != null && job.lng != null)
+    return { latitude: job.lat, longitude: job.lng };
   return null;
 }
 
-function haversineDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
+function haversineDistance(
+  lat1: number,
+  lng1: number,
+  lat2: number,
+  lng2: number,
+): number {
   const R = 6371;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
   const dLng = ((lng2 - lng1) * Math.PI) / 180;
-  const a = Math.sin(dLat / 2) ** 2 + Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLng / 2) ** 2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
 function relativeTime(dateStr: string, t?: (key: string) => string) {
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);
-  if (mins < 1) return t ? t('time.now') : "now";
-  if (mins < 60) return `${mins}${t ? t('time.mins') : 'm'}`;
+  if (mins < 1) return t ? t("time.now") : "now";
+  if (mins < 60) return `${mins}${t ? t("time.mins") : "m"}`;
   const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}${t ? t('time.hours') : 'h'}`;
+  if (hours < 24) return `${hours}${t ? t("time.hours") : "h"}`;
   const days = Math.floor(hours / 24);
-  if (days < 7) return `${days}${t ? t('time.days') : 'd'}`;
+  if (days < 7) return `${days}${t ? t("time.days") : "d"}`;
   return new Date(dateStr).toLocaleDateString();
 }
 
 function getStatusStyle(status: string) {
   switch (status) {
-    case 'open': return { color: Brand.success, bg: Brand.successLight };
-    case 'full': return { color: Brand.warning, bg: Brand.warningLight };
-    case 'completed': return { color: Brand.textSecondary, bg: Brand.borderLight };
-    case 'cancelled': return { color: Brand.danger, bg: Brand.dangerLight };
-    default: return { color: Brand.success, bg: Brand.successLight };
+    case "open":
+      return { color: Brand.success, bg: Brand.successLight };
+    case "full":
+      return { color: Brand.warning, bg: Brand.warningLight };
+    case "completed":
+      return { color: Brand.textSecondary, bg: Brand.borderLight };
+    case "cancelled":
+      return { color: Brand.danger, bg: Brand.dangerLight };
+    default:
+      return { color: Brand.success, bg: Brand.successLight };
   }
 }
 
 function openDirections(lat: number, lng: number) {
-  const scheme = Platform.select({ ios: "maps://0,0?q=", android: "geo:0,0?q=" }) || "https://www.google.com/maps?q=";
+  const scheme =
+    Platform.select({ ios: "maps://0,0?q=", android: "geo:0,0?q=" }) ||
+    "https://www.google.com/maps?q=";
   const url = Platform.select({
     ios: `${scheme}${lat},${lng}`,
     android: `${scheme}${lat},${lng}`,
@@ -102,7 +134,9 @@ export default function NearbyJobsScreen() {
   const insets = useSafeAreaInsets();
   const sheetRef = useRef<BottomSheet>(null);
   const mapRef = useRef<MapView>(null);
-  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(
+    null,
+  );
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(false);
@@ -115,51 +149,81 @@ export default function NearbyJobsScreen() {
   const [retryKey, setRetryKey] = useState(0);
 
   const loadSavedJobs = async () => {
-    if (!user) return
-    const { data } = await supabase.from('saved_jobs').select('job_id').eq('user_id', user.id)
-    setSavedJobIds(new Set((data ?? []).map((r: any) => r.job_id)))
-  }
+    if (!user) return;
+    const { data } = await supabase
+      .from("saved_jobs")
+      .select("job_id")
+      .eq("user_id", user.id);
+    setSavedJobIds(new Set((data ?? []).map((r: any) => r.job_id)));
+  };
 
   const toggleSave = async (jobId: string) => {
-    if (!user) return
-    const isSaved = savedJobIds.has(jobId)
+    if (!user) return;
+    const isSaved = savedJobIds.has(jobId);
     if (isSaved) {
-      setSavedJobIds((prev) => { const next = new Set(prev); next.delete(jobId); return next })
-      await supabase.from('saved_jobs').delete().eq('user_id', user.id).eq('job_id', jobId)
+      setSavedJobIds((prev) => {
+        const next = new Set(prev);
+        next.delete(jobId);
+        return next;
+      });
+      await supabase
+        .from("saved_jobs")
+        .delete()
+        .eq("user_id", user.id)
+        .eq("job_id", jobId);
     } else {
-      setSavedJobIds((prev) => { const next = new Set(prev); next.add(jobId); return next })
-      await supabase.from('saved_jobs').insert({ user_id: user.id, job_id: jobId })
+      setSavedJobIds((prev) => {
+        const next = new Set(prev);
+        next.add(jobId);
+        return next;
+      });
+      await supabase
+        .from("saved_jobs")
+        .insert({ user_id: user.id, job_id: jobId });
     }
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {})
-  }
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+  };
 
-  const [uploaderInfo, setUploaderInfo] = useState<Map<string, { name: string; verified: boolean }>>(new Map())
-
-  useEffect(() => {
-    const ids = [...new Set(jobs.map(j => j.uploader_id))]
-    if (ids.length === 0) return
-    supabase.from('users').select('id, display_name, verified').in('id', ids).then(({ data }) => {
-      const map = new Map<string, { name: string; verified: boolean }>()
-      for (const u of (data ?? []) as any) {
-        map.set(u.id, { name: u.display_name || 'Anonymous', verified: u.verified || false })
-      }
-      setUploaderInfo(map)
-    })
-  }, [jobs])
-
-  const snapPoints = useMemo(() => ["35%", "55%", "90%"], []);
+  const [uploaderInfo, setUploaderInfo] = useState<
+    Map<string, { name: string; verified: boolean }>
+  >(new Map());
 
   useEffect(() => {
-    let cancelled = false
-    ;(async () => {
+    const ids = [...new Set(jobs.map((j) => j.uploader_id))];
+    if (ids.length === 0) return;
+    supabase
+      .from("users")
+      .select("id, display_name, verified")
+      .in("id", ids)
+      .then(({ data }) => {
+        const map = new Map<string, { name: string; verified: boolean }>();
+        for (const u of (data ?? []) as any) {
+          map.set(u.id, {
+            name: u.display_name || "Anonymous",
+            verified: u.verified || false,
+          });
+        }
+        setUploaderInfo(map);
+      });
+  }, [jobs]);
+
+  const snapPoints = useMemo(() => ["30%", "55%", "90%"], []);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
       let lat = 16.8661;
       let lng = 96.1567;
       try {
         const { status } = await Location.requestForegroundPermissionsAsync();
         if (status === "granted") {
           const loc = await Promise.race([
-            Location.getCurrentPositionAsync({ accuracy: Location.LocationAccuracy.High }),
-            new Promise<any>((_, reject) => setTimeout(() => reject(new Error('timeout')), 20000)),
+            Location.getCurrentPositionAsync({
+              accuracy: Location.LocationAccuracy.High,
+            }),
+            new Promise<any>((_, reject) =>
+              setTimeout(() => reject(new Error("timeout")), 20000),
+            ),
           ]);
           lat = loc.coords.latitude;
           lng = loc.coords.longitude;
@@ -174,7 +238,7 @@ export default function NearbyJobsScreen() {
         } catch {}
       }
       if (!cancelled) setLocation({ lat, lng });
-      if (cancelled) return
+      if (cancelled) return;
       try {
         setFetchError(false);
         const { data } = await supabase.rpc("nearby_jobs", {
@@ -191,73 +255,123 @@ export default function NearbyJobsScreen() {
       }
     })();
     if (user) {
-      supabase.from('users').select('avatar_url').eq('id', user.id).single().then(({ data }) => {
-        if (data) setAvatarUrl((data as any).avatar_url || null)
-      })
-      loadUnread()
-      loadSavedJobs()
+      supabase
+        .from("users")
+        .select("avatar_url")
+        .eq("id", user.id)
+        .single()
+        .then(({ data }) => {
+          if (data) setAvatarUrl((data as any).avatar_url || null);
+        });
+      loadUnread();
+      loadSavedJobs();
     }
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true;
+    };
   }, [user, radiusKm, retryKey]);
 
   useEffect(() => {
-    if (!user) return
+    if (!user) return;
     const refresh = () => {
-      supabase.rpc('nearby_jobs', {
-        user_lat: location?.lat ?? 16.8661,
-        user_lng: location?.lng ?? 96.1567,
-        radius_meters: radiusKm * 1000,
-      }).then(({ data }) => {
-        if (data) setJobs(data as Job[])
-      })
-    }
+      supabase
+        .rpc("nearby_jobs", {
+          user_lat: location?.lat ?? 16.8661,
+          user_lng: location?.lng ?? 96.1567,
+          radius_meters: radiusKm * 1000,
+        })
+        .then(({ data }) => {
+          if (data) setJobs(data as Job[]);
+        });
+    };
     const sub = supabase
       .channel(`nearby-jobs-${Date.now()}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'jobs' }, refresh)
-      .subscribe()
-    return () => { supabase.removeChannel(sub) }
-  }, [user, location?.lat, location?.lng, radiusKm])
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "jobs" },
+        refresh,
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(sub);
+    };
+  }, [user, location?.lat, location?.lng, radiusKm]);
 
   useEffect(() => {
     let count = 0;
     if (filterCategory) count++;
     if (filterWorkType) count++;
-    setCount('nearby', count);
+    setCount("nearby", count);
   }, [filterCategory, filterWorkType]);
 
-  useFocusEffect(useCallback(() => {
-    if (!user) return
-    ;(async () => {
-      try {
-        const { count } = await supabase.from('notifications').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('read', false)
-        setUnreadCount(count ?? 0)
-      } catch (error) {
-        console.error('Failed to fetch unread count', error)
-      }
-    })()
-  }, [user]))
+  useFocusEffect(
+    useCallback(() => {
+      if (!user) return;
+      (async () => {
+        try {
+          const { count } = await supabase
+            .from("notifications")
+            .select("*", { count: "exact", head: true })
+            .eq("user_id", user.id)
+            .eq("read", false);
+          setUnreadCount(count ?? 0);
+        } catch (error) {
+          console.error("Failed to fetch unread count", error);
+        }
+      })();
+    }, [user]),
+  );
 
   useEffect(() => {
-    if (!user) return
+    if (!user) return;
     const sub = supabase
       .channel(`notifications-bell-${Date.now()}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` }, () => {
-        setUnreadCount((c) => c + 1)
-      })
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` }, (payload) => {
-        if (payload.old && (payload.old as any).read === false && payload.new && (payload.new as any).read === true) {
-          setUnreadCount((c) => Math.max(0, c - 1))
-        }
-      })
-      .subscribe()
-    return () => { supabase.removeChannel(sub) }
-  }, [user?.id])
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "notifications",
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => {
+          setUnreadCount((c) => c + 1);
+        },
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "notifications",
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          if (
+            payload.old &&
+            (payload.old as any).read === false &&
+            payload.new &&
+            (payload.new as any).read === true
+          ) {
+            setUnreadCount((c) => Math.max(0, c - 1));
+          }
+        },
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(sub);
+    };
+  }, [user?.id]);
 
   const loadUnread = async () => {
-    if (!user) return
-    const { count } = await supabase.from('notifications').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('read', false)
-    setUnreadCount(count ?? 0)
-  }
+    if (!user) return;
+    const { count } = await supabase
+      .from("notifications")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .eq("read", false);
+    setUnreadCount(count ?? 0);
+  };
 
   const region = location
     ? {
@@ -273,11 +387,16 @@ export default function NearbyJobsScreen() {
   const filteredJobs = jobs.filter((j) => {
     const matchCategory = !filterCategory || j.category === filterCategory;
     const matchWorkType = !filterWorkType || j.work_type === filterWorkType;
-    if (!matchCategory || !matchWorkType) return false
-    const coords = parseCoords(j)
-    if (!coords || !location) return true
-    const d = haversineDistance(location.lat, location.lng, coords.latitude, coords.longitude)
-    return d <= radiusKm
+    if (!matchCategory || !matchWorkType) return false;
+    const coords = parseCoords(j);
+    if (!coords || !location) return true;
+    const d = haversineDistance(
+      location.lat,
+      location.lng,
+      coords.latitude,
+      coords.longitude,
+    );
+    return d <= radiusKm;
   });
 
   return (
@@ -293,7 +412,12 @@ export default function NearbyJobsScreen() {
             const coords = parseCoords(job);
             if (!coords) return null;
             return (
-              <Marker key={job.id} coordinate={coords} title={job.title} onCalloutPress={() => router.push(`/job/${job.id}`)} />
+              <Marker
+                key={job.id}
+                coordinate={coords}
+                title={job.title}
+                onCalloutPress={() => router.push(`/job/${job.id}`)}
+              />
             );
           })}
         </MapView>
@@ -302,8 +426,8 @@ export default function NearbyJobsScreen() {
       {loading ? (
         <View style={[styles.loadingOverlay, { backgroundColor: Brand.bg }]}>
           <LottieView
-            source={require('@/assets/images/crew-loader.json')}
-            style={{ width: '100%', height: '100%' }}
+            source={require("@/assets/images/crew-loader.json")}
+            style={{ width: "100%", height: "100%" }}
             autoPlay
             loop
           />
@@ -314,14 +438,21 @@ export default function NearbyJobsScreen() {
           index={0}
           snapPoints={snapPoints}
           enablePanDownToClose={false}
-                  backgroundStyle={[styles.sheetBg, { backgroundColor: Brand.white }]}
-          handleIndicatorStyle={[styles.sheetHandle, { backgroundColor: Brand.border }]}
+          backgroundStyle={[styles.sheetBg, { backgroundColor: Brand.white }]}
+          handleIndicatorStyle={[
+            styles.sheetHandle,
+            { backgroundColor: Brand.border },
+          ]}
         >
           <View style={styles.sheetHeader}>
             <View style={styles.sheetCountRow}>
-              <View style={[styles.sheetDot, { backgroundColor: Brand.primary }]} />
+              <View
+                style={[styles.sheetDot, { backgroundColor: Brand.primary }]}
+              />
               <ThemedText type="caption">
-                {onsite.length} {t('nearby.jobs')} · {jobs.length - onsite.length} {t('workTypes.remote').toLowerCase()}
+                {onsite.length} {t("nearby.jobs")} ·{" "}
+                {jobs.length - onsite.length}{" "}
+                {t("workTypes.remote").toLowerCase()}
               </ThemedText>
             </View>
           </View>
@@ -331,84 +462,153 @@ export default function NearbyJobsScreen() {
             contentContainerStyle={{ paddingBottom: Spacing.four }}
             windowSize={10}
             maxToRenderPerBatch={10}
-            removeClippedSubviews={Platform.OS === 'android'}
+            removeClippedSubviews={Platform.OS === "android"}
             initialNumToRender={7}
             ItemSeparatorComponent={() => (
               <View style={{ height: Spacing.three }} />
             )}
             ListHeaderComponent={
               <View>
-                <View style={[styles.radiusRow, { borderBottomColor: Brand.border }]}>
+                <View
+                  style={[
+                    styles.radiusRow,
+                    { borderBottomColor: Brand.border },
+                  ]}
+                >
                   <ThemedText type="caption" style={{ fontWeight: 600 }}>
-                    {t('nearby.withinRadius', { radius: radiusKm })}
+                    {t("nearby.withinRadius", { radius: radiusKm })}
                   </ThemedText>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.two }}>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: Spacing.two,
+                    }}
+                  >
                     <Pressable
                       onPress={() => setRadiusKm((r) => Math.max(1, r - 5))}
-                      style={[styles.radiusBtn, { backgroundColor: Brand.primaryLight }]}
+                      style={[
+                        styles.radiusBtn,
+                        { backgroundColor: Brand.primaryLight },
+                      ]}
                     >
                       <Ionicons name="remove" size={16} color={Brand.primary} />
                     </Pressable>
-                    <ThemedText style={{ minWidth: 24, textAlign: 'center', fontWeight: 700 }}>
+                    <ThemedText
+                      style={{
+                        minWidth: 24,
+                        textAlign: "center",
+                        fontWeight: 700,
+                      }}
+                    >
                       {radiusKm}
                     </ThemedText>
                     <Pressable
                       onPress={() => setRadiusKm((r) => Math.min(200, r + 5))}
-                      style={[styles.radiusBtn, { backgroundColor: Brand.primaryLight }]}
+                      style={[
+                        styles.radiusBtn,
+                        { backgroundColor: Brand.primaryLight },
+                      ]}
                     >
                       <Ionicons name="add" size={16} color={Brand.primary} />
                     </Pressable>
                   </View>
                 </View>
-                <View style={[styles.filterRow, { borderBottomColor: Brand.border }]}>
+                <View
+                  style={[
+                    styles.filterRow,
+                    { borderBottomColor: Brand.border },
+                  ]}
+                >
                   <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                     <View style={styles.chipRow}>
                       {CATEGORIES.map((cat) => (
-                      <Pressable
-                        key={cat}
-                        style={[
-                          styles.chip,
-                          filterCategory === cat
-                            ? { backgroundColor: Brand.primary, borderColor: Brand.primary }
-                            : { backgroundColor: Brand.bg, borderColor: Brand.border },
-                        ]}
-                        onPress={() =>
-                          setFilterCategory(filterCategory === cat ? null : cat)
-                        }
-                      >
-                        <ThemedText
-                          type="small"
-                          style={filterCategory === cat ? { color: '#FFFFFF', fontWeight: '700' } : {}}
+                        <Pressable
+                          key={cat}
+                          style={[
+                            styles.chip,
+                            filterCategory === cat
+                              ? {
+                                  backgroundColor: Brand.primary,
+                                  borderColor: Brand.primary,
+                                }
+                              : {
+                                  backgroundColor: Brand.bg,
+                                  borderColor: Brand.border,
+                                },
+                          ]}
+                          onPress={() =>
+                            setFilterCategory(
+                              filterCategory === cat ? null : cat,
+                            )
+                          }
                         >
-                          {cat}
-                        </ThemedText>
-                      </Pressable>
-                    ))}
-                  </View>
-                </ScrollView>
+                          <ThemedText
+                            type="small"
+                            style={
+                              filterCategory === cat
+                                ? { color: "#FFFFFF", fontWeight: "700" }
+                                : {}
+                            }
+                          >
+                            {cat}
+                          </ThemedText>
+                        </Pressable>
+                      ))}
+                    </View>
+                  </ScrollView>
+                </View>
               </View>
-            </View>
             }
             ListEmptyComponent={
               fetchError ? (
                 <View style={{ padding: Spacing.five, alignItems: "center" }}>
-                  <Ionicons name="cloud-offline-outline" size={48} color={Brand.danger} />
-                  <ThemedText type="small" style={{ color: Brand.textSecondary, marginTop: 8 }}>
-                    {t('common.networkError')}
+                  <Ionicons
+                    name="cloud-offline-outline"
+                    size={48}
+                    color={Brand.danger}
+                  />
+                  <ThemedText
+                    type="small"
+                    style={{ color: Brand.textSecondary, marginTop: 8 }}
+                  >
+                    {t("common.networkError")}
                   </ThemedText>
                   <Pressable
-                    style={{ marginTop: 12, paddingVertical: 10, paddingHorizontal: 20, backgroundColor: Brand.primary, borderRadius: BorderRadius.md }}
-                    onPress={() => { setRetryKey((k) => k + 1); }}
+                    style={{
+                      marginTop: 12,
+                      paddingVertical: 10,
+                      paddingHorizontal: 20,
+                      backgroundColor: Brand.primary,
+                      borderRadius: BorderRadius.md,
+                    }}
+                    onPress={() => {
+                      setRetryKey((k) => k + 1);
+                    }}
                   >
-                    <ThemedText style={{ color: '#fff', fontWeight: 700 }}>Retry</ThemedText>
+                    <ThemedText style={{ color: "#fff", fontWeight: 700 }}>
+                      Retry
+                    </ThemedText>
                   </Pressable>
                 </View>
               ) : (
                 <View style={{ padding: Spacing.five, alignItems: "center" }}>
-                  <View style={{ alignItems: "center", paddingVertical: Spacing.five }}>
-                    <Ionicons name="location-outline" size={48} color={Brand.textSecondary} />
-                    <ThemedText type="small" style={{ color: Brand.textSecondary }}>
-                      {t('nearby.noJobs')}
+                  <View
+                    style={{
+                      alignItems: "center",
+                      paddingVertical: Spacing.five,
+                    }}
+                  >
+                    <Ionicons
+                      name="location-outline"
+                      size={48}
+                      color={Brand.textSecondary}
+                    />
+                    <ThemedText
+                      type="small"
+                      style={{ color: Brand.textSecondary }}
+                    >
+                      {t("nearby.noJobs")}
                     </ThemedText>
                   </View>
                 </View>
@@ -428,16 +628,24 @@ export default function NearbyJobsScreen() {
               const s = getStatusStyle(item.status);
               return (
                 <Pressable onPress={() => router.push(`/job/${item.id}`)}>
-                  <View style={[styles.jobCard, { backgroundColor: Brand.white }]}>
+                  <View
+                    style={[styles.jobCard, { backgroundColor: Brand.white }]}
+                  >
                     <Pressable
                       style={styles.saveBtn}
                       onPress={() => toggleSave(item.id)}
                       hitSlop={8}
                     >
                       <Ionicons
-                        name={savedJobIds.has(item.id) ? "heart" : "heart-outline"}
+                        name={
+                          savedJobIds.has(item.id) ? "heart" : "heart-outline"
+                        }
                         size={18}
-                        color={savedJobIds.has(item.id) ? Brand.danger : Brand.textSecondary}
+                        color={
+                          savedJobIds.has(item.id)
+                            ? Brand.danger
+                            : Brand.textSecondary
+                        }
                       />
                     </Pressable>
                     <View style={styles.jobCardTop}>
@@ -454,8 +662,16 @@ export default function NearbyJobsScreen() {
                         </ThemedText>
                       </View>
                       {item.category && (
-                        <View style={[styles.categoryBadge, { backgroundColor: Brand.primaryLight }]}>
-                          <ThemedText type="caption" style={styles.categoryBadgeText}>
+                        <View
+                          style={[
+                            styles.categoryBadge,
+                            { backgroundColor: Brand.primaryLight },
+                          ]}
+                        >
+                          <ThemedText
+                            type="caption"
+                            style={styles.categoryBadgeText}
+                          >
                             {item.category}
                           </ThemedText>
                         </View>
@@ -475,25 +691,47 @@ export default function NearbyJobsScreen() {
                         {item.city}
                         {item.region ? `, ${item.region}` : ""} ·{" "}
                         {item.work_type}
-                        {item.employment_type ? ` · ${EMPLOYMENT_TYPE_LABELS[item.employment_type]}` : ''}
+                        {item.employment_type
+                          ? ` · ${EMPLOYMENT_TYPE_LABELS[item.employment_type]}`
+                          : ""}
                         {distance !== null &&
-                          ` · ${distance < 1 ? (distance * 1000).toFixed(0) + t('nearby.m') : distance.toFixed(1) + t('nearby.km')}`}
+                          ` · ${distance < 1 ? (distance * 1000).toFixed(0) + t("nearby.m") : distance.toFixed(1) + t("nearby.km")}`}
                       </ThemedText>
                       <ThemedText type="caption">
                         {relativeTime(item.created_at, t)}
                       </ThemedText>
                     </View>
                     {uploaderInfo.has(item.uploader_id) && (
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 4 }}>
-                        <ThemedText type="caption" style={{ color: Brand.textSecondary }} numberOfLines={1}>
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: 3,
+                          marginTop: 4,
+                        }}
+                      >
+                        <ThemedText
+                          type="caption"
+                          style={{ color: Brand.textSecondary }}
+                          numberOfLines={1}
+                        >
                           {uploaderInfo.get(item.uploader_id)!.name}
                         </ThemedText>
                         {uploaderInfo.get(item.uploader_id)!.verified && (
-                          <Ionicons name="checkmark-circle" size={12} color={Brand.primary} />
+                          <Ionicons
+                            name="checkmark-circle"
+                            size={12}
+                            color={Brand.primary}
+                          />
                         )}
                       </View>
                     )}
-                    <View style={[styles.jobCardFooter, { borderTopColor: Brand.border }]}>
+                    <View
+                      style={[
+                        styles.jobCardFooter,
+                        { borderTopColor: Brand.border },
+                      ]}
+                    >
                       {item.price && !item.employment_type && (
                         <ThemedText type="price">
                           {item.price.toLocaleString()} MMK
@@ -501,7 +739,14 @@ export default function NearbyJobsScreen() {
                       )}
                       {item.salary_min != null && item.employment_type && (
                         <ThemedText type="price">
-                          {item.salary_min.toLocaleString()} - {item.salary_max != null ? item.salary_max.toLocaleString() : ''} MMK{item.salary_period ? `/${SALARY_PERIOD_LABELS[item.salary_period] || ''}` : ''}
+                          {item.salary_min.toLocaleString()} -{" "}
+                          {item.salary_max != null
+                            ? item.salary_max.toLocaleString()
+                            : ""}{" "}
+                          MMK
+                          {item.salary_period
+                            ? `/${SALARY_PERIOD_LABELS[item.salary_period] || ""}`
+                            : ""}
                         </ThemedText>
                       )}
                       {item.vacancies && (
@@ -509,7 +754,8 @@ export default function NearbyJobsScreen() {
                           type="caption"
                           style={{ color: Brand.textSecondary }}
                         >
-                          {item.vacancies} vacanc{item.vacancies > 1 ? "ies" : "y"}
+                          {item.vacancies} vacanc
+                          {item.vacancies > 1 ? "ies" : "y"}
                         </ThemedText>
                       )}
                       {coords && (
@@ -520,7 +766,7 @@ export default function NearbyJobsScreen() {
                           }
                         >
                           <ThemedText style={styles.dirBtnText}>
-                            {t('nearby.directions')}
+                            {t("nearby.directions")}
                           </ThemedText>
                         </Pressable>
                       )}
@@ -538,34 +784,66 @@ export default function NearbyJobsScreen() {
         pointerEvents="box-none"
       >
         <View style={[styles.logoPill, { backgroundColor: Brand.white }]}>
-          <ThemedText style={[styles.logo, { color: Brand.primary }]}>LocJobs</ThemedText>
+          <ThemedText style={[styles.logo, { color: Brand.primary }]}>
+            LocJobs
+          </ThemedText>
         </View>
         <View style={styles.topRight}>
-          <Pressable onPress={() => router.push('/notifications')} style={[styles.bellBtn, { backgroundColor: Brand.white }]}>
-            <Ionicons name="notifications-outline" size={22} color={Brand.primary} />
+          <Pressable
+            onPress={() => router.push("/notifications")}
+            style={[styles.bellBtn, { backgroundColor: Brand.white }]}
+          >
+            <Ionicons
+              name="notifications-outline"
+              size={22}
+              color={Brand.primary}
+            />
             {unreadCount > 0 && (
-              <View style={[styles.bellBadge, { backgroundColor: Brand.danger }]}>
-                <ThemedText style={styles.bellBadgeText}>{unreadCount > 9 ? '9+' : unreadCount}</ThemedText>
+              <View
+                style={[styles.bellBadge, { backgroundColor: Brand.danger }]}
+              >
+                <ThemedText style={styles.bellBadgeText}>
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </ThemedText>
               </View>
             )}
           </Pressable>
           {region && (
-            <Pressable style={[styles.locateHeaderBtn, { backgroundColor: Brand.white }]} onPress={() => mapRef.current?.animateToRegion({
-              latitude: location?.lat ?? 0,
-              longitude: location?.lng ?? 0,
-              latitudeDelta: 0.03,
-              longitudeDelta: 0.03,
-            }, 500)}>
+            <Pressable
+              style={[styles.locateHeaderBtn, { backgroundColor: Brand.white }]}
+              onPress={() =>
+                mapRef.current?.animateToRegion(
+                  {
+                    latitude: location?.lat ?? 0,
+                    longitude: location?.lng ?? 0,
+                    latitudeDelta: 0.03,
+                    longitudeDelta: 0.03,
+                  },
+                  500,
+                )
+              }
+            >
               <Ionicons name="locate" size={22} color={Brand.primary} />
             </Pressable>
           )}
-          <Pressable onPress={() => router.push('/profile')}>
+          <Pressable onPress={() => router.push("/profile")}>
             {avatarUrl ? (
-              <Image source={{ uri: avatarUrl }} style={[styles.avatar, { borderColor: Brand.white }]} />
+              <Image
+                source={{ uri: avatarUrl }}
+                style={[styles.avatar, { borderColor: Brand.white }]}
+              />
             ) : (
-              <View style={[styles.avatarPlaceholder, { backgroundColor: Brand.primaryLight, borderColor: Brand.white }]}>
+              <View
+                style={[
+                  styles.avatarPlaceholder,
+                  {
+                    backgroundColor: Brand.primaryLight,
+                    borderColor: Brand.white,
+                  },
+                ]}
+              >
                 <ThemedText style={styles.avatarInitial}>
-                  {(user?.email?.charAt(0) || '?').toUpperCase()}
+                  {(user?.email?.charAt(0) || "?").toUpperCase()}
                 </ThemedText>
               </View>
             )}
@@ -597,7 +875,6 @@ const styles = StyleSheet.create({
   logo: {
     fontSize: 22,
     fontWeight: "800",
-
   },
   topRight: {
     flexDirection: "row",
@@ -614,23 +891,23 @@ const styles = StyleSheet.create({
     ...Shadow.elevated,
   },
   bellBadge: {
-    position: 'absolute',
+    position: "absolute",
     top: -2,
     right: -2,
     minWidth: 18,
     height: 18,
     borderRadius: 9,
 
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     paddingHorizontal: 4,
   },
   bellBadgeText: {
     fontSize: 10,
-    fontWeight: '700',
-    color: '#fff',
+    fontWeight: "700",
+    color: "#fff",
     lineHeight: 18,
-    textAlign: 'center',
+    textAlign: "center",
     includeFontPadding: false,
   },
   locateHeaderBtn: {
@@ -647,7 +924,6 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 20,
     borderWidth: 2,
-
   },
   avatarPlaceholder: {
     width: 40,
@@ -657,7 +933,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 2,
-
   },
   avatarInitial: {
     fontWeight: "700",
@@ -690,7 +965,6 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-
   },
   jobCard: {
     borderRadius: BorderRadius.lg,
@@ -698,7 +972,7 @@ const styles = StyleSheet.create({
     ...Shadow.card,
   },
   saveBtn: {
-    position: 'absolute',
+    position: "absolute",
     top: Spacing.two,
     right: Spacing.two,
     zIndex: 1,
@@ -731,7 +1005,6 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: StyleSheet.hairlineWidth,
-
   },
   dirBtn: {
     paddingHorizontal: 14,
@@ -754,7 +1027,7 @@ const styles = StyleSheet.create({
     textTransform: "capitalize",
   },
   categoryBadge: {
-    alignSelf: 'flex-start',
+    alignSelf: "flex-start",
 
     paddingHorizontal: 6,
     paddingVertical: 1,
@@ -772,7 +1045,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.three,
   },
   chipRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: Spacing.two,
     paddingHorizontal: Spacing.four,
   },
@@ -782,18 +1055,16 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.full,
 
     borderWidth: 1,
-
   },
-  chipActive: {
-  },
+  chipActive: {},
   chipTextActive: {
     fontWeight: 700,
   },
   radiusRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    justifyContent: "center",
     gap: Spacing.two,
     paddingHorizontal: Spacing.four,
     paddingBottom: Spacing.three,
@@ -807,7 +1078,7 @@ const styles = StyleSheet.create({
     height: 28,
     borderRadius: 14,
 
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
 });

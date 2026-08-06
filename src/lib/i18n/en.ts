@@ -328,6 +328,7 @@ const en = {
     signOut: 'Sign Out',
     completedJobs: 'Completed Jobs ({count})',
     savedJobs: 'Saved Jobs ({count})',
+    viewCv: 'View CV',
     emDash: '—',
   },
   userProfile: {

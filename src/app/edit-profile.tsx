@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
-import { ActivityIndicator, Image, KeyboardAvoidingView, Platform, Pressable, StyleSheet, TextInput, ScrollView, View } from 'react-native'
+import { ActivityIndicator, Image, KeyboardAvoidingView, Linking, Platform, Pressable, StyleSheet, TextInput, ScrollView, View } from 'react-native'
 import { router } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import * as ImagePicker from 'expo-image-picker'
+import * as DocumentPicker from 'expo-document-picker'
 import * as FileSystem from 'expo-file-system/legacy'
 
 import { ThemedText } from '@/components/themed-text'
@@ -26,6 +27,9 @@ export default function EditProfileScreen() {
   const [region, setRegion] = useState('')
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [localAvatarUri, setLocalAvatarUri] = useState<string | null>(null)
+  const [cvUrl, setCvUrl] = useState<string | null>(null)
+  const [cvName, setCvName] = useState<string | null>(null)
+  const [cvUploading, setCvUploading] = useState(false)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -50,6 +54,8 @@ export default function EditProfileScreen() {
         setCity(u.city || '')
         setRegion(u.region || '')
         setAvatarUrl(u.avatar_url || null)
+        setCvUrl(u.cv_url || null)
+        setCvName(u.cv_name || null)
       }
       setLoading(false)
     })()
@@ -92,6 +98,47 @@ export default function EditProfileScreen() {
     setImageUploading(false)
   }
 
+  const handlePickCv = async () => {
+    if (!user) return
+    const result = await DocumentPicker.getDocumentAsync({
+      type: 'application/pdf',
+      copyToCacheDirectory: true,
+    })
+    if (result.canceled || !result.assets[0]) return
+    const asset = result.assets[0]
+    setCvUploading(true)
+    setError(null)
+    try {
+      const fileName = `${user.id}/cv.pdf`
+      const { data: sessionData } = await supabase.auth.getSession()
+      const token = sessionData.session?.access_token
+      if (!token) { setError('Not authenticated'); setCvUploading(false); return }
+      const uploadRes = await FileSystem.uploadAsync(
+        `${process.env.EXPO_PUBLIC_SUPABASE_URL}/storage/v1/object/cvs/${fileName}?upsert=true`,
+        asset.uri,
+        { httpMethod: 'PUT', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/pdf', apikey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY! }, uploadType: FileSystem.FileSystemUploadType.BINARY_CONTENT }
+      )
+      if (uploadRes.status < 200 || uploadRes.status >= 300) {
+        console.error('CV upload failed:', uploadRes.status, uploadRes.body)
+        setError('CV upload failed')
+      } else {
+        const publicUrl = `${process.env.EXPO_PUBLIC_SUPABASE_URL}/storage/v1/object/public/cvs/${fileName}`
+        setCvUrl(publicUrl)
+        setCvName(asset.name || 'cv.pdf')
+      }
+    } catch (e: any) {
+      setError('CV upload failed')
+    }
+    setCvUploading(false)
+  }
+
+  const handleRemoveCv = async () => {
+    if (!user || !cvUrl) return
+    await supabase.storage.from('cvs').remove([`${user.id}/cv.pdf`])
+    setCvUrl(null)
+    setCvName(null)
+  }
+
   const clearError = (field: string) => {
     setValidationErrors((prev) => {
       const next = { ...prev };
@@ -112,6 +159,8 @@ export default function EditProfileScreen() {
     setSaved(false)
     const updates: any = { display_name: displayName || null, phone: phone || null, bio: bio || null, city: city || null, region: region || null }
     if (avatarUrl) updates.avatar_url = avatarUrl
+    updates.cv_url = cvUrl || null
+    updates.cv_name = cvName || null
     const { error } = await supabase.from('users').update(updates).eq('id', user.id)
     if (!error) { setSaved(true); setTimeout(() => router.back(), 800) }
     setSaving(false)
@@ -192,6 +241,39 @@ export default function EditProfileScreen() {
               <ThemedText type="small" style={!city ? { color: Brand.placeholder } : {}}>{city || 'Select city'}</ThemedText>
             </Pressable>
             <PickerModal visible={showCityPicker} title="Select City" options={cityList} selected={city} onSelect={setCity} onClose={() => setShowCityPicker(false)} />
+          </View>
+
+          <View style={styles.formGroup}>
+            <ThemedText type="caption" style={styles.label}>CV / Resume</ThemedText>
+            {cvUrl ? (
+              <View style={[styles.cvCard, { backgroundColor: Brand.white, borderColor: Brand.borderLight }]}>
+                <Ionicons name="document-text" size={28} color={Brand.primary} />
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <ThemedText type="small" style={{ fontWeight: 600 }} numberOfLines={1}>{cvName || 'cv.pdf'}</ThemedText>
+                  <ThemedText type="caption" style={{ color: Brand.textSecondary }}>PDF</ThemedText>
+                </View>
+                <Pressable onPress={() => Linking.openURL(cvUrl)} style={[styles.cvAction, { backgroundColor: Brand.primaryLight }]} hitSlop={6}>
+                  <Ionicons name="eye-outline" size={18} color={Brand.primary} />
+                </Pressable>
+                <Pressable onPress={handleRemoveCv} style={[styles.cvAction, { backgroundColor: Brand.dangerLight }]} hitSlop={6}>
+                  <Ionicons name="trash-outline" size={18} color={Brand.danger} />
+                </Pressable>
+              </View>
+            ) : (
+              <Pressable
+                style={[styles.cvUploadBtn, { borderColor: Brand.border, backgroundColor: Brand.white }]}
+                onPress={handlePickCv}
+                disabled={cvUploading}
+              >
+                <Ionicons name="cloud-upload-outline" size={22} color={Brand.primary} />
+                <ThemedText type="small" style={{ color: Brand.primary, fontWeight: 600, marginTop: 4 }}>
+                  {cvUploading ? 'Uploading...' : 'Upload CV (PDF)'}
+                </ThemedText>
+                <ThemedText type="caption" style={{ color: Brand.textSecondary, marginTop: 2 }}>
+                  Only .pdf files are accepted
+                </ThemedText>
+              </Pressable>
+            )}
           </View>
 
           {saved && <ThemedText type="small" style={{ color: Brand.success, textAlign: 'center', fontWeight: 700 }}>Saved!</ThemedText>}
@@ -279,6 +361,29 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 12,
     backgroundColor: Brand.primary,
+  },
+  cvUploadBtn: {
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderRadius: BorderRadius.sm,
+    paddingVertical: Spacing.four,
+    alignItems: 'center',
+  },
+  cvCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.three,
+    borderWidth: 1,
+    borderRadius: BorderRadius.sm,
+    padding: Spacing.three,
+  },
+  cvAction: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   saveBtn: {
     paddingVertical: 14,

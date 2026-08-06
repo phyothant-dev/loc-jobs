@@ -44,6 +44,7 @@ interface Applicant {
   name: string;
   phone: string;
   avatarUrl: string | null;
+  cvUrl: string | null;
   status: "pending" | "accepted" | "rejected";
   message: string | null;
   reject_reason: string | null;
@@ -205,7 +206,7 @@ export default function JobDetailScreen() {
           const sIds = apps.map((a: any) => a.searcher_id);
           const { data: users } = await supabase
             .from("users")
-            .select("id, display_name, phone, avatar_url")
+            .select("id, display_name, phone, avatar_url, cv_url")
             .in("id", sIds);
           const userMap: Record<string, any> = {};
           for (const u of (users ?? []) as any) userMap[u.id] = u;
@@ -216,6 +217,7 @@ export default function JobDetailScreen() {
               name: u?.display_name || "",
               phone: u?.phone || "",
               avatarUrl: u?.avatar_url || null,
+              cvUrl: u?.cv_url || null,
               status: a.status,
               message: a.message || null,
               reject_reason: a.reject_reason || null,
@@ -853,6 +855,12 @@ export default function JobDetailScreen() {
                     </ThemedText>
                   )}
                   <View style={{ flexDirection: "row", gap: 6, marginTop: Spacing.two }}>
+                    {isUploader && a.cvUrl && (
+                      <Pressable onPress={() => Linking.openURL(a.cvUrl!)} style={[styles.applicantActionBtn, { backgroundColor: Brand.borderLight }]}>
+                        <Ionicons name="document-text-outline" size={14} color={Brand.text} />
+                        <ThemedText style={[styles.applicantActionBtnText, { color: Brand.text }]}>View CV</ThemedText>
+                      </Pressable>
+                    )}
                     {isUploader && a.status === "pending" && (
                       <>
                         <Pressable onPress={() => handleAccept(a.id)} style={[styles.applicantActionBtn, { backgroundColor: Brand.successLight }]}>
@@ -1160,7 +1168,10 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 6,
     borderRadius: BorderRadius.sm,
+    flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
+    gap: 4,
   },
   applicantActionBtnText: {
     fontWeight: 700,

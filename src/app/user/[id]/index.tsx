@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react'
-import { Image, Pressable, StyleSheet, ScrollView, View } from 'react-native'
+import { Image, Linking, Pressable, StyleSheet, ScrollView, View } from 'react-native'
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
@@ -27,6 +27,8 @@ export default function UserProfileScreen() {
   const [city, setCity] = useState('')
   const [region, setRegion] = useState('')
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+  const [cvUrl, setCvUrl] = useState<string | null>(null)
+  const [cvName, setCvName] = useState<string | null>(null)
   const [verified, setVerified] = useState(false)
   const [loading, setLoading] = useState(true)
   const [avgRating, setAvgRating] = useState(0)
@@ -55,6 +57,8 @@ export default function UserProfileScreen() {
         setRegion(u.region || '')
         setAvatarUrl(u.avatar_url || null)
         setVerified(u.verified || false)
+        setCvUrl(u.cv_url || null)
+        setCvName(u.cv_name || null)
       }
 
       const { data: ratingData } = ratingRes
@@ -226,6 +230,25 @@ export default function UserProfileScreen() {
                 <ThemedText style={styles.infoValue}>{region || t('userProfile.emDash')}</ThemedText>
               </View>
             </View>
+
+            {cvUrl && (
+              <View style={[styles.sectionCard, { backgroundColor: Brand.white }]}>
+                <ThemedText style={styles.sectionTitle}>CV / Resume</ThemedText>
+                <Pressable
+                  style={[styles.cvRow, { borderTopColor: Brand.borderLight }]}
+                  onPress={() => Linking.openURL(cvUrl)}
+                >
+                  <View style={[styles.cvIcon, { backgroundColor: Brand.primaryLight }]}>
+                    <Ionicons name="document-text" size={18} color={Brand.primary} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <ThemedText style={styles.cvName} numberOfLines={1}>{cvName || 'cv.pdf'}</ThemedText>
+                    <ThemedText type="caption" style={{ color: Brand.textSecondary }}>PDF</ThemedText>
+                  </View>
+                  <ThemedText style={styles.cvView}>View</ThemedText>
+                </Pressable>
+              </View>
+            )}
 
             {jobs.length > 0 && (
               <View style={[styles.sectionCard, { backgroundColor: Brand.white }]}>
@@ -426,5 +449,31 @@ const styles = StyleSheet.create({
     fontWeight: 700,
     fontSize: FontSize.base,
 
+  },
+  cvRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.three,
+    paddingHorizontal: Spacing.four,
+    paddingVertical: 14,
+    borderTopWidth: StyleSheet.hairlineWidth,
+
+  },
+  cvIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cvName: {
+    fontWeight: 600,
+    fontSize: FontSize.base,
+  },
+  cvView: {
+    fontWeight: 700,
+    fontSize: FontSize.sm,
+    color: Brand.primary,
   },
 })

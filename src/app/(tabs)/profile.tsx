@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
-import { Alert, Image, Pressable, ScrollView, StyleSheet, Switch, View } from "react-native";
+import { Alert, Image, Linking, Pressable, ScrollView, StyleSheet, Switch, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { ThemedText } from "@/components/themed-text";
@@ -39,6 +39,8 @@ export default function ProfileScreen() {
   const [city, setCity] = useState("");
   const [region, setRegion] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [cvUrl, setCvUrl] = useState<string | null>(null);
+  const [cvName, setCvName] = useState<string | null>(null);
   const [verified, setVerified] = useState(false);
   const [loading, setLoading] = useState(true);
   const [completedJobs, setCompletedJobs] = useState<any[]>([]);
@@ -73,6 +75,8 @@ export default function ProfileScreen() {
         setRegion(u.region || "");
         setAvatarUrl(u.avatar_url || null);
         setVerified(u.verified || false);
+        setCvUrl(u.cv_url || null);
+        setCvName(u.cv_name || null);
       }
 
       const { data: myCompleted } = myCompletedRes
@@ -294,10 +298,30 @@ export default function ProfileScreen() {
                 </View>
               </View>
 
+              {cvUrl && (
+                <View style={[styles.sectionCard, { backgroundColor: Brand.white }]}>
+                  <Pressable
+                    style={styles.cvRow}
+                    onPress={() => Linking.openURL(cvUrl)}
+                  >
+                    <View style={[styles.cvIcon, { backgroundColor: Brand.primaryLight }]}>
+                      <Ionicons name="document-text" size={18} color={Brand.primary} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <ThemedText style={styles.cvName} numberOfLines={1}>{cvName || 'cv.pdf'}</ThemedText>
+                      <ThemedText type="caption" style={{ color: Brand.textSecondary }}>PDF</ThemedText>
+                    </View>
+                    <ThemedText type="small" style={{ color: Brand.primary, fontWeight: 700 }}>{t('profile.viewCv')}</ThemedText>
+                  </Pressable>
+                </View>
+              )}
+
               {reviews.length > 0 && (
                 <View style={[styles.sectionCard, { backgroundColor: Brand.white }]}>
-                  <ThemedText style={styles.sectionTitle}>{t('profile.reviews')}</ThemedText>
-                  <View style={{ gap: Spacing.two, paddingHorizontal: Spacing.four, paddingBottom: Spacing.four }}>
+                  <View style={styles.sectionHeader}>
+                    <ThemedText style={styles.sectionTitle}>{t('profile.reviews')}</ThemedText>
+                  </View>
+                  <View style={{ gap: Spacing.three, paddingHorizontal: Spacing.four, paddingBottom: Spacing.four }}>
                     {reviews.map((r) => (
                       <ReviewCard key={r.id} review={r} isOwn={r.reviewer_id === user?.id} onUpdated={loadProfile} />
                     ))}
@@ -314,50 +338,76 @@ export default function ProfileScreen() {
 
               {completedJobs.length > 0 && (
                 <View style={[styles.sectionCard, { backgroundColor: Brand.white }]}>
-                  <ThemedText style={styles.sectionTitle}>{t('profile.completedJobs', { count: completedJobs.length })}</ThemedText>
-                  {(expandedCompleted ? completedJobs : completedJobs.slice(0, 3)).map((job, i) => (
-                    <Pressable key={job.id} onPress={() => router.push(`/job/${job.id}`)}>
-                      <View style={[styles.jobRow, i < (expandedCompleted ? completedJobs.length : Math.min(completedJobs.length, 3)) - 1 && styles.jobRowBorder, { borderBottomColor: Brand.borderLight }]}>
-                        <View style={{ flex: 1 }}>
-                          <ThemedText style={styles.jobTitle}>{job.title}</ThemedText>
-                          {job.price ? <ThemedText type="caption" style={{ color: Brand.textSecondary }}>{job.price.toLocaleString()} MMK</ThemedText> : null}
-                        </View>
-                        <Ionicons name="chevron-forward" size={18} color={Brand.textSecondary} />
-                      </View>
-                    </Pressable>
-                  ))}
-                  {!expandedCompleted && completedJobs.length > 3 && (
-                    <Pressable onPress={() => setExpandedCompleted(true)} style={[styles.seeAllRow, { borderTopColor: Brand.borderLight }]}>
-                      <ThemedText style={styles.seeAllText}>+{completedJobs.length - 3} {t('userSearch.jobs')}</ThemedText>
-                    </Pressable>
+                  <Pressable
+                    onPress={() => setExpandedCompleted((v) => !v)}
+                    style={styles.sectionHeader}
+                  >
+                    <ThemedText style={styles.sectionTitle}>{t('profile.completedJobs', { count: completedJobs.length })}</ThemedText>
+                    <Ionicons
+                      name="chevron-down"
+                      size={18}
+                      color={Brand.textSecondary}
+                      style={{
+                        transform: [{ rotate: expandedCompleted ? '180deg' : '0deg' }],
+                      }}
+                    />
+                  </Pressable>
+                  {expandedCompleted && (
+                    <>
+                      {completedJobs.map((job, i) => (
+                        <Pressable key={job.id} onPress={() => router.push(`/job/${job.id}`)}>
+                          <View style={[styles.jobRow, i < completedJobs.length - 1 && styles.jobRowBorder, { borderBottomColor: Brand.borderLight }]}>
+                            <View style={{ flex: 1 }}>
+                              <ThemedText style={styles.jobTitle}>{job.title}</ThemedText>
+                              {job.price ? <ThemedText type="caption" style={{ color: Brand.textSecondary }}>{job.price.toLocaleString()} MMK</ThemedText> : null}
+                            </View>
+                            <Ionicons name="chevron-forward" size={18} color={Brand.textSecondary} />
+                          </View>
+                        </Pressable>
+                      ))}
+                    </>
                   )}
                 </View>
               )}
 
               {savedJobs.length > 0 && (
                 <View style={[styles.sectionCard, { backgroundColor: Brand.white }]}>
-                  <ThemedText style={styles.sectionTitle}>{t('profile.savedJobs', { count: savedJobs.length })}</ThemedText>
-                  {(expandedSaved ? savedJobs : savedJobs.slice(0, 3)).map((job, i) => (
-                    <Pressable key={job.id} onPress={() => router.push(`/job/${job.id}`)}>
-                      <View style={[styles.jobRow, i < (expandedSaved ? savedJobs.length : Math.min(savedJobs.length, 3)) - 1 && styles.jobRowBorder, { borderBottomColor: Brand.borderLight }]}>
-                        <View style={{ flex: 1 }}>
-                          <ThemedText style={styles.jobTitle}>{job.title}</ThemedText>
-                          {job.price ? <ThemedText type="caption" style={{ color: Brand.textSecondary }}>{job.price.toLocaleString()} MMK</ThemedText> : null}
-                        </View>
-                        <Ionicons name="chevron-forward" size={18} color={Brand.textSecondary} />
-                      </View>
-                    </Pressable>
-                  ))}
-                  {!expandedSaved && savedJobs.length > 3 && (
-                    <Pressable onPress={() => setExpandedSaved(true)} style={[styles.seeAllRow, { borderTopColor: Brand.borderLight }]}>
-                      <ThemedText style={styles.seeAllText}>+{savedJobs.length - 3} {t('userSearch.jobs')}</ThemedText>
-                    </Pressable>
+                  <Pressable
+                    onPress={() => setExpandedSaved((v) => !v)}
+                    style={styles.sectionHeader}
+                  >
+                    <ThemedText style={styles.sectionTitle}>{t('profile.savedJobs', { count: savedJobs.length })}</ThemedText>
+                    <Ionicons
+                      name="chevron-down"
+                      size={18}
+                      color={Brand.textSecondary}
+                      style={{
+                        transform: [{ rotate: expandedSaved ? '180deg' : '0deg' }],
+                      }}
+                    />
+                  </Pressable>
+                  {expandedSaved && (
+                    <>
+                      {savedJobs.map((job, i) => (
+                        <Pressable key={job.id} onPress={() => router.push(`/job/${job.id}`)}>
+                          <View style={[styles.jobRow, i < savedJobs.length - 1 && styles.jobRowBorder, { borderBottomColor: Brand.borderLight }]}>
+                            <View style={{ flex: 1 }}>
+                              <ThemedText style={styles.jobTitle}>{job.title}</ThemedText>
+                              {job.price ? <ThemedText type="caption" style={{ color: Brand.textSecondary }}>{job.price.toLocaleString()} MMK</ThemedText> : null}
+                            </View>
+                            <Ionicons name="chevron-forward" size={18} color={Brand.textSecondary} />
+                          </View>
+                        </Pressable>
+                      ))}
+                    </>
                   )}
                 </View>
               )}
 
                 <View style={[styles.sectionCard, { backgroundColor: Brand.white }]}>
-                  <ThemedText style={styles.sectionTitle}>{t('profile.settings')}</ThemedText>
+                  <View style={styles.sectionHeader}>
+                    <ThemedText style={styles.sectionTitle}>{t('profile.settings')}</ThemedText>
+                  </View>
                   <View style={styles.settingRow}>
                     <ThemedText style={styles.settingLabel}>{t('profile.language')}</ThemedText>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -536,13 +586,17 @@ const styles = StyleSheet.create({
     ...Shadow.card,
     overflow: "hidden",
   },
-  sectionTitle: {
-    fontWeight: 700,
-    fontSize: FontSize.base,
-
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: Spacing.four,
     paddingTop: Spacing.four,
     paddingBottom: Spacing.two,
+  },
+  sectionTitle: {
+    fontWeight: 700,
+    fontSize: FontSize.base,
   },
   jobRow: {
     flexDirection: "row",
@@ -606,5 +660,24 @@ const styles = StyleSheet.create({
   seeAllText: {
     fontWeight: 700,
     fontSize: FontSize.sm,
+  },
+  cvRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.three,
+    paddingHorizontal: Spacing.four,
+    paddingVertical: 14,
+  },
+  cvIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cvName: {
+    fontWeight: 600,
+    fontSize: FontSize.base,
   },
 });
