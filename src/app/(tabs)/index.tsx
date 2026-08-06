@@ -688,9 +688,8 @@ export default function NearbyJobsScreen() {
                     )}
                     <View style={styles.jobMetaRow}>
                       <ThemedText type="caption" numberOfLines={1}>
-                        {item.city}
-                        {item.region ? `, ${item.region}` : ""} ·{" "}
-                        {item.work_type}
+                        {[item.region, item.city].filter(Boolean).join(", ")} ·{" "}
+                        {t(`workTypes.${item.work_type}`)}
                         {item.employment_type
                           ? ` · ${EMPLOYMENT_TYPE_LABELS[item.employment_type]}`
                           : ""}

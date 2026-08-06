@@ -28,6 +28,7 @@ interface JobItem {
   title: string
   price: number | null
   city: string | null
+  region: string | null
   employment_type: string
   created_at: string
 }
@@ -48,7 +49,7 @@ export default function UserJobsScreen() {
       try {
         const [userRes, jobRes] = await Promise.all([
           supabase.from('users').select('display_name, avatar_url').eq('id', id).single(),
-          supabase.from('jobs').select('id, title, price, city, employment_type, created_at').eq('uploader_id', id).eq('deleted', false).in('status', ['open', 'full']).order('created_at', { ascending: false }),
+          supabase.from('jobs').select('id, title, price, city, region, employment_type, created_at').eq('uploader_id', id).eq('deleted', false).in('status', ['open', 'full']).order('created_at', { ascending: false }),
         ])
         const { data: userRow } = userRes
         if (userRow) {
@@ -136,10 +137,10 @@ export default function UserJobsScreen() {
             <View style={{ flex: 1 }}>
               <ThemedText style={styles.jobTitle} numberOfLines={1}>{item.title}</ThemedText>
               <View style={{ flexDirection: 'row', gap: Spacing.two, marginTop: 4 }}>
-                {item.city ? (
+                {[item.region, item.city].filter(Boolean).length ? (
                   <View style={styles.chip}>
                     <Ionicons name="location-outline" size={12} color={Brand.textSecondary} />
-                    <ThemedText type="caption" style={{ color: Brand.textSecondary }}>{item.city}</ThemedText>
+                    <ThemedText type="caption" style={{ color: Brand.textSecondary }}>{[item.region, item.city].filter(Boolean).join(", ")}</ThemedText>
                   </View>
                 ) : null}
                 <View style={styles.chip}>

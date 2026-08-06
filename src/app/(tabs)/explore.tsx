@@ -126,6 +126,7 @@ export default function AllJobsScreen() {
   const [showWorkTypePicker, setShowWorkTypePicker] = useState(false);
   const [showEmployTypePicker, setShowEmployTypePicker] = useState(false);
   const [showRegionPicker, setShowRegionPicker] = useState(false);
+  const [showCityPicker, setShowCityPicker] = useState(false);
   const [savedJobIds, setSavedJobIds] = useState<Set<string>>(new Set());
   const [savedSearches, setSavedSearches] = useState<{ id: string; name: string; filters: Record<string, any> }[]>([]);
   const [showSaveSearchModal, setShowSaveSearchModal] = useState(false);
@@ -392,10 +393,22 @@ export default function AllJobsScreen() {
         title={t("explore.selectRegion")}
         options={[t("explore.allRegions"), ...allRegions]}
         selected={selectedRegion || t("explore.allRegions")}
-        onSelect={(val) =>
-          setSelectedRegion(val === t("explore.allRegions") ? null : val)
-        }
+        onSelect={(val) => {
+          setSelectedRegion(val === t("explore.allRegions") ? null : val);
+          setSelectedCity(null);
+        }}
         onClose={() => setShowRegionPicker(false)}
+      />
+
+      <PickerModal
+        visible={showCityPicker}
+        title={t("explore.selectCity")}
+        options={[t("common.all"), ...allCities]}
+        selected={selectedCity || t("common.all")}
+        onSelect={(val) =>
+          setSelectedCity(val === t("common.all") ? null : val)
+        }
+        onClose={() => setShowCityPicker(false)}
       />
 
       <Modal visible={showSaveSearchModal} transparent animationType="fade">
@@ -644,58 +657,30 @@ export default function AllJobsScreen() {
                     </Pressable>
                   </View>
                 </View>
-                <View style={styles.citySection}>
-                  <ThemedText
-                    type="caption"
-                    style={{ marginBottom: 6, fontWeight: 600 }}
-                  >
-                    {t("explore.city")}
-                  </ThemedText>
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    keyboardShouldPersistTaps="handled"
-                  >
-                    <View style={styles.cityRow}>
-                      <Pressable
-                        style={[
-                          styles.cityChip,
+                <View style={styles.filterRow}>
+                  <View style={styles.filterGroup}>
+                    <ThemedText
+                      type="caption"
+                      style={{ marginBottom: 6, fontWeight: 600 }}
+                    >
+                      {t("explore.city")}
+                    </ThemedText>
+                    <Pressable
+                      style={[styles.dropdown, { backgroundColor: Brand.white, borderColor: Brand.borderLight }]}
+                      onPress={() => setShowCityPicker(true)}
+                    >
+                      <ThemedText
+                        type="small"
+                        style={
                           !selectedCity
-                            ? { backgroundColor: Brand.primary, borderColor: Brand.primary }
-                            : { backgroundColor: Brand.bg, borderColor: Brand.border },
-                        ]}
-                        onPress={() => setSelectedCity(null)}
+                            ? { color: Brand.placeholder }
+                            : { color: Brand.text, fontWeight: 700 }
+                        }
                       >
-                        <ThemedText
-                          type="small"
-                          style={!selectedCity ? { color: '#FFFFFF', fontWeight: '700' } : {}}
-                        >
-                          All
-                        </ThemedText>
-                      </Pressable>
-                      {allCities.map((city) => (
-                        <Pressable
-                          key={city}
-                          style={[
-                            styles.cityChip,
-                            selectedCity === city
-                              ? { backgroundColor: Brand.primary, borderColor: Brand.primary }
-                              : { backgroundColor: Brand.bg, borderColor: Brand.border },
-                          ]}
-                          onPress={() =>
-                            setSelectedCity(selectedCity === city ? null : city)
-                          }
-                        >
-                          <ThemedText
-                            type="small"
-                            style={selectedCity === city ? { color: '#FFFFFF', fontWeight: '700' } : {}}
-                          >
-                            {city}
-                          </ThemedText>
-                        </Pressable>
-                      ))}
-                    </View>
-                  </ScrollView>
+                        {selectedCity || t("common.all")}
+                      </ThemedText>
+                    </Pressable>
+                  </View>
                 </View>
                 <View style={styles.citySection}>
                   <ThemedText
@@ -850,8 +835,13 @@ export default function AllJobsScreen() {
                         </ThemedText>
                         <View style={styles.cardLocation}>
                           <ThemedText type="caption" numberOfLines={1}>
-                            {job.city}
-                            {job.region ? `, ${job.region}` : ""}
+                            {[job.region, job.city].filter(Boolean).join(", ")}
+                            {job.work_type
+                              ? ` · ${t(`workTypes.${job.work_type}`)}`
+                              : ""}
+                            {job.employment_type
+                              ? ` · ${EMPLOYMENT_TYPE_LABELS[job.employment_type]}`
+                              : ""}
                           </ThemedText>
                         </View>
                         <ThemedText type="caption" style={{ color: Brand.textSecondary, marginTop: 2 }}>

@@ -84,10 +84,19 @@ export default function ReviewsScreen() {
           {sortOptions.map((opt) => (
             <Pressable
               key={opt.key}
-              style={[styles.sortOption, sort === opt.key && styles.sortOptionActive, { backgroundColor: Brand.white, borderColor: Brand.borderLight }, { backgroundColor: Brand.primary, borderColor: Brand.primary }]}
+              style={[
+                styles.sortOption,
+                { backgroundColor: Brand.white, borderColor: Brand.borderLight },
+                sort === opt.key && { backgroundColor: Brand.primary, borderColor: Brand.primary },
+              ]}
               onPress={() => { setSort(opt.key); setShowSortPicker(false) }}
             >
-              <ThemedText style={[styles.sortOptionText, sort === opt.key && styles.sortOptionTextActive]}>
+              <ThemedText
+                style={[
+                  styles.sortOptionText,
+                  sort === opt.key ? { color: '#FFFFFF', fontWeight: '700' } : null,
+                ]}
+              >
                 {opt.label}
               </ThemedText>
             </Pressable>
@@ -178,16 +187,11 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.full,
 
     borderWidth: 1,
-    backgroundColor: Brand.primary,
-  },
-  sortOptionActive: {
   },
   sortOptionText: {
     fontSize: FontSize.sm,
     fontWeight: 600,
 
-  },
-  sortOptionTextActive: {
   },
   skeletonCard: {
     borderRadius: BorderRadius.lg,

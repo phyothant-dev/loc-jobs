@@ -451,9 +451,8 @@ export default function MyJobsScreen() {
                         </ThemedText>
                       </View>
                       <ThemedText type="caption">
-                        {item.city}
-                        {item.region ? `, ${item.region}` : ""} ·{" "}
-                        {item.work_type}
+                        {[item.region, item.city].filter(Boolean).join(", ")} ·{" "}
+                        {t(`workTypes.${item.work_type}`)}
                         {item.employment_type ? ` · ${EMPLOYMENT_TYPE_LABELS[item.employment_type]}` : ''}
                       </ThemedText>
                     </View>

@@ -31,6 +31,21 @@ export default function ProfileScreen() {
     toggleTheme()
   }
 
+  const confirmSignOut = () => {
+    Alert.alert(
+      t("profile.signOutConfirmTitle"),
+      t("profile.signOutConfirmMessage"),
+      [
+        { text: t("common.cancel"), style: "cancel" },
+        {
+          text: t("profile.signOut"),
+          style: "destructive",
+          onPress: () => signOut(),
+        },
+      ],
+    );
+  }
+
   const { user, signOut } = useAuth();
   const { t, locale, setLocale } = useLocale();
   const [displayName, setDisplayName] = useState("");
@@ -160,7 +175,7 @@ export default function ProfileScreen() {
       <View style={{ flex: 1 }}>
         <View style={styles.header}>
           <ThemedText style={styles.headerTitle}>{t('profile.title')}</ThemedText>
-          <Pressable onPress={signOut} style={[styles.signOutBtn, { backgroundColor: Brand.dangerLight }]}>
+          <Pressable onPress={confirmSignOut} style={[styles.signOutBtn, { backgroundColor: Brand.dangerLight }]}>
             <ThemedText style={[styles.signOutText, { color: Brand.danger }]}>{t('profile.signOut')}</ThemedText>
           </Pressable>
         </View>

@@ -30,6 +30,7 @@ import {
     Spacing,
 } from "@/constants/theme";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLocale } from "@/contexts/LocaleContext";
 import { CATEGORIES, EMPLOYMENT_TYPES, EMPLOYMENT_TYPE_LABELS } from "@/lib/categories";
 import { REGIONS } from "@/lib/regions";
 import { supabase } from "@/lib/supabase";
@@ -39,6 +40,7 @@ const WORK_TYPES = ["onsite", "remote", "hybrid"] as const;
 
 export default function PostJobScreen() {
   const Brand = useBrand();
+  const { t } = useLocale();
 
   const { user } = useAuth();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -124,7 +126,7 @@ export default function PostJobScreen() {
   const handleUseCurrentLocation = async () => {
     const { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== "granted") {
-      Alert.alert("Location Permission", "Location permission is needed to use your current location. Please enable it in Settings.");
+      Alert.alert(t('post.locationPermissionTitle'), t('post.locationPermissionMessage'));
       return;
     }
     const loc = await Location.getCurrentPositionAsync({});
@@ -135,13 +137,13 @@ export default function PostJobScreen() {
 
   const validate = () => {
     const errors: Record<string, string> = {};
-    if (!title.trim()) errors.title = "Title is required";
+    if (!title.trim()) errors.title = t('post.titleError');
 
     const priceNum = price ? parseInt(price, 10) : NaN;
-    if (price && (isNaN(priceNum) || priceNum <= 0)) errors.price = "Enter a valid price";
+    if (price && (isNaN(priceNum) || priceNum <= 0)) errors.price = t('post.priceError');
 
-    if ((workType === "onsite" || workType === "hybrid") && !region) errors.region = "Region is required";
-    if ((workType === "onsite" || workType === "hybrid") && !city) errors.city = "City is required";
+    if ((workType === "onsite" || workType === "hybrid") && !region) errors.region = t('post.regionRequired');
+    if ((workType === "onsite" || workType === "hybrid") && !city) errors.city = t('post.cityRequired');
 
     return errors;
   };
@@ -160,7 +162,7 @@ export default function PostJobScreen() {
     const errors = validate();
     setValidationErrors(errors);
     if (Object.keys(errors).length > 0) {
-      Alert.alert("Validation Error", Object.values(errors)[0]);
+      Alert.alert(t('post.validationError'), Object.values(errors)[0]);
       return;
     }
 
@@ -239,14 +241,14 @@ export default function PostJobScreen() {
         .eq("id", id);
       if (updateErr) setError(updateErr.message);
       else {
-        setToast({ visible: true, message: isEditing ? 'Job updated!' : 'Job posted!', type: 'success' });
+        setToast({ visible: true, message: isEditing ? t('post.jobUpdated') : t('post.jobPosted'), type: 'success' });
         setTimeout(() => router.back(), 1200);
       }
     } else {
       const { data, error: rpcErr } = await supabase.rpc("post_job", params);
       if (rpcErr) setError(rpcErr.message);
       else {
-        setToast({ visible: true, message: 'Job posted!', type: 'success' });
+        setToast({ visible: true, message: t('post.jobPosted'), type: 'success' });
         setTimeout(() => router.back(), 1200);
       }
     }
@@ -263,7 +265,7 @@ export default function PostJobScreen() {
             <Ionicons name="chevron-down" size={24} color={Brand.primary} />
           </Pressable>
           <ThemedText style={styles.headerTitle}>
-            {isEditing ? "Edit Job" : "Post a Job"}
+            {isEditing ? t('post.editTitle') : t('post.title')}
           </ThemedText>
           <View style={{ width: 50 }} />
         </View>
@@ -283,11 +285,11 @@ export default function PostJobScreen() {
 
           <View style={styles.formGroup}>
             <ThemedText type="caption" style={styles.label}>
-              Title *
+              {t('post.titleRequired')}
             </ThemedText>
             <TextInput
               style={[styles.input, { backgroundColor: Brand.white, borderColor: Brand.borderLight, color: Brand.text }]}
-              placeholder="Job title"
+              placeholder={t('post.jobTitlePlaceholder')}
               placeholderTextColor={Brand.placeholder}
               value={title}
               onChangeText={(v) => { setTitle(v); clearError("title"); }}
@@ -299,11 +301,11 @@ export default function PostJobScreen() {
 
           <View style={styles.formGroup}>
             <ThemedText type="caption" style={styles.label}>
-              Description
+              {t('post.description')}
             </ThemedText>
             <TextInput
               style={[styles.input, { height: 100, textAlignVertical: "top" }, { backgroundColor: Brand.white, borderColor: Brand.borderLight, color: Brand.text }]}
-              placeholder="Describe the job..."
+              placeholder={t('post.descriptionPlaceholder')}
               placeholderTextColor={Brand.placeholder}
               value={description}
               onChangeText={setDescription}
@@ -313,11 +315,11 @@ export default function PostJobScreen() {
 
           <View style={styles.formGroup}>
             <ThemedText type="caption" style={styles.label}>
-              Price (MMK)
+              {t('post.priceLabel')}
             </ThemedText>
             <TextInput
               style={[styles.input, { backgroundColor: Brand.white, borderColor: Brand.borderLight, color: Brand.text }]}
-              placeholder="e.g. 50000"
+              placeholder={t('post.pricePlaceholder')}
               placeholderTextColor={Brand.placeholder}
               value={price}
               onChangeText={(v) => { setPrice(v.replace(/\D/g, '')); clearError("price"); }}
@@ -330,7 +332,7 @@ export default function PostJobScreen() {
 
           <View style={styles.formGroup}>
             <ThemedText type="caption" style={styles.label}>
-              Vacancies (how many people needed)
+              {t('post.vacanciesLabel')}
             </ThemedText>
             <View style={styles.slotsRow}>
               <Pressable
@@ -353,7 +355,7 @@ export default function PostJobScreen() {
 
           <View style={styles.formGroup}>
             <ThemedText type="caption" style={styles.label}>
-              Work Type
+              {t('post.workType')}
             </ThemedText>
             <Pressable
               style={[styles.pickerBtn, { backgroundColor: Brand.white, borderColor: Brand.borderLight }]}
@@ -363,22 +365,26 @@ export default function PostJobScreen() {
                 type="small"
                 style={!workType ? { color: Brand.placeholder } : { textTransform: 'capitalize' }}
               >
-                {workType || "Select work type"}
+                {workType ? t(`workTypes.${workType}`) : t('post.selectWorkType')}
               </ThemedText>
             </Pressable>
             <PickerModal
               visible={showWorkTypePicker}
-              title="Work Type"
-              options={WORK_TYPES as unknown as string[]}
-              selected={workType}
-              onSelect={(v) => { setWorkType(v); setShowWorkTypePicker(false); }}
+              title={t('post.workType')}
+              options={WORK_TYPES.map((w) => t(`workTypes.${w}`))}
+              selected={workType ? t(`workTypes.${workType}`) : ""}
+              onSelect={(v) => {
+                const key = WORK_TYPES.find((w) => t(`workTypes.${w}`) === v);
+                if (key) setWorkType(key);
+                setShowWorkTypePicker(false);
+              }}
               onClose={() => setShowWorkTypePicker(false)}
             />
           </View>
 
           <View style={styles.formGroup}>
             <ThemedText type="caption" style={styles.label}>
-              Category
+              {t('post.category')}
             </ThemedText>
             <Pressable
               style={[styles.pickerBtn, { backgroundColor: Brand.white, borderColor: Brand.borderLight }]}
@@ -388,12 +394,12 @@ export default function PostJobScreen() {
                 type="small"
                 style={!category ? { color: Brand.placeholder } : {}}
               >
-                {category || "Select category"}
+                {category || t('post.selectCategoryLabel')}
               </ThemedText>
             </Pressable>
             <PickerModal
               visible={showCategoryPicker}
-              title="Select Category"
+              title={t('post.selectCategory')}
               options={[...CATEGORIES]}
               selected={category}
               onSelect={setCategory}
@@ -403,7 +409,7 @@ export default function PostJobScreen() {
 
           <View style={styles.formGroup}>
             <ThemedText type="caption" style={styles.label}>
-              Employment Type
+              {t('post.employmentType')}
             </ThemedText>
             <Pressable
               style={[styles.pickerBtn, { backgroundColor: Brand.white, borderColor: Brand.borderLight }]}
@@ -413,12 +419,12 @@ export default function PostJobScreen() {
                 type="small"
                 style={!employmentType ? { color: Brand.placeholder } : {}}
               >
-                {employmentType ? EMPLOYMENT_TYPE_LABELS[employmentType] : "Select type"}
+                {employmentType ? EMPLOYMENT_TYPE_LABELS[employmentType] : t('post.selectTypeLabel')}
               </ThemedText>
             </Pressable>
             <PickerModal
               visible={showEmployTypePicker}
-              title="Employment Type"
+              title={t('post.employmentType')}
               options={["", ...EMPLOYMENT_TYPES.map((t) => EMPLOYMENT_TYPE_LABELS[t])]}
               selected={employmentType ? EMPLOYMENT_TYPE_LABELS[employmentType] : ""}
               onSelect={(val) => {
@@ -432,7 +438,7 @@ export default function PostJobScreen() {
 
           <View style={styles.formGroup}>
             <ThemedText type="caption" style={styles.label}>
-              Region
+              {t('post.region')}
             </ThemedText>
             <Pressable
               style={[styles.pickerBtn, { backgroundColor: Brand.white, borderColor: Brand.borderLight }]}
@@ -442,7 +448,7 @@ export default function PostJobScreen() {
                 type="small"
                 style={!region ? { color: Brand.placeholder } : {}}
               >
-                {region || "Select region"}
+                {region || t('post.selectRegion')}
               </ThemedText>
             </Pressable>
             {validationErrors.region && (
@@ -450,7 +456,7 @@ export default function PostJobScreen() {
             )}
             <PickerModal
               visible={showRegionPicker}
-              title="Select Region"
+              title={t('post.selectRegion')}
               options={regionList}
               selected={region}
               onSelect={(v) => {
@@ -463,7 +469,7 @@ export default function PostJobScreen() {
 
           <View style={styles.formGroup}>
             <ThemedText type="caption" style={styles.label}>
-              City
+              {t('post.city')}
             </ThemedText>
             <Pressable
               style={[styles.pickerBtn, { backgroundColor: Brand.white, borderColor: Brand.borderLight }]}
@@ -473,7 +479,7 @@ export default function PostJobScreen() {
                 type="small"
                 style={!city ? { color: Brand.placeholder } : {}}
               >
-                {city || "Select city"}
+                {city || t('post.selectCity')}
               </ThemedText>
             </Pressable>
             {validationErrors.city && (
@@ -481,7 +487,7 @@ export default function PostJobScreen() {
             )}
             <PickerModal
               visible={showCityPicker}
-              title="Select City"
+              title={t('post.selectCity')}
               options={cityList}
               selected={city}
               onSelect={setCity}
@@ -492,7 +498,7 @@ export default function PostJobScreen() {
           <View style={styles.formGroup}>
             <View style={styles.switchRow}>
               <ThemedText type="caption" style={styles.label}>
-                Use exact location
+                {t('post.useExactLocation')}
               </ThemedText>
               <Switch
                 value={useExactLocation}
@@ -512,7 +518,7 @@ export default function PostJobScreen() {
                 onPress={handleUseCurrentLocation}
               >
                 <ThemedText style={styles.locationBtnText}>
-                  Use My Current Location
+                  {t('post.useCurrentLocation')}
                 </ThemedText>
               </Pressable>
             )}
@@ -528,11 +534,11 @@ export default function PostJobScreen() {
 
           <View style={styles.formGroup}>
             <ThemedText type="caption" style={styles.label}>
-              Images
+              {t('post.images')}
             </ThemedText>
             <Pressable style={[styles.addImageBtn, { borderColor: Brand.primary }]} onPress={handlePickImages}>
               <ThemedText style={styles.addImageBtnText}>
-                + Add Images
+                {t('post.addImages')}
               </ThemedText>
             </Pressable>
             {images.length > 0 && (
@@ -572,7 +578,7 @@ export default function PostJobScreen() {
               <ActivityIndicator size="small" color={Brand.white} />
             ) : (
               <ThemedText style={styles.submitBtnText}>
-                {isEditing ? "Update Job" : "Post Job"}
+                {isEditing ? t('post.update') : t('post.post')}
               </ThemedText>
             )}
           </Pressable>

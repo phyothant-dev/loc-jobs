@@ -43,7 +43,7 @@ export default function UserProfileScreen() {
         supabase.from('users').select('*').eq('id', id).single(),
         supabase.from('reviews').select('rating').eq('reviewee_id', id),
         supabase.from('reviews').select('*, reviewer:users!reviewer_id(display_name, avatar_url)').eq('reviewee_id', id).order('created_at', { ascending: false }).limit(3),
-        supabase.from('jobs').select('id, title, price, city, employment_type, created_at').eq('uploader_id', id).eq('deleted', false).in('status', ['open', 'full']).order('created_at', { ascending: false }).limit(5),
+        supabase.from('jobs').select('id, title, price, city, region, employment_type, created_at').eq('uploader_id', id).eq('deleted', false).in('status', ['open', 'full']).order('created_at', { ascending: false }).limit(5),
       ])
 
       const { data } = userRes
@@ -265,7 +265,7 @@ export default function UserProfileScreen() {
                       <View style={{ flex: 1 }}>
                         <ThemedText style={styles.jobTitle} numberOfLines={1}>{job.title}</ThemedText>
                         <ThemedText type="caption" style={{ color: Brand.textSecondary }}>
-                          {job.city || ''}{job.city && job.price ? ' · ' : ''}{job.price ? `${job.price.toLocaleString()} MMK` : ''}
+                          {[job.region, job.city].filter(Boolean).join(", ")}{[job.region, job.city].filter(Boolean).length && job.price ? ' · ' : ''}{job.price ? `${job.price.toLocaleString()} MMK` : ''}
                         </ThemedText>
                       </View>
                       <Ionicons name="chevron-forward" size={16} color={Brand.textSecondary} />

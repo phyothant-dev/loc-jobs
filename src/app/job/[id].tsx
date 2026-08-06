@@ -681,7 +681,9 @@ export default function JobDetailScreen() {
                 {job.status === "full" ? "Full" : job.status}
               </ThemedText>
             </View>
-            <ThemedText type="caption">{job.work_type}</ThemedText>
+            <ThemedText type="caption">
+              {t(`workTypes.${job.work_type}`)}
+            </ThemedText>
             {job.employment_type && (
               <View
                 style={{
@@ -703,6 +705,16 @@ export default function JobDetailScreen() {
             )}
             <ThemedText type="caption" style={{ color: Brand.textSecondary }}>
               {vacanciesFilled}/{vacanciesTotal} {t("jobDetail.filled")}
+            </ThemedText>
+          </View>
+          <View style={styles.titleLocation}>
+            <Ionicons
+              name="location-outline"
+              size={14}
+              color={Brand.textSecondary}
+            />
+            <ThemedText type="caption" style={{ color: Brand.textSecondary }}>
+              {[job.region, job.city].filter(Boolean).join(", ")}
             </ThemedText>
           </View>
           {job.price && !job.employment_type && (
@@ -819,8 +831,7 @@ export default function JobDetailScreen() {
           {hasLocation ? (
             <>
               <ThemedText style={styles.infoLine}>
-                {job.city ? `${job.city}, ` : ""}
-                {job.region || ""}
+                {[job.region, job.city].filter(Boolean).join(", ")}
               </ThemedText>
               <MapView
                 style={styles.map}
@@ -1433,6 +1444,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: Spacing.two,
     marginTop: 6,
+  },
+  titleLocation: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginTop: 8,
+    paddingHorizontal: Spacing.one,
   },
   statusBadge: {
     paddingHorizontal: 8,
