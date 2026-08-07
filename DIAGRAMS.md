@@ -306,95 +306,160 @@ The full app lifecycle in five phases: onboarding/auth, posting, browsing/applyi
 sequenceDiagram
     actor Seeker
     actor Poster
-    participant App as RN App
-    participant SB as Supabase
+    participant UI as UI Screens<br/>(tabs · detail · modals)
+    participant APP as App Core<br/>(Providers · Router · i18n)
+    participant API as Supabase Client<br/>(REST · RPC · Realtime)
+    participant SB as Supabase Backend<br/>(Postgres · triggers · auth)
     participant G as Google OAuth
 
     rect rgb(235,240,250)
-    Note over Seeker,App: Phase 1 — Onboarding & Auth
-    Seeker->>App: launch app
-    App->>App: load fonts + theme, show splash
-    App->>App: onboarding screens (language select)
-    App->>SB: supabase.auth.getSession()
+    Note over Seeker,API: Phase 1 — Onboarding & Auth
+    Seeker->>UI: launch app (entry)
+    UI->>APP: boot _layout
+    APP->>APP: ThemeProvider loads theme
+    APP->>APP: LocaleProvider reads stored locale
+    APP->>APP: AuthProvider.init() → getSession()
+    APP->>API: supabase.auth.getSession()
+    API->>SB: GET /auth/v1/session
+    SB-->>API: session (nil or user)
+    API-->>APP: session result
     alt no session
-        Seeker->>App: register / login (email or Google)
-        App->>G: signInWithOAuth (Google)
-        G-->>App: callback (exp:// or locjobs:// scheme)
-        App->>SB: supabase.auth.setSession(session)
+        APP->>UI: navigate to onboarding (language select)
+        Seeker->>UI: pick language
+        UI->>APP: LocaleProvider.setLocale() → t() relabels all UI
+        Seeker->>UI: register / login screen
+        UI->>APP: AuthProvider.signUp(email, pass, display_name)
+        APP->>API: supabase.auth.signUp({ options.data: { display_name } })
+        API->>SB: POST /auth/v1/signup
         SB->>SB: trigger handle_new_user → insert into users
-        SB-->>App: user (role, display_name, verified)
+        SB-->>API: session / verify-email
+        API-->>APP: auth result
+        alt Google OAuth
+            Seeker->>UI: sign in with Google
+            UI->>APP: AuthProvider.signInWithGoogle()
+            APP->>API: supabase.auth.signInWithOAuth(provider: google)
+            API->>G: OAuth flow (WebBrowser.openAuthSessionAsync)
+            G-->>API: callback (exp:// or locjobs:// + Linking fallback)
+            APP->>API: supabase.auth.setSession(session)
+            API->>SB: POST /auth/v1/token
+            SB-->>API: session user
+        end
     else session exists
-        App->>SB: getUser()
-        SB-->>App: session user
+        APP->>API: getUser()
+        API->>SB: GET /auth/v1/user
+        SB-->>API: user (role, verified, display_name)
+        API-->>APP: user
     end
+    APP->>UI: navigate to Main Tab Navigator (5 tabs)
+    APP->>API: subscribe realtime (notifications · chat unread)
     end
 
     rect rgb(235,245,235)
-    Note over Poster,App: Phase 2 — Posting a Job
-    Poster->>App: open Post Job form
-    Poster->>App: fill title, description, category, work_type
-    Poster->>App: set price + currency (picker, default MMK)
-    Poster->>App: set city/region + map pin (lat/lng)
-    App->>App: validate + formatPrice() live preview
-    App->>SB: rpc post_job(p_currency, price, ...)
-    SB-->>Poster: job row (status: open, vacancies, image_urls)
-    SB-->>Poster: realtime event on jobs channel
+    Note over Poster,SB: Phase 2 — Posting a Job
+    Poster->>UI: Post Job screen
+    UI->>APP: manage edit/draft state
+    Poster->>UI: fill title, description, category, work_type
+    Poster->>UI: set price + currency (PickerModal, default MMK)
+    UI->>APP: formatPrice() live preview
+    Poster->>UI: set city/region + map pin (lat/lng)
+    Poster->>UI: submit
+    UI->>APP: PostJobScreen.submit(params)
+    APP->>API: rpc post_job(p_currency, price, ...)
+    API->>SB: POST /rest/v1/rpc/post_job
+    SB-->>API: job row (status: open, vacancies, image_urls)
+    API-->>APP: job
+    APP->>API: subscribe jobs channel (UPDATE/DELETE)
+    APP->>UI: show job in My Jobs
+    SB-->>API: realtime event (job created)
+    API-->>APP: payload
+    APP->>UI: update Nearby / Explore lists live
     end
 
     rect rgb(250,245,235)
-    Note over Seeker,App: Phase 3 — Browse, Save, Share, Apply
-    Seeker->>App: open Nearby / Explore
-    App->>SB: query jobs (filters: radius, category, price range, currency)
-    App->>SB: batch fetch uploader verified badges
-    SB-->>App: job list (price formatted in job currency)
-    Seeker->>App: tap Save toggle
-    App->>SB: saved_jobs upsert
-    Seeker->>App: tap Share
-    App->>SB: landing page fetches job via REST
-    SB-->>App: title + price/salary in job currency
-    App->>App: deep link locjobs://job/{id} or App Store
-    Seeker->>App: open job detail, tap Apply + message
-    App->>SB: insert application (status: pending)
+    Note over Seeker,SB: Phase 3 — Browse, Save, Share, Apply
+    Seeker->>UI: open Nearby / Explore tab
+    UI->>APP: loadJobs(filters: radius, category, price range, currency)
+    APP->>API: query jobs (filters + search)
+    API->>SB: GET /rest/v1/jobs
+    SB-->>API: job rows
+    APP->>API: batch fetch uploader verified badges
+    API->>SB: GET /rest/v1/users?id=in.(...)
+    SB-->>API: verified map
+    APP->>UI: render cards (formatPrice in job currency)
+    APP->>APP: FilterCountProvider.setCount(tab, count) → badge
+    Seeker->>UI: tap Save toggle
+    UI->>APP: toggle save
+    APP->>API: saved_jobs upsert
+    API->>SB: POST /rest/v1/saved_jobs
+    Seeker->>UI: tap Share
+    UI->>APP: handleShare()
+    APP->>API: landing page fetch job via REST
+    API->>SB: GET (landing Netlify → Supabase REST)
+    SB-->>API: title + price/salary in job currency
+    APP->>UI: share sheet / deep link locjobs://job/{id}
+    Seeker->>UI: open job detail → Apply + message
+    UI->>APP: JobDetailScreen.apply()
+    APP->>API: insert application (status: pending)
+    API->>SB: POST /rest/v1/applications
     SB-->>Poster: realtime notification (new application)
-    Poster->>App: open applicants (My Jobs)
-    App->>SB: update application status
+    Poster->>UI: My Jobs → applicant list
+    UI->>APP: accept / reject applicant
+    APP->>API: update application status
+    API->>SB: PATCH /rest/v1/applications
     alt accepted
         SB-->>Seeker: notification (application accepted)
-        SB-->>App: chat channel opens (chat-messages-{jobId})
+        APP->>API: subscribe chat-messages-{jobId}
+        APP->>UI: chat opens (Chat tab)
     else rejected
-        SB-->>Seeker: notification (rejected + reject_reason)
+        API->>SB: PATCH (rejected + reject_reason)
+        SB-->>Seeker: notification (rejected + reason)
     end
     end
 
     rect rgb(240,240,250)
-    Note over Seeker,Poster: Phase 4 — Realtime Chat
-    Seeker->>App: open chat detail
-    App->>SB: subscribe chat-messages-{jobId}
-    App->>SB: load latest 30 messages
-    App->>SB: mark unread as read (read_at)
-    SB-->>App: messages (Seen shown on read items)
-    Seeker->>App: send message (text or image)
-    App->>SB: insert message
+    Note over Seeker,SB: Phase 4 — Realtime Chat
+    Seeker->>UI: open chat detail
+    UI->>APP: ChatScreen.loadPage()
+    APP->>API: load latest 30 (2 parallel equality queries)
+    API->>SB: GET /rest/v1/messages
+    SB-->>API: 30 messages
+    APP->>API: mark incoming as read (read_at)
+    API->>SB: PATCH /rest/v1/messages
+    SB-->>API: ok
+    APP->>UI: render bubbles + date separators + "Seen"
+    Seeker->>UI: send message (text / image)
+    UI->>APP: ChatScreen.sendMessage()
+    APP->>API: insert message
+    API->>SB: POST /rest/v1/messages
     SB-->>Poster: realtime message event
-    Poster->>App: long-press message → Reply
-    App->>SB: insert reply (reply_to_id)
+    API-->>APP: confirmation
+    Poster->>UI: long-press message → Reply
+    UI->>APP: ChatScreen.sendMessage(reply_to_id)
+    API->>SB: POST /rest/v1/messages (reply_to_id)
     SB-->>Seeker: realtime reply event
-    Seeker->>App: scroll up (load earlier)
-    App->>SB: paginated query (next 30, offset)
-    SB-->>App: older messages
+    Seeker->>UI: scroll up (load earlier)
+    UI->>APP: loadPage(offset)
+    API->>SB: GET /rest/v1/messages (next 30)
+    SB-->>API: older messages
     end
 
     rect rgb(250,240,240)
     Note over Poster,SB: Phase 5 — Complete, Review, Verified Badge
-    Poster->>App: mark job complete
-    App->>SB: update jobs.status = completed
+    Poster->>UI: mark job complete
+    UI->>APP: MyJobs.complete()
+    APP->>API: update jobs.status = completed
+    API->>SB: PATCH /rest/v1/jobs
     SB-->>Seeker: notification (job completed)
-    Seeker->>App: submit review (rating 1–5 + comment)
-    Poster->>App: submit review
-    App->>SB: insert reviews (both sides)
-    Note over SB: trigger checks: count completed jobs ≥ 3
-    SB-->>App: realtime users.update (verified = true)
-    App->>App: show Verified badge in profile + cards
+    Seeker->>UI: submit review (rating 1–5 + comment)
+    UI->>APP: openReviewModal()
+    Poster->>UI: submit review
+    APP->>API: insert reviews (both sides)
+    API->>SB: POST /rest/v1/reviews
+    SB-->>API: ok
+    Note over SB: trigger: count completed jobs ≥ 3 → verified = true
+    SB-->>API: realtime users.update (verified = true)
+    API-->>APP: payload
+    APP->>UI: show Verified badge (profile + cards)
     end
 ```
 
