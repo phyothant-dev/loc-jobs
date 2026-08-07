@@ -25,9 +25,10 @@ flowchart TB
     Login --> Auth
     Auth -- Yes --> Tabs["Main Tabs<br/>(Nearby · Explore · My Jobs · Chat · Profile)"]
     Tabs --> Detail["Job Detail"]
-    Detail --> Apply{"Apply?"}
-    Apply -- No --> End1(["End"])
-    Apply -- Yes --> Pending["Application Pending<br/>(notify poster)"]
+    Detail --> Post{"Post or<br/>Apply?"}
+    Post -- Post --> PostJob["Post Job<br/>(price · currency · location)"]
+    PostJob --> Pending["Application Pending<br/>(notify poster)"]
+    Post -- Apply --> Pending
     Pending --> Decide{"Accept?"}
     Decide -- No --> Reject["Rejected<br/>(reason sent)"]
     Decide -- Yes --> Chat["Realtime Chat"]
@@ -35,9 +36,9 @@ flowchart TB
     Comp -- No --> Chat
     Comp -- Yes --> Review["Both Parties Review"]
     Review --> Badge{"≥ 3 Completed<br/>Jobs?"}
-    Badge -- No --> End2(["End"])
+    Badge -- No --> End1(["End"])
     Badge -- Yes --> Verified["Verified Badge<br/>Auto-Granted"]
-    Verified --> End3(["End"])
+    Verified --> End2(["End"])
     Reject --> End1
 ```
 
