@@ -1,186 +1,170 @@
-# LocJobs — Flowcharts
+# LocJobs — Full App Flowchart
 
-System and user-flow diagrams for the LocJobs app.
-
-## 1. App Architecture Overview
+A single end-to-end flowchart covering the entire LocJobs app, from launch through auth, browsing, applying, chatting, reviewing, posting, and sharing.
 
 ```mermaid
 flowchart TB
-    subgraph Client["React Native App (Expo SDK 56)"]
-        Root["Root Layout<br/>(_layout.tsx)"]
-        subgraph Providers["Providers"]
-            Theme["ThemeProvider"]
-            Locale["LocaleProvider<br/>(EN + MY)"]
-            Auth["AuthProvider<br/>(supabase.auth)"]
-        end
-        subgraph Screens["Screens"]
-            Onboard["Onboarding"]
-            AuthScreens["Auth Screens<br/>Login / Register / Verify / Reset"]
-            Tabs["Tab Navigator (5 tabs)"]
-            Post["Post Job (modal)"]
-            JobDetail["Job Detail /job/[id]"]
-            ChatDetail["Chat Detail<br/>/chat/[jobId]/[otherUserId]"]
-            Other["Edit Profile · Notifications<br/>Reviews · Search Users<br/>User Profile · Support"]
-        end
+
+    %% ================= 1. LAUNCH & AUTH =================
+    subgraph Auth["Launch & Auth"]
+        A["App Launch<br/>(splash, load fonts)"]
+        B{"Onboarding complete?<br/>(AsyncStorage)"}
+        C["Onboarding screens<br/>(language select)"]
+        D{"Session restored?<br/>(AuthProvider + supabase.auth)"}
+        E["Login / Register<br/>Forgot password · Google OAuth"]
+        F["Main Tab Navigator<br/>(5 tabs)"]
+        A --> B
+        B -->|No| C
+        C -->|Done| D
+        B -->|Yes| D
+        D -->|No| E
+        E -->|"Credentials / OAuth callback"| D
+        D -->|Yes| F
     end
 
-    subgraph Backend["Supabase"]
-        DB[("PostgreSQL<br/>27 migrations")]
-        AuthSvc["Auth Service<br/>Email/Password + Google OAuth"]
-        Realtime["Realtime<br/>(jobs, chat, notifications)"]
-        Storage["Storage<br/>(job images, avatars, chat images)"]
-        RPC["RPC Functions<br/>nearby_jobs, delete_user_account"]
+    %% ================= 2. BROWSE =================
+    subgraph Browse["Browsing (Nearby · Explore)"]
+        T1["Nearby tab<br/>(index.tsx)"]
+        T2["Explore tab<br/>(explore.tsx)"]
+        M["MapView + markers<br/>bottom sheet (25–90%)"]
+        L["Radius + filter chips<br/>category · work type"]
+        S["Search bar"]
+        FL["Filters<br/>work type · employment type · region · city<br/>category · price min–max · currency"]
+        CR["Job cards<br/>title · location · price/salary<br/>work type · status · save"]
+        T1 --> M
+        T1 --> L
+        T2 --> S
+        T2 --> FL
+        L --> CR
+        FL --> CR
+        M -->|tap marker| JD
+        CR --> JD
     end
 
-    subgraph External["External"]
-        Maps["react-native-maps<br/>Markers + Directions"]
-        OAuth["Google OAuth"]
-        Web["Landing Page<br/>landing/index.html"]
+    %% ================= 3. JOB DETAIL =================
+    subgraph Detail["Job Detail (/job/[id])"]
+        JD["Job detail screen"]
+        JI["Info: title · category · work type<br/>employment type · region/city<br/>price + salary range (job currency)"]
+        IMG["Photo carousel"]
+        UP["Uploader card<br/>verified badge · rating · CV"]
+        JD --> JI
+        JD --> IMG
+        JD --> UP
+        JD --> SAVE{"Save job?"}
+        SAVE -->|"Yes / unsave"| SV["saved_jobs insert / delete<br/>bookmark toggles"]
+        JD --> SHARE{"Share?"}
+        SHARE -->|"Yes"| LP
+        JD --> APPLY{"Applicant?"}
+        JD --> POSTER{"Uploader?"}
     end
 
-    Root --> Providers
-    Auth -->|session check| Screens
-    Screens --> DB
-    Screens --> AuthSvc
-    Screens --> Realtime
-    Screens --> Storage
-    Screens --> RPC
-    Screens --> Maps
-    AuthSvc <--> OAuth
-    Web -->|deep link locjobs://| JobDetail
-```
+    %% ================= 4. APPLY / SEEKER =================
+    subgraph Apply["Apply Flow (Seeker)"]
+        AP["Apply modal + message"]
+        APD["application: pending<br/>notification to poster"]
+        APC{"Poster decision"}
+        ACC["application: accepted<br/>chat channel opens"]
+        REJ["application: rejected<br/>+ reject_reason"]
+        DONE2{"Uploader marks complete?"}
+        AP --> APD
+        APD --> APC
+        APC -->|Accept| ACC
+        APC -->|Reject| REJ
+        ACC --> DONE2
+        DONE2 -->|"Yes"| COMP
+    end
 
-## 2. Launch, Onboarding & Auth Flow
+    %% ================= 5. CHAT =================
+    subgraph Chat["Real-time Chat"]
+        CL["Chat tab<br/>conversation list · unread badge"]
+        CH["Chat detail<br/>/chat/[jobId]/[otherUserId]"]
+        CHL["Load last 30 msgs<br/>+ subscribe channel"]
+        SEND["Send text / image<br/>reply · read receipts"]
+        PAG{"Older messages?"}
+        CL --> CH
+        CH --> CHL
+        CH --> SEND
+        SEND --> DONE2
+        PAG -->|"Yes"| CHL
+        PAG -->|"No"| SEND
+    end
 
-```mermaid
-flowchart TD
-    A["App Launch<br/>Splash Screen"] --> B{"Fonts loaded &<br/>onboarding status read?"}
-    B -- "No" --> B
-    B -- "Yes" --> C{"Onboarding complete?<br/>(AsyncStorage)"}
-    C -- "No" --> D["Onboarding Screen"]
-    D -- "Done" --> E["AuthProvider loads session"]
-    C -- "Yes" --> E
-    E --> F{"Session exists?"}
-    F -- "No" --> G["Login"]
-    G --> H{"Auth method"}
-    H -- "Email/Password" --> I["supabase.auth.signInWithPassword"]
-    H -- "Register" --> J["signUp with display_name<br/>options.data"]
-    H -- "Forgot password" --> K["Email recovery link"]
-    H -- "Google OAuth" --> L["signInWithOAuth<br/>iOS: exp:// · Android: locjobs://"]
-    J --> M["Verify email screen"]
-    M --> I
-    K --> N["reset-password screen<br/>(PASSWORD_RECOVERY event)"]
-    I --> E
-    L --> O["Callback captures tokens"]
-    O --> E
-    F -- "Yes" --> P["Main Tab Navigator"]
-```
+    %% ================= 6. POSTER FLOW =================
+    subgraph Poster["Post & Manage (Poster)"]
+        PJ["Post job form"]
+        PJE["Fields: title · desc · work type · category<br/>employment type · region/city · location<br/>currency + price · vacancies · photos"]
+        PJB["Validate → post_job RPC<br/>job status: open"]
+        MJ["My Jobs dashboard<br/>(Posted / Accepted tabs)"]
+        ED{"Edit / Delete?"}
+        EDI["Edit job<br/>(currency changeable)"]
+        DEL["Soft delete job"]
+        APL["Applicant list<br/>accept / reject · view CV"]
+        PJ --> PJE
+        PJE --> PJB
+        PJB --> MJ
+        MJ --> ED
+        ED -->|Edit| EDI
+        ED -->|Delete| DEL
+        ED -->|Applicants| APL
+        APL --> APC
+        MJ --> DONE2
+    end
 
-## 3. Main Tabs Structure
+    %% ================= 7. COMPLETION & REVIEWS =================
+    subgraph Review["Completion & Reviews"]
+        COMP["job status: completed"]
+        RV["Both parties review each other<br/>(rating + comment)"]
+        VF{"Completed ≥ 3 jobs?"}
+        VB["Verified badge auto-granted"]
+        COMP --> RV
+        RV --> VF
+        VF -->|"Yes"| VB
+        VF -->|"No"| END
+        VB --> END
+    end
 
-```mermaid
-flowchart LR
-    Tabs["Tab Navigator<br/>(NativeTabs + FilterCountProvider)"]
+    %% ================= 8. PROFILE & SETTINGS =================
+    subgraph Profile["Profile & Settings"]
+        PR["Profile tab"]
+        PI["Info: avatar · name · phone · email<br/>city · region · rating · CV"]
+        EP["Edit Profile<br/>avatar · bio · region/city · CV upload"]
+        SET["Settings<br/>language EN/MY · dark mode<br/>help & support · onboarding"]
+        DO{"Delete account?"}
+        DA["delete_user_account RPC<br/>+ sign out"]
+        LLS["Relabel whole UI<br/>(i18n en/my)"]
+        PR --> PI
+        PR --> EP
+        PR --> SET
+        PR --> DO
+        DO -->|"Yes"| DA
+        SET -->|"language switch"| LLS
+    end
 
-    Tabs --> Nearby["Nearby<br/>(index.tsx)"]
-    Tabs --> Explore["Explore"]
-    Tabs --> MyJobs["My Jobs"]
-    Tabs --> Chat["Chat"]
-    Tabs --> Profile["Profile"]
+    %% ================= 9. SHARING / LANDING =================
+    subgraph Share["Sharing & Landing Page"]
+        LP["Netlify link<br/>?id={jobId}"]
+        LPW["landing/index.html<br/>fetch job via Supabase REST"]
+        LPR["Render card (title · price/salary<br/>in job currency · photos · uploader)"]
+        OI{"User has app?"}
+        DL["locjobs://job/{id} deep link"]
+        DB["Download App (Expo build)"]
+        LP --> LPW
+        LPW --> LPR
+        LPR --> OI
+        OI -->|"Yes"| DL
+        OI -->|"No"| DB
+        DL --> JD
+    end
 
-    Nearby --> NearbyMap["MapView<br/>+ markers + bottom sheet"]
-    Nearby --> NearbyList["Job list 25%–90%<br/>radius + filter chips"]
-    Explore --> ExploreList["Job list<br/>full filter + search"]
-    MyJobs --> MyJobsList["Posted jobs<br/>edit / delete / applicants"]
-    Chat --> ChatList["Conversations<br/>unread badge"]
-    Profile --> ProfileCards["Profile card, stats,<br/>accordions, settings"]
-```
+    END["App keeps running —<br/>realtime updates everywhere"]
 
-## 4. Job Lifecycle — Seeker & Poster
-
-```mermaid
-flowchart TD
-    P1["Poster creates job<br/>(gig price or salary,<br/>per-job currency)"] --> P2["Job status: open"]
-    P2 --> P3["Job appears in<br/>Nearby + Explore"]
-
-    S1["Seeker sees job"] --> S2{"Interested?"}
-    S2 -- "No" --> S3["Continue browsing"]
-    S2 -- "Yes, save" --> S4["saved_jobs insert<br/>(heart toggle)"]
-    S2 -- "Yes, apply" --> S5["Apply modal with message"]
-    S5 --> S6["application status: pending<br/>+ notification to poster"]
-
-    P3 --> P7["Poster sees applicants"]
-    P7 --> P8{"Vacancies?"}
-    P8 -- "Accept" --> P9["application: accepted<br/>notification + chat channel"]
-    P8 -- "Reject" --> P10["application: rejected<br/>+ reject_reason"]
-    P9 --> P11{"All vacancies filled?"}
-    P11 -- "Yes" --> P12["job status: full"]
-    P11 -- "No" --> P7
-
-    P9 --> C1["Chat between poster & seeker<br/>(chat-messages-{jobId})"]
-    P12 --> P13["Poster marks job completed"]
-    P13 --> P14["job status: completed"]
-    P14 --> P15["Both can review each other<br/>(reviews table)"]
-    P14 --> P16{"Completed ≥ 3 jobs?"}
-    P16 -- "Yes" --> P17["Verified badge auto-granted"]
-```
-
-## 5. Real-time Chat Flow
-
-```mermaid
-flowchart TD
-    A["Open conversation"] --> B["Fetch last 30 messages"]
-    B --> C["Subscribe to channel<br/>chat-messages-{jobId}"]
-    C --> D["Real-time INSERT/UPDATE events"]
-    D --> E["Append message to list<br/>+ mark read_at"]
-    A --> F{"Need older messages?"}
-    F -- "Yes" --> G["Load earlier page (30)"]
-    F -- "No" --> H["Send message<br/>(images, reply_to)"]
-    H --> I["Insert into DB"]
-    I --> J["Update conversation list<br/>(deferred via InteractionManager)"]
-    J --> K["Update unread badge<br/>(FilterCountContext)"]
-```
-
-## 6. CV / Resume Upload & Viewing
-
-```mermaid
-flowchart TD
-    U["User opens Edit Profile"] --> P["Tap Upload CV<br/>(expo-document-picker, .pdf only)"]
-    P --> V{"File valid?"}
-    V -- "No" --> P
-    V -- "Yes" --> Up["Upload PDF to storage<br/>bucket: cvs/{userId}/cv.pdf"]
-    Up --> Save["Save cv_url + cv_name<br/>on users row"]
-    Save --> Pub["CV visible on:<br/>own profile · public profile<br/>· applicant list (View CV button)"]
-    Pub --> Open["Viewer taps View CV"]
-    Open --> Link["Linking.openURL(public URL)"]
-    Link --> Browser["PDF opens in browser"]
-```
-
-## 7. Job Sharing & Landing Page
-
-```mermaid
-flowchart LR
-    A["User shares job in app"] --> B["Link:<br/>https://locjobs-landing.netlify.app/?id={jobId}"]
-    B --> C["landing/index.html<br/>fetches job via Supabase REST"]
-    C --> D["Render job card<br/>+ posted-by + photos"]
-    D --> E{"User has app?"}
-    E -- "Yes" --> F["Open in App →<br/>locjobs://job/{id} deep link"]
-    E -- "No / silent fail" --> G["Download App button<br/>(Expo APK build)"]
-```
-
-## 8. Data Flow — Real-time Sync
-
-```mermaid
-sequenceDiagram
-    participant App as React Native App
-    participant SB as Supabase
-    participant DB as PostgreSQL
-
-    App->>SB: Subscribe jobs channel (DELETE/UPDATE)
-    App->>SB: Subscribe chat channel chat-messages-{jobId}
-    App->>SB: Subscribe notifications channel (INSERT/UPDATE)
-    Note over SB,DB: WAL events propagate to subscribed clients
-    DB-->>SB: change event
-    SB-->>App: payload
-    App->>App: Update local state (jobs list, messages, badge counts)
-```
+    F --> T1
+    F --> T2
+    F --> MJ
+    F --> CL
+    F --> PR
+    APPLY -->|"Yes"| AP
+    POSTER -->|"Yes"| MJ
+    DA -->|"sign out"| E
+    LLS --> PR
+    DB --> F
