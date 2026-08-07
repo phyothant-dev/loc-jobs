@@ -298,7 +298,9 @@ classDiagram
 
 ---
 
-## 4. Sequence Diagram — Application Lifecycle
+## 4. Sequence Diagram — Full App Flow
+
+The full app lifecycle in five phases: onboarding/auth, posting, browsing/applying, realtime chat, and completion/reviews/badge.
 
 ```mermaid
 sequenceDiagram
@@ -306,25 +308,94 @@ sequenceDiagram
     actor Poster
     participant App as RN App
     participant SB as Supabase
+    participant G as Google OAuth
 
-    Seeker->>App: open job detail
-    App->>App: determine role (seeker / uploader)
-    Seeker->>App: tap Apply + message
+    rect rgb(235,240,250)
+    Note over Seeker,App: Phase 1 — Onboarding & Auth
+    Seeker->>App: launch app
+    App->>App: load fonts + theme, show splash
+    App->>App: onboarding screens (language select)
+    App->>SB: supabase.auth.getSession()
+    alt no session
+        Seeker->>App: register / login (email or Google)
+        App->>G: signInWithOAuth (Google)
+        G-->>App: callback (exp:// or locjobs:// scheme)
+        App->>SB: supabase.auth.setSession(session)
+        SB->>SB: trigger handle_new_user → insert into users
+        SB-->>App: user (role, display_name, verified)
+    else session exists
+        App->>SB: getUser()
+        SB-->>App: session user
+    end
+    end
+
+    rect rgb(235,245,235)
+    Note over Poster,App: Phase 2 — Posting a Job
+    Poster->>App: open Post Job form
+    Poster->>App: fill title, description, category, work_type
+    Poster->>App: set price + currency (picker, default MMK)
+    Poster->>App: set city/region + map pin (lat/lng)
+    App->>App: validate + formatPrice() live preview
+    App->>SB: rpc post_job(p_currency, price, ...)
+    SB-->>Poster: job row (status: open, vacancies, image_urls)
+    SB-->>Poster: realtime event on jobs channel
+    end
+
+    rect rgb(250,245,235)
+    Note over Seeker,App: Phase 3 — Browse, Save, Share, Apply
+    Seeker->>App: open Nearby / Explore
+    App->>SB: query jobs (filters: radius, category, price range, currency)
+    App->>SB: batch fetch uploader verified badges
+    SB-->>App: job list (price formatted in job currency)
+    Seeker->>App: tap Save toggle
+    App->>SB: saved_jobs upsert
+    Seeker->>App: tap Share
+    App->>SB: landing page fetches job via REST
+    SB-->>App: title + price/salary in job currency
+    App->>App: deep link locjobs://job/{id} or App Store
+    Seeker->>App: open job detail, tap Apply + message
     App->>SB: insert application (status: pending)
     SB-->>Poster: realtime notification (new application)
     Poster->>App: open applicants (My Jobs)
-    App->>SB: update application status: accepted
-    SB-->>Seeker: notification (accepted)
-    SB-->>App: chat channel opens (chat-messages-{jobId})
-    Seeker->>App: send message
+    App->>SB: update application status
+    alt accepted
+        SB-->>Seeker: notification (application accepted)
+        SB-->>App: chat channel opens (chat-messages-{jobId})
+    else rejected
+        SB-->>Seeker: notification (rejected + reject_reason)
+    end
+    end
+
+    rect rgb(240,240,250)
+    Note over Seeker,Poster: Phase 4 — Realtime Chat
+    Seeker->>App: open chat detail
+    App->>SB: subscribe chat-messages-{jobId}
+    App->>SB: load latest 30 messages
+    App->>SB: mark unread as read (read_at)
+    SB-->>App: messages (Seen shown on read items)
+    Seeker->>App: send message (text or image)
     App->>SB: insert message
     SB-->>Poster: realtime message event
+    Poster->>App: long-press message → Reply
+    App->>SB: insert reply (reply_to_id)
+    SB-->>Seeker: realtime reply event
+    Seeker->>App: scroll up (load earlier)
+    App->>SB: paginated query (next 30, offset)
+    SB-->>App: older messages
+    end
+
+    rect rgb(250,240,240)
+    Note over Poster,SB: Phase 5 — Complete, Review, Verified Badge
     Poster->>App: mark job complete
-    App->>SB: update jobs.status: completed
-    Seeker->>App: submit review (rating + comment)
+    App->>SB: update jobs.status = completed
+    SB-->>Seeker: notification (job completed)
+    Seeker->>App: submit review (rating 1–5 + comment)
     Poster->>App: submit review
     App->>SB: insert reviews (both sides)
-    Note over App: if ≥ 3 completed jobs → grant verified badge
+    Note over SB: trigger checks: count completed jobs ≥ 3
+    SB-->>App: realtime users.update (verified = true)
+    App->>App: show Verified badge in profile + cards
+    end
 ```
 
 ---
@@ -335,23 +406,23 @@ Mermaid has no native use-case diagram, so this uses a flowchart with actors `( 
 
 ```mermaid
 flowchart LR
-    A1(["Seeker"]) --> U1(("Browse / search jobs"))
-    A1 --> U2(("Apply for a job"))
-    A1 --> U3(("Save a job"))
-    A1 --> U4(("Chat with poster"))
-    A1 --> U5(("Review poster"))
-    A2(["Poster"]) --> U6(("Post a job"))
-    A2 --> U7(("Manage applicants"))
-    A2 --> U8(("Accept / reject applications"))
-    A2 --> U9(("Mark job complete"))
-    A2 --> U10(("Review seeker"))
-    A3(["Any user"]) --> U11(("Register / login"))
-    A3 --> U12(("Manage profile + CV"))
-    A3 --> U13(("Receive notifications"))
-    A3 --> U14(("Report a job"))
-    A3 --> U15(("Share a job"))
+    A1(["👤 Seeker"]) --> U1(("🔍 Browse / search jobs"))
+    A1 --> U2(("📝 Apply for a job"))
+    A1 --> U3(("⭐ Save a job"))
+    A1 --> U4(("💬 Chat with poster"))
+    A1 --> U5(("🗣️ Review poster"))
+    A2(["👤 Poster"]) --> U6(("📦 Post a job"))
+    A2 --> U7(("📋 Manage applicants"))
+    A2 --> U8(("✅ Accept / reject applications"))
+    A2 --> U9(("🏁 Mark job complete"))
+    A2 --> U10(("🗣️ Review seeker"))
+    A3(["👤 Any user"]) --> U11(("🔑 Register / login"))
+    A3 --> U12(("🪪 Manage profile + CV"))
+    A3 --> U13(("🔔 Receive notifications"))
+    A3 --> U14(("🚩 Report a job"))
+    A3 --> U15(("🔗 Share a job"))
 
-    subgraph SYSTEM["LocJobs App (system boundary)"]
+    subgraph SYSTEM["📱 LocJobs App (system boundary)"]
         U1
         U2
         U3
