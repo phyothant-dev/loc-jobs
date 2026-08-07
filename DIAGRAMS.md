@@ -298,169 +298,261 @@ classDiagram
 
 ---
 
-## 4. Sequence Diagram — Full App Flow
+## 4. Sequence Diagrams — Full App Flow (per phase)
 
-The full app lifecycle in five phases: onboarding/auth, posting, browsing/applying, realtime chat, and completion/reviews/badge.
+The RN app is split into its real layers — **screens**, **App Core** (providers · router · i18n) and the **Supabase Client** (REST · RPC · Realtime) — with every screen as its own lifeline. Five phases, one diagram each, so each stays readable.
+
+### 4.1 Phase 1 — Onboarding & Auth
 
 ```mermaid
 sequenceDiagram
     actor Seeker
-    actor Poster
-    participant UI as UI Screens<br/>(tabs · detail · modals)
+    participant OB as Onboarding<br/>(language select)
+    participant AU as Auth Screens<br/>(login · register · verify)
     participant APP as App Core<br/>(Providers · Router · i18n)
     participant API as Supabase Client<br/>(REST · RPC · Realtime)
     participant SB as Supabase Backend<br/>(Postgres · triggers · auth)
     participant G as Google OAuth
 
-    rect rgb(235,240,250)
-    Note over Seeker,API: Phase 1 — Onboarding & Auth
-    Seeker->>UI: launch app (entry)
-    UI->>APP: boot _layout
+    Seeker->>OB: launch app (entry)
+    OB->>APP: boot _layout
     APP->>APP: ThemeProvider loads theme
-    APP->>APP: LocaleProvider reads stored locale
+    APP->>APP: LocaleProvider reads stored locale (en/my)
+    APP->>APP: NetworkBanner subscribes NetInfo (offline detection)
     APP->>APP: AuthProvider.init() → getSession()
     APP->>API: supabase.auth.getSession()
     API->>SB: GET /auth/v1/session
     SB-->>API: session (nil or user)
     API-->>APP: session result
     alt no session
-        APP->>UI: navigate to onboarding (language select)
-        Seeker->>UI: pick language
-        UI->>APP: LocaleProvider.setLocale() → t() relabels all UI
-        Seeker->>UI: register / login screen
-        UI->>APP: AuthProvider.signUp(email, pass, display_name)
-        APP->>API: supabase.auth.signUp({ options.data: { display_name } })
+        APP->>OB: show onboarding (language select)
+        Seeker->>OB: pick language
+        OB->>APP: LocaleProvider.setLocale(locale)
+        APP->>OB: t() relabels every screen (en ↔ my)
+        Seeker->>AU: open register / login
+        AU->>APP: AuthProvider.signUp(email, pass, display_name)
+        APP->>API: supabase.auth.signUp({ data: { display_name } })
         API->>SB: POST /auth/v1/signup
-        SB->>SB: trigger handle_new_user → insert into users
-        SB-->>API: session / verify-email
+        SB->>SB: trigger handle_new_user → insert public.users
+        SB-->>API: verify-email / session
         API-->>APP: auth result
-        alt Google OAuth
-            Seeker->>UI: sign in with Google
-            UI->>APP: AuthProvider.signInWithGoogle()
-            APP->>API: supabase.auth.signInWithOAuth(provider: google)
-            API->>G: OAuth flow (WebBrowser.openAuthSessionAsync)
-            G-->>API: callback (exp:// or locjobs:// + Linking fallback)
+        alt email verification pending
+            APP->>AU: show verify-email screen
+        else Google OAuth
+            Seeker->>AU: sign in with Google
+            AU->>APP: AuthProvider.signInWithGoogle()
+            APP->>API: supabase.auth.signInWithOAuth(google)
+            API->>G: WebBrowser.openAuthSessionAsync
+            G-->>API: callback (exp:// iOS · locjobs:// Android)
+            API-->>APP: Linking listener fallback
             APP->>API: supabase.auth.setSession(session)
             API->>SB: POST /auth/v1/token
             SB-->>API: session user
         end
+        APP->>API: upsert user (display_name → public.users)
     else session exists
         APP->>API: getUser()
         API->>SB: GET /auth/v1/user
         SB-->>API: user (role, verified, display_name)
         API-->>APP: user
     end
-    APP->>UI: navigate to Main Tab Navigator (5 tabs)
+    APP->>AU: navigate to Main Tab Navigator (5 tabs)
     APP->>API: subscribe realtime (notifications · chat unread)
-    end
+```
 
-    rect rgb(235,245,235)
-    Note over Poster,SB: Phase 2 — Posting a Job
-    Poster->>UI: Post Job screen
-    UI->>APP: manage edit/draft state
-    Poster->>UI: fill title, description, category, work_type
-    Poster->>UI: set price + currency (PickerModal, default MMK)
-    UI->>APP: formatPrice() live preview
-    Poster->>UI: set city/region + map pin (lat/lng)
-    Poster->>UI: submit
-    UI->>APP: PostJobScreen.submit(params)
+### 4.2 Phase 2 — Posting a Job
+
+```mermaid
+sequenceDiagram
+    actor Poster
+    participant PJ as Post Job Screen
+    participant MJ as My Jobs (manage)
+    participant APP as App Core<br/>(Providers · Router · i18n)
+    participant API as Supabase Client<br/>(REST · RPC · Realtime)
+    participant SB as Supabase Backend<br/>(Postgres · triggers · auth)
+
+    Poster->>PJ: open Post Job screen
+    PJ->>APP: router.push /post
+    Poster->>PJ: fill title, description
+    Poster->>PJ: pick category + work type (localized t() labels)
+    Poster->>PJ: set price + currency (PickerModal, default MMK)
+    PJ->>APP: formatPrice(price, currency) live preview
+    Poster->>PJ: set city/region + map pin (lat/lng)
+    Poster->>PJ: pick images (image_urls)
+    Poster->>PJ: tap submit
+    PJ->>APP: PostJobScreen.submit(params)
     APP->>API: rpc post_job(p_currency, price, ...)
     API->>SB: POST /rest/v1/rpc/post_job
     SB-->>API: job row (status: open, vacancies, image_urls)
     API-->>APP: job
+    APP->>MJ: show new job in My Jobs (edit / delete)
     APP->>API: subscribe jobs channel (UPDATE/DELETE)
-    APP->>UI: show job in My Jobs
     SB-->>API: realtime event (job created)
     API-->>APP: payload
-    APP->>UI: update Nearby / Explore lists live
-    end
+    APP->>MJ: My Jobs list updates live
+```
 
-    rect rgb(250,245,235)
-    Note over Seeker,SB: Phase 3 — Browse, Save, Share, Apply
-    Seeker->>UI: open Nearby / Explore tab
-    UI->>APP: loadJobs(filters: radius, category, price range, currency)
-    APP->>API: query jobs (filters + search)
+### 4.3 Phase 3 — Browse, Save, Share, Apply
+
+```mermaid
+sequenceDiagram
+    actor Seeker
+    actor Poster
+    participant NT as Nearby Tab<br/>(map + bottom sheet)
+    participant EX as Explore Tab<br/>(search + filters)
+    participant JD as Job Detail<br/>(/job/[id])
+    participant MJ as My Jobs<br/>(applicants)
+    participant NF as Notifications
+    participant CT as Chat List (tab)
+    participant APP as App Core<br/>(Providers · Router · i18n)
+    participant API as Supabase Client<br/>(REST · RPC · Realtime)
+    participant SB as Supabase Backend<br/>(Postgres · triggers · auth)
+
+    Seeker->>NT: Nearby tab (map + markers)
+    NT->>APP: loadJobs (GPS Accuracy.High, 20s timeout)
+    APP->>API: query nearby jobs (radius)
     API->>SB: GET /rest/v1/jobs
     SB-->>API: job rows
     APP->>API: batch fetch uploader verified badges
     API->>SB: GET /rest/v1/users?id=in.(...)
     SB-->>API: verified map
-    APP->>UI: render cards (formatPrice in job currency)
-    APP->>APP: FilterCountProvider.setCount(tab, count) → badge
-    Seeker->>UI: tap Save toggle
-    UI->>APP: toggle save
+    APP->>NT: render markers + cards (formatPrice in job currency)
+    Seeker->>NT: tap marker callout
+    NT->>JD: router.push /job/{id}
+    Seeker->>EX: Explore tab
+    EX->>APP: setCount(explore) on every filter change → badge
+    EX->>APP: loadJobs(filters: city, region, work type, category, price, currency, search)
+    APP->>API: query jobs with filters
+    API->>SB: GET /rest/v1/jobs
+    SB-->>API: rows
+    APP->>EX: render list + FilterCount badge
+    Seeker->>JD: tap Save
+    JD->>APP: toggle save
     APP->>API: saved_jobs upsert
     API->>SB: POST /rest/v1/saved_jobs
-    Seeker->>UI: tap Share
-    UI->>APP: handleShare()
+    Seeker->>JD: tap Share
+    JD->>APP: handleShare()
     APP->>API: landing page fetch job via REST
     API->>SB: GET (landing Netlify → Supabase REST)
     SB-->>API: title + price/salary in job currency
-    APP->>UI: share sheet / deep link locjobs://job/{id}
-    Seeker->>UI: open job detail → Apply + message
-    UI->>APP: JobDetailScreen.apply()
+    APP->>JD: share sheet / deep link locjobs://job/{id}
+    Seeker->>JD: tap Apply + message
+    JD->>APP: JobDetailScreen.apply()
     APP->>API: insert application (status: pending)
     API->>SB: POST /rest/v1/applications
-    SB-->>Poster: realtime notification (new application)
-    Poster->>UI: My Jobs → applicant list
-    UI->>APP: accept / reject applicant
-    APP->>API: update application status
+    SB-->>NF: realtime notification (new application)
+    Poster->>NF: tap notification
+    NF->>MJ: navigate to My Jobs → applicant list
+    Poster->>MJ: open applicant list
+    MJ->>APP: load applications for job
+    APP->>API: query applications
+    API->>SB: GET /rest/v1/applications
+    SB-->>API: rows
+    Poster->>MJ: Accept / Reject
+    MJ->>APP: update application status
+    APP->>API: PATCH application
     API->>SB: PATCH /rest/v1/applications
     alt accepted
-        SB-->>Seeker: notification (application accepted)
-        APP->>API: subscribe chat-messages-{jobId}
-        APP->>UI: chat opens (Chat tab)
+        SB-->>NF: notification (accepted) → Seeker
+        APP->>APP: subscribe chat-messages-{jobId}
+        APP->>CT: chat opens (Chat tab)
     else rejected
         API->>SB: PATCH (rejected + reject_reason)
-        SB-->>Seeker: notification (rejected + reason)
+        SB-->>NF: notification (rejected + reason)
     end
-    end
+```
 
-    rect rgb(240,240,250)
-    Note over Seeker,SB: Phase 4 — Realtime Chat
-    Seeker->>UI: open chat detail
-    UI->>APP: ChatScreen.loadPage()
-    APP->>API: load latest 30 (2 parallel equality queries)
+### 4.4 Phase 4 — Realtime Chat
+
+```mermaid
+sequenceDiagram
+    actor Seeker
+    actor Poster
+    participant CT as Chat List (tab)
+    participant CD as Chat Detail<br/>(/chat/[jobId])
+    participant APP as App Core<br/>(Providers · Router · i18n)
+    participant API as Supabase Client<br/>(REST · RPC · Realtime)
+    participant SB as Supabase Backend<br/>(Postgres · triggers · auth)
+
+    Seeker->>CT: Chat tab
+    CT->>APP: fetchAll (300 most recent)
+    APP->>API: query conversations
+    API->>SB: GET /rest/v1/messages
+    SB-->>API: rows
+    APP->>CT: conversations + unread count (badge capped at 9+)
+    Seeker->>CT: tap conversation
+    CT->>CD: router.push /chat/{jobId}
+    CD->>APP: subscribe chat-messages-{jobId}
+    CD->>APP: loadPage (latest 30, 2 parallel equality queries)
+    APP->>API: GET /rest/v1/messages
     API->>SB: GET /rest/v1/messages
     SB-->>API: 30 messages
-    APP->>API: mark incoming as read (read_at)
+    CD->>APP: mark incoming as read
+    APP->>API: PATCH read_at
     API->>SB: PATCH /rest/v1/messages
     SB-->>API: ok
-    APP->>UI: render bubbles + date separators + "Seen"
-    Seeker->>UI: send message (text / image)
-    UI->>APP: ChatScreen.sendMessage()
+    APP->>CD: render bubbles + date separators + "Seen"
+    Seeker->>CD: send message (text / image)
+    CD->>APP: ChatScreen.sendMessage()
     APP->>API: insert message
     API->>SB: POST /rest/v1/messages
     SB-->>Poster: realtime message event
     API-->>APP: confirmation
-    Poster->>UI: long-press message → Reply
-    UI->>APP: ChatScreen.sendMessage(reply_to_id)
+    CD->>CD: clear input only on success (sendError → retry)
+    Poster->>CD: long-press message → Reply
+    CD->>APP: sendMessage(reply_to_id)
     API->>SB: POST /rest/v1/messages (reply_to_id)
     SB-->>Seeker: realtime reply event
-    Seeker->>UI: scroll up (load earlier)
-    UI->>APP: loadPage(offset)
-    API->>SB: GET /rest/v1/messages (next 30)
+    APP->>CD: fetchReplyDetails → reply preview bar
+    Seeker->>CD: scroll up → load earlier
+    CD->>APP: loadPage(offset)
+    APP->>API: GET next 30 (offset)
+    API->>SB: GET /rest/v1/messages
     SB-->>API: older messages
-    end
+    CD->>CD: connection indicator (Reconnecting… on drop)
+```
 
-    rect rgb(250,240,240)
-    Note over Poster,SB: Phase 5 — Complete, Review, Verified Badge
-    Poster->>UI: mark job complete
-    UI->>APP: MyJobs.complete()
+### 4.5 Phase 5 — Complete, Review, Verified Badge
+
+```mermaid
+sequenceDiagram
+    actor Seeker
+    actor Poster
+    participant MJ as My Jobs (manage)
+    participant JD as Job Detail<br/>(/job/[id])
+    participant PR as Profile
+    participant APP as App Core<br/>(Providers · Router · i18n)
+    participant API as Supabase Client<br/>(REST · RPC · Realtime)
+    participant SB as Supabase Backend<br/>(Postgres · triggers · auth)
+
+    Poster->>MJ: mark job complete
+    MJ->>APP: complete()
     APP->>API: update jobs.status = completed
     API->>SB: PATCH /rest/v1/jobs
     SB-->>Seeker: notification (job completed)
-    Seeker->>UI: submit review (rating 1–5 + comment)
-    UI->>APP: openReviewModal()
-    Poster->>UI: submit review
-    APP->>API: insert reviews (both sides)
+    Seeker->>JD: open job detail (leave review)
+    JD->>APP: openReviewModal()
+    Seeker->>JD: rating 1–5 + comment
+    JD->>APP: submit review
+    APP->>API: insert review
+    API->>SB: POST /rest/v1/reviews
+    SB-->>API: ok
+    Poster->>MJ: open applicants → review seeker
+    MJ->>APP: submit review
+    APP->>API: insert review
     API->>SB: POST /rest/v1/reviews
     SB-->>API: ok
     Note over SB: trigger: count completed jobs ≥ 3 → verified = true
     SB-->>API: realtime users.update (verified = true)
     API-->>APP: payload
-    APP->>UI: show Verified badge (profile + cards)
-    end
+    APP->>PR: show Verified badge (profile header)
+    APP->>JD: Verified badge on uploader info
+    Seeker->>PR: edit profile / upload CV (cv_url)
+    PR->>APP: save profile changes
+    APP->>API: update users (cv_url, cv_name, bio)
+    API->>SB: PATCH /rest/v1/users
+    SB-->>API: ok
+    PR->>PR: render updated profile + review summary
 ```
 
 ---
