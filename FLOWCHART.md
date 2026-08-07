@@ -1,170 +1,265 @@
-# LocJobs — Full App Flowchart
+# LocJobs — Full App Flow (Markdown)
 
-A single end-to-end flowchart covering the entire LocJobs app, from launch through auth, browsing, applying, chatting, reviewing, posting, and sharing.
+A complete end-to-end walkthrough of the app, written in plain Markdown (no diagrams). Read it top-to-bottom as a single user journey, with branch points spelled out.
 
-```mermaid
-flowchart TB
+---
 
-    %% ================= 1. LAUNCH & AUTH =================
-    subgraph Auth["Launch & Auth"]
-        A["App Launch<br/>(splash, load fonts)"]
-        B{"Onboarding complete?<br/>(AsyncStorage)"}
-        C["Onboarding screens<br/>(language select)"]
-        D{"Session restored?<br/>(AuthProvider + supabase.auth)"}
-        E["Login / Register<br/>Forgot password · Google OAuth"]
-        F["Main Tab Navigator<br/>(5 tabs)"]
-        A --> B
-        B -->|No| C
-        C -->|Done| D
-        B -->|Yes| D
-        D -->|No| E
-        E -->|"Credentials / OAuth callback"| D
-        D -->|Yes| F
-    end
+## 0. End-to-End Overview
 
-    %% ================= 2. BROWSE =================
-    subgraph Browse["Browsing (Nearby · Explore)"]
-        T1["Nearby tab<br/>(index.tsx)"]
-        T2["Explore tab<br/>(explore.tsx)"]
-        M["MapView + markers<br/>bottom sheet (25–90%)"]
-        L["Radius + filter chips<br/>category · work type"]
-        S["Search bar"]
-        FL["Filters<br/>work type · employment type · region · city<br/>category · price min–max · currency"]
-        CR["Job cards<br/>title · location · price/salary<br/>work type · status · save"]
-        T1 --> M
-        T1 --> L
-        T2 --> S
-        T2 --> FL
-        L --> CR
-        FL --> CR
-        M -->|tap marker| JD
-        CR --> JD
-    end
+```
+Launch → Onboarding → Auth → Tab Navigator
+                                   │
+     ┌──────────────┬──────────────┼──────────────┬──────────────┐
+   Nearby         Explore       My Jobs       Chat          Profile
+   (browse)       (browse)      (post/manage) (messages)    (account)
+      │              │                              │              │
+      └──────┬───────┘                              │              │
+        Job Detail (/job/[id])                       │              │
+             │                                       │              │
+   ┌─────────┼───────────────┬───────────────┐       │              │
+ Save       Share         Apply (seeker)  Manage (poster)          │
+   │          │               │               │                     │
+   │          │          pending appl.   applicants list            │
+   │          │               │               │                     │
+   │          │          accept/reject    accept/reject             │
+   │          │               │               │                     │
+   │          │            Chat opens ◄────────┘                    │
+   │          │               │                                     │
+   │          │         job completed → reviews → verified badge    │
+   │          │                                                     │
+   └─ landing page → download app / deep link back to job ──────────┘
+```
 
-    %% ================= 3. JOB DETAIL =================
-    subgraph Detail["Job Detail (/job/[id])"]
-        JD["Job detail screen"]
-        JI["Info: title · category · work type<br/>employment type · region/city<br/>price + salary range (job currency)"]
-        IMG["Photo carousel"]
-        UP["Uploader card<br/>verified badge · rating · CV"]
-        JD --> JI
-        JD --> IMG
-        JD --> UP
-        JD --> SAVE{"Save job?"}
-        SAVE -->|"Yes / unsave"| SV["saved_jobs insert / delete<br/>bookmark toggles"]
-        JD --> SHARE{"Share?"}
-        SHARE -->|"Yes"| LP
-        JD --> APPLY{"Applicant?"}
-        JD --> POSTER{"Uploader?"}
-    end
+---
 
-    %% ================= 4. APPLY / SEEKER =================
-    subgraph Apply["Apply Flow (Seeker)"]
-        AP["Apply modal + message"]
-        APD["application: pending<br/>notification to poster"]
-        APC{"Poster decision"}
-        ACC["application: accepted<br/>chat channel opens"]
-        REJ["application: rejected<br/>+ reject_reason"]
-        DONE2{"Uploader marks complete?"}
-        AP --> APD
-        APD --> APC
-        APC -->|Accept| ACC
-        APC -->|Reject| REJ
-        ACC --> DONE2
-        DONE2 -->|"Yes"| COMP
-    end
+## 1. Launch & Auth
 
-    %% ================= 5. CHAT =================
-    subgraph Chat["Real-time Chat"]
-        CL["Chat tab<br/>conversation list · unread badge"]
-        CH["Chat detail<br/>/chat/[jobId]/[otherUserId]"]
-        CHL["Load last 30 msgs<br/>+ subscribe channel"]
-        SEND["Send text / image<br/>reply · read receipts"]
-        PAG{"Older messages?"}
-        CL --> CH
-        CH --> CHL
-        CH --> SEND
-        SEND --> DONE2
-        PAG -->|"Yes"| CHL
-        PAG -->|"No"| SEND
-    end
+| Step | Action | Detail |
+|------|--------|--------|
+| 1.1 | **App Launch** | Splash screen; load fonts (Expo), theme, and locale (`LocaleProvider` EN + MY). |
+| 1.2 | **Onboarding check** | Read onboarding-complete flag from `AsyncStorage`. |
+| 1.3 | **Onboarding** | If not complete → show onboarding screens (language select). On "Done", mark complete. |
+| 1.4 | **Session restore** | `AuthProvider` restores session via `supabase.auth`. |
+| 1.5 | **Decision** | **No session?** → Login screen. **Session?** → Main Tab Navigator (skip auth). |
 
-    %% ================= 6. POSTER FLOW =================
-    subgraph Poster["Post & Manage (Poster)"]
-        PJ["Post job form"]
-        PJE["Fields: title · desc · work type · category<br/>employment type · region/city · location<br/>currency + price · vacancies · photos"]
-        PJB["Validate → post_job RPC<br/>job status: open"]
-        MJ["My Jobs dashboard<br/>(Posted / Accepted tabs)"]
-        ED{"Edit / Delete?"}
-        EDI["Edit job<br/>(currency changeable)"]
-        DEL["Soft delete job"]
-        APL["Applicant list<br/>accept / reject · view CV"]
-        PJ --> PJE
-        PJE --> PJB
-        PJB --> MJ
-        MJ --> ED
-        ED -->|Edit| EDI
-        ED -->|Delete| DEL
-        ED -->|Applicants| APL
-        APL --> APC
-        MJ --> DONE2
-    end
+### 1.1 Auth options (no session)
 
-    %% ================= 7. COMPLETION & REVIEWS =================
-    subgraph Review["Completion & Reviews"]
-        COMP["job status: completed"]
-        RV["Both parties review each other<br/>(rating + comment)"]
-        VF{"Completed ≥ 3 jobs?"}
-        VB["Verified badge auto-granted"]
-        COMP --> RV
-        RV --> VF
-        VF -->|"Yes"| VB
-        VF -->|"No"| END
-        VB --> END
-    end
+| Option | Flow |
+|--------|------|
+| **Email/Password login** | `signInWithPassword` → back to session restore. |
+| **Register** | `signUp` with `options.data.display_name` (so display name persists through email verification) → verify-email screen → login. |
+| **Forgot password** | Email recovery link → `reset-password` screen on `PASSWORD_RECOVERY` event. |
+| **Google OAuth** | `signInWithOAuth` — iOS uses `exp://auth/callback`, Android dev build uses `locjobs://auth/callback`; callback captures tokens → session restore. |
 
-    %% ================= 8. PROFILE & SETTINGS =================
-    subgraph Profile["Profile & Settings"]
-        PR["Profile tab"]
-        PI["Info: avatar · name · phone · email<br/>city · region · rating · CV"]
-        EP["Edit Profile<br/>avatar · bio · region/city · CV upload"]
-        SET["Settings<br/>language EN/MY · dark mode<br/>help & support · onboarding"]
-        DO{"Delete account?"}
-        DA["delete_user_account RPC<br/>+ sign out"]
-        LLS["Relabel whole UI<br/>(i18n en/my)"]
-        PR --> PI
-        PR --> EP
-        PR --> SET
-        PR --> DO
-        DO -->|"Yes"| DA
-        SET -->|"language switch"| LLS
-    end
+---
 
-    %% ================= 9. SHARING / LANDING =================
-    subgraph Share["Sharing & Landing Page"]
-        LP["Netlify link<br/>?id={jobId}"]
-        LPW["landing/index.html<br/>fetch job via Supabase REST"]
-        LPR["Render card (title · price/salary<br/>in job currency · photos · uploader)"]
-        OI{"User has app?"}
-        DL["locjobs://job/{id} deep link"]
-        DB["Download App (Expo build)"]
-        LP --> LPW
-        LPW --> LPR
-        LPR --> OI
-        OI -->|"Yes"| DL
-        OI -->|"No"| DB
-        DL --> JD
-    end
+## 2. Main Tab Navigator (5 tabs)
 
-    END["App keeps running —<br/>realtime updates everywhere"]
+`FilterCountProvider` wraps the tab navigator and powers unread badges on Nearby, Explore, and Chat tabs.
 
-    F --> T1
-    F --> T2
-    F --> MJ
-    F --> CL
-    F --> PR
-    APPLY -->|"Yes"| AP
-    POSTER -->|"Yes"| MJ
-    DA -->|"sign out"| E
-    LLS --> PR
-    DB --> F
+| Tab | Screen | Purpose |
+|-----|--------|---------|
+| **Nearby** | `(tabs)/index.tsx` | Map + job list around current location |
+| **Explore** | `(tabs)/explore.tsx` | Full-filtered job search |
+| **My Jobs** | `(tabs)/my-jobs.tsx` | Jobs I posted + jobs I've been accepted into |
+| **Chat** | `(tabs)/chat.tsx` | Conversation list with unread badge (capped at "9+") |
+| **Profile** | `(tabs)/profile.tsx` | My account, stats, settings |
+
+---
+
+## 3. Browsing (Nearby & Explore)
+
+### 3.1 Nearby tab
+
+1. Request location (`Accuracy.High`, 20s timeout).
+2. Show `MapView` with job markers + a resizable bottom sheet (25%–90%) listing jobs.
+3. Filter chips for **category** and **work type** (updates the tab badge via `FilterCountContext`).
+4. Tapping a marker callout or a list card → **Job Detail**.
+5. Realtime subscription to `jobs` channel DELETE/UPDATE keeps the list current.
+6. On fetch error → retry button in the empty state.
+
+### 3.2 Explore tab
+
+1. Full search bar + filter panel:
+   - Search text
+   - Work type (all / gig / professional)
+   - Employment type (`employmentTypes.*` — full-time, part-time, freelance, contract, internship, seasonal)
+   - Region + City (localized pickers, ~15 regions, ~290 cities)
+   - Category (26+ localized categories)
+   - **Price range (min–max) + currency picker** (10 currencies; selecting a currency alone filters to that currency, `currencyFilterActive`)
+2. Price filter matching:
+   - `job.price` within [min, max] **OR**
+   - `salary_min` / `salary_max` endpoint within [min, max] **OR**
+   - salary interval overlaps [min, max]
+3. Active filters update the Explore tab badge; saved searches persist (incl. currency).
+4. Cards show title, location, price/salary, work type, posted-time label ("Posted 3h ago").
+5. Tap card → **Job Detail**. Realtime DELETE/UPDATE subscription keeps results fresh.
+
+---
+
+## 4. Job Detail (`/job/[id]`)
+
+| Section | Content |
+|---------|---------|
+| Info | Title, category, work type, employment type, region/city, **price + salary range formatted in the job's currency** (e.g. `100,000 Ks` or `500 $`), description |
+| Photos | Carousel of job images |
+| Uploader | Uploader card: avatar/name, verified badge, rating, CV access |
+| Applicants | (poster view) applicant list with Accept/Reject buttons below |
+
+### Decisions from Job Detail
+
+| Branch | Action |
+|--------|--------|
+| **Save?** | Heart/bookmark toggles `saved_jobs` insert/delete. |
+| **Share?** | Builds Netlify link `https://locjobs-landing.netlify.app/?id={jobId}` → landing page (see §10). |
+| **Applicant?** | → Apply flow (see §5). |
+| **Uploader?** | → Manage flow / My Jobs (see §6). |
+
+---
+
+## 5. Apply Flow (Seeker)
+
+```
+Apply modal + message
+        │
+        ▼
+application: pending  ──►  notification to poster
+        │
+        ▼
+   poster decision
+     /        \
+  accept       reject
+   │            │
+   │        reason + notification
+   ▼
+accepted + chat channel opens
+   │
+   ▼
+uploader marks complete?
+   │  No → job stays open, continue chatting
+   ▼  Yes → job completed (see §8)
+```
+
+- Application row is `pending` until the poster accepts or rejects (with a reject reason).
+- Acceptance notifies the seeker and opens the chat channel (`chat-messages-{jobId}`).
+
+---
+
+## 6. Post & Manage Flow (Poster)
+
+### 6.1 Post a job
+
+1. Tap the Post action (modal) from anywhere.
+2. Fill the form:
+   - Title, description
+   - Work type, category, employment type
+   - Region / city / location
+   - **Currency picker + price** (multi-currency: MMK, USD, EUR, GBP, SGD, THB, JPY, KRW, CNY, INR)
+   - Vacancies, photos
+3. Validate → `post_job` RPC with `p_currency` → job status `open`.
+4. Job appears in Nearby + Explore immediately.
+
+### 6.2 Manage from My Jobs
+
+```
+My Jobs dashboard (Posted / Accepted tabs)
+        │
+   Edit / Delete?
+   /        \
+Edit       Delete          Applicants
+  │          │                 │
+  │      soft delete          list
+  ▼          ▼                 │
+form      job removed      accept / reject
+prefilled  from listings    each applicant
+(currency                   (→ apply flow)
+changeable)
+```
+
+- Accepted jobs also appear here (Accepted tab) and can be marked **completed** by the uploader.
+
+---
+
+## 7. Real-time Chat
+
+1. **Chat tab** → conversation list (last 300 messages), unread count → badge.
+2. Open conversation → **Chat detail** (`/chat/[jobId]/[otherUserId]`):
+   - Load last 30 messages, subscribe to `chat-messages-{jobId}` channel.
+   - Real-time INSERT/UPDATE events append messages; date separators (Today/Yesterday).
+3. Send text or image; **reply** to a message (long-press → Reply); **read receipts** ("Seen"); "Reconnecting…" indicator when the channel drops.
+4. Load earlier pages (30 at a time) when scrolling up.
+5. Messages are marked read when the chat opens; tapping a conversation updates the unread badge.
+
+---
+
+## 8. Completion, Reviews & Verified Badge
+
+```
+job status: completed
+        │
+        ▼
+both parties review each other
+(rating + comment)
+        │
+        ▼
+completed ≥ 3 jobs?
+    /         \
+  Yes          No
+   │            │
+   ▼            ▼
+verified     (no badge)
+badge
+auto-granted
+```
+
+- Reviews are only meaningful on **completed** jobs.
+- After 3 completed jobs, the verified badge is auto-granted and shows on the uploader card and profile.
+
+---
+
+## 9. Profile & Settings
+
+| Action | Flow |
+|--------|------|
+| **View profile** | Avatar (image or initials), name, phone, email, city/region (localized), rating, CV, own jobs preview. |
+| **Edit profile** | Change avatar, bio, phone, **region/city pickers (localized options + reverse lookup)**. |
+| **CV upload** | PDF-only via `expo-document-picker` → storage `cvs/{userId}/cv.pdf` → save `cv_url` + `cv_name`. Visible on own profile, public profiles, and applicant list ("View CV" opens the PDF). |
+| **Settings** | Language EN/MY (relabels whole UI instantly), dark mode, Help & Support (FAQ accordion + Contact Us), onboarding replay. |
+| **Notifications** | Bell with real-time unread count; marked read only on tap. |
+| **Delete account** | Confirmation → `delete_user_account` RPC → sign out. |
+| **Reports** | Flag inappropriate jobs → admin handling. |
+
+---
+
+## 10. Sharing & Landing Page
+
+```
+share job → https://locjobs-landing.netlify.app/?id={jobId}
+                     │
+                     ▼
+        landing/index.html fetches job via Supabase REST
+                     │
+                     ▼
+        renders card: title · price/salary in job currency
+                     · photos · uploader
+                     │
+              user has app?
+              /          \
+            Yes           No
+             │             │
+             ▼             ▼
+   locjobs://job/{id}   Download App
+   deep link → job detail   (Expo build)
+```
+
+---
+
+## 11. Cross-cutting Flows
+
+| Concern | Flow |
+|---------|------|
+| **Realtime sync** | Jobs channel (DELETE/UPDATE) keeps lists fresh; chat channel streams messages; notifications channel updates badge counts. |
+| **i18n** | `LocaleProvider` + `t()` everywhere. DB stores English enum values; screens translate at display time; pickers reverse-lookup to save English keys. `en.ts` and `my.ts` MUST keep identical keys (typecheck enforces it). |
+| **Offline** | `NetworkBanner` (netinfo) slides in over any authenticated screen when the connection drops; auto-translated. |
+| **Unread badges** | `FilterCountContext` (stable `setCount`) tracks Nearby, Explore, Chat, and Notifications counts; badge hidden when 0. |
+| **Deep links** | `locjobs://` scheme configured in `app.json`; landing page deep links back into a specific job. |
