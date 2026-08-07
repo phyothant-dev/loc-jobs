@@ -105,52 +105,30 @@ This chapter presents the system design of LocJobs. The design is described with
 The flowchart below models the entire application flow, from app launch to the verified-badge flow. Shape legend: `[box]` = process/action, `{diamond}` = decision, `(["stadium"])` = start/end.
 
 ```mermaid
+%%{init: {"flowchart": {"curve": "linear"}}}%%
 flowchart TB
-    Start(["App Launch<br/>splash · fonts · theme"]) --> Onb{"Onboarding complete?"}
-    Onb -- No --> Intro["Onboarding screens<br/>language select"]
-    Intro -- Done --> LoadS["AuthProvider loads session"]
-    Onb -- Yes --> LoadS
-    LoadS --> Sess{"Session exists?"}
-    Sess -- No --> Auth["Login / Register /<br/>Forgot · Google OAuth"]
-    Auth -- success --> LoadS
-    Sess -- Yes --> Tabs["Main Tab Navigator<br/>(5 tabs)"]
-    Tabs --> N["Nearby"]
-    Tabs --> E["Explore"]
-    Tabs --> M["My Jobs"]
-    Tabs --> C["Chat"]
-    Tabs --> P["Profile"]
-    N --> N2["Map + bottom sheet<br/>radius + chips"]
-    E --> E2["Search + filters<br/>price · currency · region/city"]
-    N2 --> JD["JOB DETAIL<br/>/job/[id]"]
-    E2 --> JD
-    JD --> S1{"Save?"}
-    S1 -- Yes --> SV["saved_jobs toggle"]
-    SV --> JD
-    JD --> S2{"Share?"}
-    S2 -- Yes --> LP["Landing page<br/>(Netlify, fetch via REST)"]
-    LP --> LP2["Render card<br/>title · price/salary in job currency"]
-    LP2 --> LP3{"User has app?"}
-    LP3 -- Yes --> DL["Deep link locjobs://job/{id}"] --> JD
-    LP3 -- No --> DW["Download app<br/>(Expo build)"]
-    JD --> S3{"Applicant?"}
-    S3 -- Yes --> AM["Apply modal + message"]
-    AM --> PD["application: pending<br/>notify poster"]
-    JD --> S4{"Uploader?"}
-    S4 -- Yes --> MG["Manage (My Jobs)"]
-    M --> MG
-    PD --> DC{"Poster decision"}
-    MG --> DC
-    DC -- Accept --> AC["accepted + chat opens"]
-    DC -- Reject --> RJ["rejected + reason<br/>notify seeker"]
-    AC --> CH["Chat detail<br/>(load 30 · send · reply · read)"]
-    C --> CH
-    CH --> CP{"Uploader marks<br/>complete?"}
-    CP -- Yes --> CO["job: completed"]
-    CO --> RV["both review each other<br/>(rating + comment)"]
-    RV --> VB{"≥ 3 completed<br/>jobs?"}
-    VB -- Yes --> VBD["Verified badge<br/>auto-granted"]
-    VB -- No --> END(["App keeps running —<br/>realtime updates"])
-    VBD --> END
+    Start(["Start"]) --> Onb{"Onboarded?"}
+    Onb -- No --> Intro["Onboarding +<br/>Language Select"]
+    Intro --> Auth{"Logged in?"}
+    Onb -- Yes --> Auth
+    Auth -- No --> Login["Login / Register"]
+    Login --> Auth
+    Auth -- Yes --> Tabs["Main Tabs<br/>(Nearby · Explore · My Jobs · Chat · Profile)"]
+    Tabs --> Detail["Job Detail"]
+    Detail --> Apply{"Apply?"}
+    Apply -- No --> End1(["End"])
+    Apply -- Yes --> Pending["Application Pending<br/>(notify poster)"]
+    Pending --> Decide{"Accept?"}
+    Decide -- No --> Reject["Rejected<br/>(reason sent)"]
+    Decide -- Yes --> Chat["Realtime Chat"]
+    Chat --> Comp{"Marked<br/>Complete?"}
+    Comp -- No --> Chat
+    Comp -- Yes --> Review["Both Parties Review"]
+    Review --> Badge{"≥ 3 Completed<br/>Jobs?"}
+    Badge -- No --> End2(["End"])
+    Badge -- Yes --> Verified["Verified Badge<br/>Auto-Granted"]
+    Verified --> End3(["End"])
+    Reject --> End1
 ```
 
 ## 2.2 Class Diagram
