@@ -105,7 +105,7 @@ This chapter presents the system design of LocJobs. The design is described with
 The flowchart below models the entire application flow, from app launch to the verified-badge flow. Shape legend: `[box]` = process/action, `{diamond}` = decision, `(["stadium"])` = start/end.
 
 ```mermaid
-%%{init: {"flowchart": {"curve": "linear"}}}%%
+%%{init: {"flowchart": {"curve": "stepAfter", "nodeSpacing": 60, "rankSpacing": 60}}}%%
 flowchart TB
     Start(["Start"]) --> Onb{"Onboarded?"}
     Onb -- No --> Intro["Onboarding +<br/>Language Select"]
@@ -365,44 +365,12 @@ classDiagram
     User "1" --> "many" Report : files
     Job "1" --> "many" Report : has
     Message "0..1" --> "1" Message : reply_to
-
     AuthProvider "1" --> "1" User : session
     LocaleProvider ..> I18n : t(key)
-    ThemeProvider ..> AppTabs : theme
     FilterCountProvider ..> AppTabs : badges
-    FilterCountProvider ..> NearbyScreen : count
-    FilterCountProvider ..> ExploreScreen : count
-    FilterCountProvider ..> ChatListScreen : count
-    FilterCountProvider ..> NotificationsScreen : count
-
-    SupabaseClient --> User
-    SupabaseClient --> Job
-    SupabaseClient --> Application
-    SupabaseClient --> Message
-    SupabaseClient --> Notification
-    SupabaseClient --> SavedJob
-    SupabaseClient --> Review
-    SupabaseClient --> Report
-    NearbyScreen --> SupabaseClient : loadJobs
-    ExploreScreen --> SupabaseClient : loadJobs
-    JobDetailScreen --> SupabaseClient : load/apply/save/review
-    PostJobScreen --> SupabaseClient : rpc post_job
-    MyJobsScreen --> SupabaseClient : manage
-    ChatListScreen --> SupabaseClient : fetchAll
-    ChatDetailScreen --> SupabaseClient : messages
-    NotificationsScreen --> SupabaseClient : notifications
-    ProfileScreen --> SupabaseClient : profile + cv
-
-    PostJobScreen --> Currency : formatPrice
-    JobDetailScreen --> Currency : formatPrice
-    ExploreScreen --> Currency : formatPrice
-    ProfileScreen --> Currency : formatPrice
-    PostJobScreen --> PickerModal : currency/category
-    ExploreScreen --> PickerModal : filters
-    JobDetailScreen --> ReviewCard : reviews
-    MyJobsScreen --> ReviewCard : reviews
-    AuthProvider ..> NetworkBanner : mounts
 ```
+
+Only the domain and provider relations above are drawn as edges, to keep the lines from overlapping. Cross-cutting wiring (not drawn): all screens read/write through the **SupabaseClient** (REST · RPC · Realtime); **ThemeProvider** supplies theme styles to `AppTabs` and the screens; screens format prices with **Currency** (`formatPrice`); `PostJobScreen`/`ExploreScreen` open **PickerModal**; `JobDetailScreen`/`MyJobsScreen` render **ReviewCard**; **AuthProvider** mounts **NetworkBanner**.
 
 ## 2.3 Use-Case Diagram
 
@@ -410,39 +378,45 @@ The use-case diagram identifies three actors — **Seeker**, **Poster**, and **A
 
 ```mermaid
 flowchart LR
-    A1(["👤 Seeker"]) --> U1(("🔍 Browse / search jobs"))
-    A1 --> U2(("📝 Apply for a job"))
-    A1 --> U3(("⭐ Save a job"))
-    A1 --> U4(("💬 Chat with poster"))
-    A1 --> U5(("🗣️ Review poster"))
-    A2(["👤 Poster"]) --> U6(("📦 Post a job"))
-    A2 --> U7(("📋 Manage applicants"))
-    A2 --> U8(("✅ Accept / reject applications"))
-    A2 --> U9(("🏁 Mark job complete"))
-    A2 --> U10(("🗣️ Review seeker"))
-    A3(["👤 Any user"]) --> U11(("🔑 Register / login"))
-    A3 --> U12(("🪪 Manage profile + CV"))
-    A3 --> U13(("🔔 Receive notifications"))
-    A3 --> U14(("🚩 Report a job"))
-    A3 --> U15(("🔗 Share a job"))
-
     subgraph SYSTEM["📱 LocJobs App (system boundary)"]
-        U1
-        U2
-        U3
-        U4
-        U5
-        U6
-        U7
-        U8
-        U9
-        U10
-        U11
-        U12
-        U13
-        U14
-        U15
+        direction TB
+        subgraph G1["Seeker use cases"]
+            U1(("🔍 Browse / search jobs"))
+            U2(("📝 Apply for a job"))
+            U3(("⭐ Save a job"))
+            U4(("💬 Chat with poster"))
+            U5(("🗣️ Review poster"))
+        end
+        subgraph G2["Poster use cases"]
+            U6(("📦 Post a job"))
+            U7(("📋 Manage applicants"))
+            U8(("✅ Accept / reject applications"))
+            U9(("🏁 Mark job complete"))
+            U10(("🗣️ Review seeker"))
+        end
+        subgraph G3["Any-user use cases"]
+            U11(("🔑 Register / login"))
+            U12(("🪪 Manage profile + CV"))
+            U13(("🔔 Receive notifications"))
+            U14(("🚩 Report a job"))
+            U15(("🔗 Share a job"))
+        end
     end
+    A1(["👤 Seeker"]) --> U1
+    A1 --> U2
+    A1 --> U3
+    A1 --> U4
+    A1 --> U5
+    A2(["👤 Poster"]) --> U6
+    A2 --> U7
+    A2 --> U8
+    A2 --> U9
+    A2 --> U10
+    A3(["👤 Any user"]) --> U11
+    A3 --> U12
+    A3 --> U13
+    A3 --> U14
+    A3 --> U15
 ```
 
 ## 2.4 Sequence Diagram
