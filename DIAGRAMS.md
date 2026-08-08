@@ -327,20 +327,18 @@ Cross-cutting wiring (not drawn, to keep lines from overlapping): all screens re
 
 ## 4. Sequence Diagram
 
-Three medium diagrams cover the whole app flow: authentication, job posting + applying, and chat + completion + verified badge.
-
-### 4.1 Authentication & Onboarding
+One medium diagram covers the whole app flow in order: authentication → post a job → apply → accept/reject → chat → complete → review → verified badge.
 
 ```mermaid
 sequenceDiagram
     actor Seeker
+    actor Poster
     participant APP as RN App<br/>(screens + providers)
     participant API as Supabase Client
     participant SB as Supabase
     participant G as Google OAuth
 
-    Seeker->>APP: launch app
-    APP->>APP: onboarding + language select
+    Seeker->>APP: launch app (onboarding + language)
     APP->>API: getSession()
     alt no session
         Seeker->>APP: register / login
@@ -355,29 +353,15 @@ sequenceDiagram
         APP->>API: getUser()
         API-->>APP: user (role, verified)
     end
-    APP->>APP: navigate to Main Tabs
     APP->>API: subscribe realtime (notifications · chat)
-```
-
-### 4.2 Post, Apply & Accept/Reject
-
-```mermaid
-sequenceDiagram
-    actor Poster
-    actor Seeker
-    participant APP as RN App<br/>(screens + providers)
-    participant API as Supabase Client
-    participant SB as Supabase
 
     Poster->>APP: Post Job (price, currency, location, images)
     APP->>API: rpc post_job()
     API->>SB: insert job (status: open)
     Seeker->>APP: browse Nearby / Explore (filters, currency)
     APP->>API: query jobs + uploader verified badges
-    API-->>APP: jobs
     Seeker->>APP: Apply + message
     APP->>API: insert application (pending)
-    API->>SB: insert application
     SB-->>Poster: realtime notification (new application)
     Poster->>APP: My Jobs → Accept / Reject
     APP->>API: update application status
@@ -387,25 +371,11 @@ sequenceDiagram
     else rejected
         SB-->>Seeker: notification (rejected + reason)
     end
-```
 
-### 4.3 Chat, Complete, Review & Verified Badge
-
-```mermaid
-sequenceDiagram
-    actor Seeker
-    actor Poster
-    participant APP as RN App<br/>(screens + providers)
-    participant API as Supabase Client
-    participant SB as Supabase
-
-    Seeker->>APP: open chat (latest 30)
-    APP->>API: load messages + mark read
-    Seeker->>APP: send message / reply
-    APP->>API: insert message
+    Seeker->>APP: open chat (latest 30) + send message / reply
+    APP->>API: load messages + insert message
     SB-->>Poster: realtime message event
     Poster->>APP: mark job complete
-    APP->>API: update job (completed)
     SB-->>Seeker: notification (job completed)
     Seeker->>APP: submit review (rating + comment)
     Poster->>APP: submit review
