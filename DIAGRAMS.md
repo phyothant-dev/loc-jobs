@@ -325,29 +325,64 @@ Cross-cutting wiring (not drawn, to keep lines from overlapping): all screens re
 
 ---
 
-## 4. App State Diagram
+## 4. Sequence Diagram
 
-A simple state diagram of the whole app: onboarding → auth → browsing → applying → accepted/rejected → chat → complete → review → verified badge.
+One medium diagram covers the whole app flow in order: authentication → post a job → apply → accept/reject → chat → complete → review → verified badge.
 
 ```mermaid
-stateDiagram-v2
-    [*] --> Onboarding
-    Onboarding --> Auth: pick language (en/my)
-    Auth --> MainTabs: register / login / OAuth
-    MainTabs --> JobDetail: open a job
-    MainTabs --> PostJob: post a job
-    PostJob --> MainTabs: published (open)
-    JobDetail --> MainTabs: back
-    JobDetail --> Pending: apply
-    Pending --> Accepted: poster accepts
-    Pending --> Rejected: poster rejects
-    Rejected --> [*]
-    Accepted --> Chat: start chat
-    Chat --> Completed: mark job complete
-    Completed --> Review: both leave reviews
-    Review --> Verified: ≥ 3 completed jobs
-    Review --> [*]
-    Verified --> [*]
+sequenceDiagram
+    actor Seeker
+    actor Poster
+    participant APP as RN App<br/>(screens + providers)
+    participant API as Supabase Client
+    participant SB as Supabase
+    participant G as Google OAuth
+
+    Seeker->>APP: launch app (onboarding + language)
+    APP->>API: getSession()
+    alt no session
+        Seeker->>APP: register / login
+        APP->>API: signUp(email, pass, display_name)
+        API->>SB: create auth user + trigger → users
+        alt Google OAuth
+            APP->>API: signInWithOAuth(google)
+            API->>G: OAuth flow
+            G-->>API: callback (exp:// or locjobs://)
+        end
+    else session exists
+        APP->>API: getUser()
+        API-->>APP: user (role, verified)
+    end
+    APP->>API: subscribe realtime (notifications · chat)
+
+    Poster->>APP: Post Job (price, currency, location, images)
+    APP->>API: rpc post_job()
+    API->>SB: insert job (status: open)
+    Seeker->>APP: browse Nearby / Explore (filters, currency)
+    APP->>API: query jobs + uploader verified badges
+    Seeker->>APP: Apply + message
+    APP->>API: insert application (pending)
+    SB-->>Poster: realtime notification (new application)
+    Poster->>APP: My Jobs → Accept / Reject
+    APP->>API: update application status
+    alt accepted
+        SB-->>Seeker: notification (accepted)
+        APP->>API: subscribe chat-messages-{jobId}
+    else rejected
+        SB-->>Seeker: notification (rejected + reason)
+    end
+
+    Seeker->>APP: open chat (latest 30) + send message / reply
+    APP->>API: load messages + insert message
+    SB-->>Poster: realtime message event
+    Poster->>APP: mark job complete
+    SB-->>Seeker: notification (job completed)
+    Seeker->>APP: submit review (rating + comment)
+    Poster->>APP: submit review
+    APP->>API: insert reviews (both sides)
+    Note over SB: count completed jobs ≥ 3 → verified = true
+    SB-->>APP: realtime users.update (verified = true)
+    APP->>APP: show Verified badge
 ```
 
 ---
