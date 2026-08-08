@@ -331,8 +331,7 @@ A simple frontend-only diagram of the main flow: auth → browse → apply → a
 
 ```mermaid
 sequenceDiagram
-    actor Seeker
-    actor Poster
+    actor User
     participant OB as Onboarding & Auth
     participant TB as Main Tabs<br/>(Nearby · Explore)
     participant JD as Job Detail
@@ -340,23 +339,23 @@ sequenceDiagram
     participant CH as Chat
     participant CO as App Core<br/>(Providers · State)
 
-    Seeker->>OB: launch app
+    User->>OB: launch app
     OB->>CO: setLocale + save session
     CO-->>TB: navigate to Main Tabs
 
-    Poster->>TB: post a job (price, currency, location, images)
-    Seeker->>TB: browse + apply filters
-    Seeker->>JD: open job → Save / Share / Apply
+    User->>TB: post a job (price, currency, location, images)
+    User->>TB: browse + apply filters
+    User->>JD: open job → Save / Share / Apply
     JD->>CO: application → pending
 
-    Poster->>MJ: accept / reject (reason)
+    User->>MJ: accept / reject (reason)
     MJ->>CO: update status
     MJ->>CH: open chat
-    Seeker->>CH: send message / reply
+    User->>CH: send message / reply
 
-    Poster->>MJ: mark job complete
-    Seeker->>JD: leave review
-    Poster->>MJ: leave review
+    User->>MJ: mark job complete
+    User->>JD: leave review
+    User->>MJ: leave review
     CO->>CO: verified after 3 completed jobs
     CO-->>JD: show Verified badge
 ```
