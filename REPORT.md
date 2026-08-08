@@ -335,7 +335,7 @@ flowchart LR
 
 ## 2.4 Sequence Diagram
 
-One medium diagram covers the whole app flow in order: authentication → post a job → apply → accept/reject → chat → complete → review → verified badge.
+One diagram covers the whole app flow in order: onboarding & auth → post a job → browse / save / share → apply → accept / reject → realtime chat → complete → review → verified badge.
 
 ```mermaid
 sequenceDiagram
@@ -346,7 +346,7 @@ sequenceDiagram
     participant SB as Supabase
     participant G as Google OAuth
 
-    Seeker->>APP: launch app (onboarding + language)
+    Seeker->>APP: launch app (onboarding + language select)
     APP->>API: getSession()
     alt no session
         Seeker->>APP: register / login
@@ -356,22 +356,33 @@ sequenceDiagram
             APP->>API: signInWithOAuth(google)
             API->>G: OAuth flow
             G-->>API: callback (exp:// or locjobs://)
+            APP->>API: setSession(session)
         end
     else session exists
         APP->>API: getUser()
         API-->>APP: user (role, verified)
     end
-    APP->>API: subscribe realtime (notifications · chat)
+    APP->>APP: navigate to Main Tabs
+    APP->>API: subscribe realtime (notifications · chat unread)
 
-    Poster->>APP: Post Job (price, currency, location, images)
-    APP->>API: rpc post_job()
+    Poster->>APP: Post Job (title, category, work type, price + currency, city + map pin, images)
+    APP->>API: rpc post_job(p_currency, price, ...)
     API->>SB: insert job (status: open)
-    Seeker->>APP: browse Nearby / Explore (filters, currency)
-    APP->>API: query jobs + uploader verified badges
+    API-->>APP: job
+    APP->>APP: show in My Jobs (edit / delete)
+
+    Seeker->>APP: browse Nearby (map markers) / Explore (search + filters)
+    APP->>API: query jobs + uploader verified badges (batch)
+    API-->>APP: jobs + verified map
+    APP->>APP: formatPrice(amount, job currency)
+    Seeker->>APP: tap Save / Share
+    APP->>API: saved_jobs upsert · deep link locjobs://job/{id}
     Seeker->>APP: Apply + message
-    APP->>API: insert application (pending)
+    APP->>API: insert application (status: pending)
+    API->>SB: insert application
     SB-->>Poster: realtime notification (new application)
-    Poster->>APP: My Jobs → Accept / Reject
+    Poster->>APP: My Jobs → applicant list
+    Poster->>APP: Accept / Reject (reason)
     APP->>API: update application status
     alt accepted
         SB-->>Seeker: notification (accepted)
@@ -380,17 +391,28 @@ sequenceDiagram
         SB-->>Seeker: notification (rejected + reason)
     end
 
-    Seeker->>APP: open chat (latest 30) + send message / reply
-    APP->>API: load messages + insert message
+    Seeker->>APP: Chat tab → conversation
+    APP->>API: query conversations (latest 300)
+    Seeker->>APP: open chat detail
+    APP->>API: loadPage (latest 30) + mark incoming read
+    Seeker->>APP: send message / reply (long-press)
+    APP->>API: insert message (reply_to_id)
+    API->>SB: insert message
     SB-->>Poster: realtime message event
+    APP->>APP: render bubbles + date separators + "Seen" receipts
+    Seeker->>APP: scroll up → load earlier pages (30)
+
     Poster->>APP: mark job complete
+    APP->>API: update job (completed)
     SB-->>Seeker: notification (job completed)
-    Seeker->>APP: submit review (rating + comment)
-    Poster->>APP: submit review
+    Seeker->>APP: open job detail → submit review (rating + comment)
+    Poster->>APP: My Jobs → review seeker
     APP->>API: insert reviews (both sides)
-    Note over SB: count completed jobs ≥ 3 → verified = true
+    Note over SB: trigger: count completed jobs ≥ 3 → verified = true
     SB-->>APP: realtime users.update (verified = true)
-    APP->>APP: show Verified badge
+    APP->>APP: show Verified badge (profile + job detail)
+    Seeker->>APP: edit profile / upload CV
+    APP->>API: update users (cv_url, bio)
 ```
 
 ## 2.5 Entity Relationship Diagram
