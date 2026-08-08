@@ -335,7 +335,7 @@ flowchart LR
 
 ## 2.4 Sequence Diagram
 
-A simple frontend-only diagram of the main flow: auth → browse → apply → accept / reject → chat → complete → review → verified badge. No Supabase shown.
+A frontend-only diagram of the whole app flow with the main steps and screens: onboarding & auth → post a job → browse / save / share → apply → accept / reject → chat → complete → review → verified badge. One user, no Supabase shown.
 
 ```mermaid
 sequenceDiagram
@@ -343,29 +343,63 @@ sequenceDiagram
     participant OB as Onboarding & Auth
     participant TB as Main Tabs<br/>(Nearby · Explore)
     participant JD as Job Detail
+    participant PJ as Post Job
     participant MJ as My Jobs
     participant CH as Chat
-    participant CO as App Core<br/>(Providers · State)
+    participant PF as Profile
+    participant CO as App Core<br/>(Providers · Router · State)
 
     User->>OB: launch app
-    OB->>CO: setLocale + save session
+    OB->>CO: getSession() (restored auth)
+    alt signed out
+        User->>OB: register / login (or Google OAuth)
+        OB->>CO: save session (role, verified)
+    else signed in
+        CO-->>OB: session user
+    end
+    OB->>CO: setLocale(locale) → relabel screens (en / my)
     CO-->>TB: navigate to Main Tabs
+    TB->>CO: FilterCount badges (notifications · chat unread)
 
-    User->>TB: post a job (price, currency, location, images)
-    User->>TB: browse + apply filters
-    User->>JD: open job → Save / Share / Apply
+    User->>PJ: fill title, category, work type, price and currency
+    User->>PJ: pick city / region and map pin (lat / lng)
+    User->>PJ: pick images (image_urls)
+    User->>PJ: tap submit
+    PJ->>CO: submit job
+    CO-->>MJ: job added (edit / delete)
+
+    User->>TB: browse Nearby (map markers) / Explore (search + filters)
+    TB->>CO: apply filters → refresh list and tab badge
+    User->>TB: tap job
+    TB->>JD: open job detail
+    JD->>CO: load job + uploader verified badge
+    User->>JD: tap Save / Share
+    JD->>CO: toggle saved_jobs · share deep link
+    User->>JD: write message + Apply
     JD->>CO: application → pending
 
-    User->>MJ: accept / reject (reason)
-    MJ->>CO: update status
+    User->>MJ: open applicant list
+    User->>MJ: Accept (chat opens) / Reject (reason)
+    MJ->>CO: update application status
     MJ->>CH: open chat
-    User->>CH: send message / reply
+
+    User->>CH: open conversation
+    CH->>CO: load latest 30 messages (local cache)
+    CH->>CO: mark incoming as read → "Seen"
+    User->>CH: send message / long-press → Reply
+    CH->>CO: append message (reply_to_id) + render bubble
+    User->>CH: scroll up → load earlier pages (30)
 
     User->>MJ: mark job complete
-    User->>JD: leave review
-    User->>MJ: leave review
+    MJ->>CO: job status → completed
+    User->>JD: rating 1-5 and comment → leave review
+    JD->>CO: save review
+    User->>MJ: review seeker
+    MJ->>CO: save review
     CO->>CO: verified after 3 completed jobs
-    CO-->>JD: show Verified badge
+    CO-->>PF: show Verified badge (profile + job detail)
+    User->>PF: edit profile / upload CV
+    PF->>CO: update profile (cv_url, bio)
 ```
 
 ## 2.5 Entity Relationship Diagram
