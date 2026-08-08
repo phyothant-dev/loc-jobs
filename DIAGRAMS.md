@@ -327,53 +327,63 @@ Cross-cutting wiring (not drawn, to keep lines from overlapping): all screens re
 
 ## 4. Sequence Diagram
 
-One diagram covers the whole frontend app flow in order: onboarding & auth → post a job → browse / save / share → apply → accept / reject → chat → complete → review → verified badge. All interactions happen inside the React Native app (screens, providers and local state); no Supabase shown.
+One diagram covers the whole frontend app flow in order: onboarding & auth → post a job → browse / save / share → apply → accept / reject → chat → complete → review → verified badge. Every screen is its own lifeline; all interactions stay inside the React Native app — no Supabase shown.
 
 ```mermaid
 sequenceDiagram
     actor Seeker
     actor Poster
-    participant UI as UI Screens<br/>(Onboarding · Auth · Tabs · Job Detail · Post · My Jobs · Chat · Profile)
-    participant ST as App State<br/>(Auth · Locale · FilterCount · local data)
+    participant OB as Onboarding
+    participant AU as Auth Screens<br/>(login · register · OAuth)
+    participant TB as Main Tabs<br/>(Nearby · Explore)
+    participant JD as Job Detail
+    participant PJ as Post Job
+    participant MJ as My Jobs
+    participant CH as Chat
+    participant PF as Profile
+    participant CO as App Core<br/>(Providers · Router · State)
 
-    Seeker->>UI: launch app
-    UI->>ST: getSession() (restored auth)
-    alt signed out
-        UI->>UI: onboarding + language select
-        Seeker->>UI: register / login (or Google OAuth)
-        ST->>ST: save session (role, verified)
-    else signed in
-        ST-->>UI: session user
-    end
-    UI->>ST: navigate to Main Tabs
-    UI->>ST: FilterCount badges (notifications · chat unread)
+    Seeker->>OB: launch app
+    OB->>CO: setLocale(locale) → relabel screens
+    OB->>AU: open login / register
+    Seeker->>AU: login / register (or Google OAuth)
+    AU->>CO: save session (role, verified)
+    CO-->>TB: navigate to Main Tabs
 
-    Poster->>UI: Post Job (title, category, price + currency, map pin, images)
-    UI->>ST: add job → My Jobs state
-    Seeker->>UI: browse Nearby (map markers) / Explore (search + filters)
-    UI->>ST: apply filters → list + tab badge
-    Seeker->>UI: tap Save / Share
-    Seeker->>UI: Apply + message
-    UI->>ST: application → pending (My Jobs)
-    Poster->>UI: My Jobs → Accept / Reject (reason)
-    UI->>ST: update application status
+    Poster->>PJ: fill title, category, price + currency, map pin, images
+    PJ->>CO: submit job
+    CO-->>MJ: job added (edit / delete)
+
+    Seeker->>TB: browse Nearby (map markers) / Explore (filters)
+    TB->>CO: apply filters → tab badge
+    TB->>JD: open job detail
+    Seeker->>JD: Save / Share
+    Seeker->>JD: Apply + message
+    JD->>CO: application → pending
+
+    Poster->>MJ: open applicant list
+    Poster->>MJ: Accept / Reject (reason)
+    MJ->>CO: update application status
     alt accepted
-        UI->>UI: open Chat screen
+        MJ->>CH: open chat
     else rejected
-        UI->>UI: show rejection + reason
+        MJ->>MJ: show rejection + reason
     end
 
-    Seeker->>UI: Chat tab → conversation
-    UI->>ST: load recent messages (local cache)
-    Seeker->>UI: send message / reply (long-press)
-    UI->>ST: append message + render bubble + seen status
-    Poster->>UI: mark job complete
-    UI->>ST: job status → completed
-    Seeker->>UI: submit review (rating + comment)
-    Poster->>UI: submit review
-    UI->>ST: save reviews, verified after 3 completed jobs
-    UI->>UI: show Verified badge (profile + job detail)
-    Seeker->>UI: edit profile / upload CV
+    Seeker->>CH: open conversation
+    CH->>CO: load recent messages (local cache)
+    Seeker->>CH: send message / reply
+    CH->>CO: append + render bubble + seen
+    Poster->>MJ: mark job complete
+    MJ->>CO: job status → completed
+    Seeker->>JD: submit review (rating + comment)
+    JD->>CO: save review
+    Poster->>MJ: review seeker
+    MJ->>CO: save review
+    CO->>CO: verified after 3 completed jobs
+    CO-->>PF: show Verified badge
+    Seeker->>PF: edit profile / upload CV
+    PF->>CO: update profile
 ```
 
 ---
