@@ -327,84 +327,53 @@ Cross-cutting wiring (not drawn, to keep lines from overlapping): all screens re
 
 ## 4. Sequence Diagram
 
-One diagram covers the whole app flow in order: onboarding & auth → post a job → browse / save / share → apply → accept / reject → realtime chat → complete → review → verified badge.
+One diagram covers the whole frontend app flow in order: onboarding & auth → post a job → browse / save / share → apply → accept / reject → chat → complete → review → verified badge. All interactions happen inside the React Native app (screens, providers and local state); no Supabase shown.
 
 ```mermaid
 sequenceDiagram
     actor Seeker
     actor Poster
-    participant APP as RN App<br/>(screens + providers)
-    participant API as Supabase Client
-    participant SB as Supabase
-    participant G as Google OAuth
+    participant UI as UI Screens<br/>(Onboarding · Auth · Tabs · Job Detail · Post · My Jobs · Chat · Profile)
+    participant ST as App State<br/>(Auth · Locale · FilterCount · local data)
 
-    Seeker->>APP: launch app (onboarding + language select)
-    APP->>API: getSession()
-    alt no session
-        Seeker->>APP: register / login
-        APP->>API: signUp(email, pass, display_name)
-        API->>SB: create auth user + trigger → users
-        alt Google OAuth
-            APP->>API: signInWithOAuth(google)
-            API->>G: OAuth flow
-            G-->>API: callback (exp:// or locjobs://)
-            APP->>API: setSession(session)
-        end
-    else session exists
-        APP->>API: getUser()
-        API-->>APP: user (role, verified)
+    Seeker->>UI: launch app
+    UI->>ST: getSession() (restored auth)
+    alt signed out
+        UI->>UI: onboarding + language select
+        Seeker->>UI: register / login (or Google OAuth)
+        ST->>ST: save session (role, verified)
+    else signed in
+        ST-->>UI: session user
     end
-    APP->>APP: navigate to Main Tabs
-    APP->>API: subscribe realtime (notifications · chat unread)
+    UI->>ST: navigate to Main Tabs
+    UI->>ST: FilterCount badges (notifications · chat unread)
 
-    Poster->>APP: Post Job (title, category, work type, price + currency, city + map pin, images)
-    APP->>API: rpc post_job(p_currency, price, ...)
-    API->>SB: insert job (status: open)
-    API-->>APP: job
-    APP->>APP: show in My Jobs (edit / delete)
-
-    Seeker->>APP: browse Nearby (map markers) / Explore (search + filters)
-    APP->>API: query jobs + uploader verified badges (batch)
-    API-->>APP: jobs + verified map
-    APP->>APP: formatPrice(amount, job currency)
-    Seeker->>APP: tap Save / Share
-    APP->>API: saved_jobs upsert · deep link locjobs://job/{id}
-    Seeker->>APP: Apply + message
-    APP->>API: insert application (status: pending)
-    API->>SB: insert application
-    SB-->>Poster: realtime notification (new application)
-    Poster->>APP: My Jobs → applicant list
-    Poster->>APP: Accept / Reject (reason)
-    APP->>API: update application status
+    Poster->>UI: Post Job (title, category, price + currency, map pin, images)
+    UI->>ST: add job → My Jobs state
+    Seeker->>UI: browse Nearby (map markers) / Explore (search + filters)
+    UI->>ST: apply filters → list + tab badge
+    Seeker->>UI: tap Save / Share
+    Seeker->>UI: Apply + message
+    UI->>ST: application → pending (My Jobs)
+    Poster->>UI: My Jobs → Accept / Reject (reason)
+    UI->>ST: update application status
     alt accepted
-        SB-->>Seeker: notification (accepted)
-        APP->>API: subscribe chat-messages-{jobId}
+        UI->>UI: open Chat screen
     else rejected
-        SB-->>Seeker: notification (rejected + reason)
+        UI->>UI: show rejection + reason
     end
 
-    Seeker->>APP: Chat tab → conversation
-    APP->>API: query conversations (latest 300)
-    Seeker->>APP: open chat detail
-    APP->>API: loadPage (latest 30) + mark incoming read
-    Seeker->>APP: send message / reply (long-press)
-    APP->>API: insert message (reply_to_id)
-    API->>SB: insert message
-    SB-->>Poster: realtime message event
-    APP->>APP: render bubbles + date separators + "Seen" receipts
-    Seeker->>APP: scroll up → load earlier pages (30)
-
-    Poster->>APP: mark job complete
-    APP->>API: update job (completed)
-    SB-->>Seeker: notification (job completed)
-    Seeker->>APP: open job detail → submit review (rating + comment)
-    Poster->>APP: My Jobs → review seeker
-    APP->>API: insert reviews (both sides)
-    Note over SB: trigger: count completed jobs ≥ 3 → verified = true
-    SB-->>APP: realtime users.update (verified = true)
-    APP->>APP: show Verified badge (profile + job detail)
-    Seeker->>APP: edit profile / upload CV
-    APP->>API: update users (cv_url, bio)
+    Seeker->>UI: Chat tab → conversation
+    UI->>ST: load recent messages (local cache)
+    Seeker->>UI: send message / reply (long-press)
+    UI->>ST: append message + render bubble + seen status
+    Poster->>UI: mark job complete
+    UI->>ST: job status → completed
+    Seeker->>UI: submit review (rating + comment)
+    Poster->>UI: submit review
+    UI->>ST: save reviews, verified after 3 completed jobs
+    UI->>UI: show Verified badge (profile + job detail)
+    Seeker->>UI: edit profile / upload CV
 ```
 
 ---
