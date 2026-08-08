@@ -327,63 +327,38 @@ Cross-cutting wiring (not drawn, to keep lines from overlapping): all screens re
 
 ## 4. Sequence Diagram
 
-One diagram covers the whole frontend app flow in order: onboarding & auth → post a job → browse / save / share → apply → accept / reject → chat → complete → review → verified badge. Every screen is its own lifeline; all interactions stay inside the React Native app — no Supabase shown.
+A simple frontend-only diagram of the main flow: auth → browse → apply → accept / reject → chat → complete → review → verified badge. No Supabase shown.
 
 ```mermaid
 sequenceDiagram
     actor Seeker
     actor Poster
-    participant OB as Onboarding
-    participant AU as Auth Screens<br/>(login · register · OAuth)
+    participant OB as Onboarding & Auth
     participant TB as Main Tabs<br/>(Nearby · Explore)
     participant JD as Job Detail
-    participant PJ as Post Job
     participant MJ as My Jobs
     participant CH as Chat
-    participant PF as Profile
-    participant CO as App Core<br/>(Providers · Router · State)
+    participant CO as App Core<br/>(Providers · State)
 
     Seeker->>OB: launch app
-    OB->>CO: setLocale(locale) → relabel screens
-    OB->>AU: open login / register
-    Seeker->>AU: login / register (or Google OAuth)
-    AU->>CO: save session (role, verified)
+    OB->>CO: setLocale + save session
     CO-->>TB: navigate to Main Tabs
 
-    Poster->>PJ: fill title, category, price + currency, map pin, images
-    PJ->>CO: submit job
-    CO-->>MJ: job added (edit / delete)
-
-    Seeker->>TB: browse Nearby (map markers) / Explore (filters)
-    TB->>CO: apply filters → tab badge
-    TB->>JD: open job detail
-    Seeker->>JD: Save / Share
-    Seeker->>JD: Apply + message
+    Poster->>TB: post a job (price, currency, location, images)
+    Seeker->>TB: browse + apply filters
+    Seeker->>JD: open job → Save / Share / Apply
     JD->>CO: application → pending
 
-    Poster->>MJ: open applicant list
-    Poster->>MJ: Accept / Reject (reason)
-    MJ->>CO: update application status
-    alt accepted
-        MJ->>CH: open chat
-    else rejected
-        MJ->>MJ: show rejection + reason
-    end
-
-    Seeker->>CH: open conversation
-    CH->>CO: load recent messages (local cache)
+    Poster->>MJ: accept / reject (reason)
+    MJ->>CO: update status
+    MJ->>CH: open chat
     Seeker->>CH: send message / reply
-    CH->>CO: append + render bubble + seen
+
     Poster->>MJ: mark job complete
-    MJ->>CO: job status → completed
-    Seeker->>JD: submit review (rating + comment)
-    JD->>CO: save review
-    Poster->>MJ: review seeker
-    MJ->>CO: save review
+    Seeker->>JD: leave review
+    Poster->>MJ: leave review
     CO->>CO: verified after 3 completed jobs
-    CO-->>PF: show Verified badge
-    Seeker->>PF: edit profile / upload CV
-    PF->>CO: update profile
+    CO-->>JD: show Verified badge
 ```
 
 ---
