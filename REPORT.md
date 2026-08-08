@@ -117,17 +117,22 @@ flowchart TB
     Tabs --> Detail["Job Detail"]
     Detail --> Post{"Post or<br/>Apply?"}
     Post -- Post --> PostJob["Post Job<br/>(price · currency · location)"]
+    PostJob -->|insert job| DB[("Database<br/>(Supabase/Postgres)")]
     PostJob --> Pending["Application Pending<br/>(notify poster)"]
     Post -- Apply --> Pending
+    Pending -->|insert application| DB
     Pending --> Decide{"Accept?"}
     Decide -- No --> Reject["Rejected<br/>(reason sent)"]
     Decide -- Yes --> Chat["Realtime Chat"]
+    Chat -->|insert message| DB
     Chat --> Comp{"Marked<br/>Complete?"}
     Comp -- No --> Chat
     Comp -- Yes --> Review["Both Parties Review"]
+    Review -->|insert review| DB
     Review --> Badge{"≥ 3 Completed<br/>Jobs?"}
     Badge -- No --> End1(["End"])
     Badge -- Yes --> Verified["Verified Badge<br/>Auto-Granted"]
+    Verified -->|update verified| DB
     Verified --> End2(["End"])
     Reject --> End1
 ```
@@ -237,12 +242,17 @@ classDiagram
         +loadPage()
         +sendMessage()
     }
-    Job --> User : uploader
-    Application --> Job
-    Application --> User
-    Message --> Job
-    Review --> Job
-    AuthProvider --> User
+    User "1" --> "many" Job : uploads
+    Job "1" --> "many" Application : has
+    User "1" --> "many" Application : applies
+    Job "1" --> "many" Message : has
+    User "1" --> "many" Message : sends
+    User "1" --> "many" Message : receives
+    Job "1" --> "many" Review : has
+    User "1" --> "many" Review : as reviewer
+    User "1" --> "many" Review : as reviewee
+    Message "0..1" --> "1" Message : reply_to
+    AuthProvider "1" --> "1" User : session
     LocaleProvider ..> AuthProvider : labels UI
     FilterCountProvider ..> NearbyScreen
     FilterCountProvider ..> ExploreScreen
