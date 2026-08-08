@@ -164,125 +164,271 @@ erDiagram
 
 ---
 
-## 3. Class Diagram (Frontend + Domain)
+## 3. Class Diagram — Full App Coverage
+
+Covers the whole app: all 8 domain entities, the context providers, the services (Supabase client, currency, i18n), every screen, and the shared components — grouped into namespaces.
 
 ```mermaid
 classDiagram
-    class Job {
-        +string id
-        +string uploader_id
-        +string title
-        +string description
-        +string work_type
-        +string status
-        +number price
-        +string currency
-        +number salary_min
-        +number salary_max
-        +string salary_period
-        +string category
-        +string city
-        +string region
-        +number lat
-        +number lng
-        +string[] image_urls
-        +number vacancies
-        +boolean deleted
+    namespace Domain {
+        class User {
+            +uuid id
+            +string display_name
+            +user_role role
+            +string phone
+            +string city
+            +string region
+            +string avatar_url
+            +boolean verified
+            +string bio
+            +string cv_url
+            +string cv_name
+        }
+        class Job {
+            +uuid id
+            +uuid uploader_id
+            +string title
+            +string description
+            +work_type work_type
+            +job_status status
+            +number price
+            +string currency
+            +number salary_min
+            +number salary_max
+            +string salary_period
+            +string category
+            +string employment_type
+            +string city
+            +string region
+            +number lat
+            +number lng
+            +string[] image_urls
+            +number vacancies
+            +boolean deleted
+        }
+        class Application {
+            +uuid id
+            +uuid job_id
+            +uuid searcher_id
+            +application_status status
+            +string message
+            +string reject_reason
+        }
+        class Message {
+            +uuid id
+            +uuid job_id
+            +uuid sender_id
+            +uuid receiver_id
+            +string content
+            +string image_url
+            +uuid reply_to_id
+            +datetime read_at
+            +boolean deleted
+        }
+        class Notification {
+            +uuid id
+            +uuid user_id
+            +string type
+            +string title
+            +string body
+            +jsonb data
+            +boolean read
+        }
+        class SavedJob {
+            +uuid id
+            +uuid user_id
+            +uuid job_id
+        }
+        class Review {
+            +uuid id
+            +uuid job_id
+            +uuid reviewer_id
+            +uuid reviewee_id
+            +integer rating
+            +string comment
+        }
+        class Report {
+            +uuid id
+            +uuid job_id
+            +uuid reporter_id
+            +string reason
+        }
     }
-    class User {
-        +string id
-        +string display_name
-        +string role
-        +string phone
-        +string city
-        +string region
-        +string avatar_url
-        +boolean verified
-        +string bio
-        +string cv_url
-        +string cv_name
+    namespace Contexts {
+        class AuthProvider {
+            -User? user
+            +signInWithPassword(email, password)
+            +signUp(email, password, display_name)
+            +signInWithGoogle()
+            +signOut()
+        }
+        class LocaleProvider {
+            -string locale
+            +t(key) string
+            +setLocale(locale)
+        }
+        class ThemeProvider {
+            -string theme
+            +toggleTheme()
+        }
+        class FilterCountProvider {
+            -Map counts
+            +setCount(tab, count)
+        }
     }
-    class Application {
-        +string id
-        +string job_id
-        +string searcher_id
-        +string status
-        +string message
-        +string reject_reason
+    namespace Services {
+        class SupabaseClient {
+            -SupabaseClient client
+            +from(table) Query
+            +rpc(fn, params)
+            +channel(name) Channel
+            +auth Auth
+            +storage Storage
+        }
+        class Currency {
+            +string[] CURRENCIES
+            +Map CURRENCY_SYMBOLS
+            +formatPrice(amount, currency) string
+            +currencyLabel(code) string
+        }
+        class I18n {
+            -Map en
+            -Map my
+            +t(key, locale) string
+        }
     }
-    class Message {
-        +string id
-        +string job_id
-        +string sender_id
-        +string receiver_id
-        +string content
-        +string image_url
-        +string reply_to_id
-        +datetime read_at
+    namespace Screens {
+        class OnboardingScreen {
+            +selectLanguage(locale)
+        }
+        class LoginScreen {
+            +login(email, password)
+        }
+        class RegisterScreen {
+            +register(email, password, display_name)
+        }
+        class NearbyScreen {
+            +loadJobs()
+            +setCount(tab, count)
+        }
+        class ExploreScreen {
+            +loadJobs(filters)
+            +jobMatchesPriceFilter(job)
+            +setCount(tab, count)
+        }
+        class JobDetailScreen {
+            +loadJob(id)
+            +apply(message)
+            +toggleSave()
+            +handleShare()
+            +openReviewModal()
+            +submitReview(rating, comment)
+        }
+        class PostJobScreen {
+            +submit(params)
+            +formatPricePreview()
+        }
+        class MyJobsScreen {
+            +loadJobs()
+            +acceptApplication(id)
+            +rejectApplication(id, reason)
+            +complete(id)
+            +submitReview(rating, comment)
+        }
+        class ChatListScreen {
+            +fetchAll()
+            +handlePress(conversation)
+        }
+        class ChatDetailScreen {
+            +loadPage()
+            +sendMessage(content, replyToId)
+            +markRead()
+        }
+        class NotificationsScreen {
+            +load()
+            +markRead(id)
+        }
+        class ProfileScreen {
+            +saveProfile()
+            +uploadCV(file)
+            +signOut()
+        }
+        class SupportScreen {
+            +toggleFaq(index)
+        }
+        class UserJobsScreen {
+            +loadUserJobs(id)
+        }
     }
-    class Review {
-        +string id
-        +string job_id
-        +string reviewer_id
-        +string reviewee_id
-        +number rating
-        +string comment
+    namespace Components {
+        class AppTabs {
+            +renderBadge(tab, count)
+        }
+        class NetworkBanner {
+            -boolean isOffline
+            +listenNetInfo()
+        }
+        class ReviewCard {
+            +renderReview(review)
+        }
+        class PickerModal {
+            -string[] options
+            +onSelect(value)
+        }
     }
-    class AuthProvider {
-        -User? user
-        +signInWithPassword(email, password)
-        +signUp(email, password, display_name)
-        +signInWithGoogle()
-        +signOut()
-    }
-    class LocaleProvider {
-        -string locale
-        +t(key) string
-        +setLocale(locale)
-    }
-    class ThemeProvider {
-        -string theme
-        +toggleTheme()
-    }
-    class FilterCountProvider {
-        -Map counts
-        +setCount(tab, count)
-    }
-    class NearbyScreen {
-        +loadJobs()
-        +setCount(tab, count)
-    }
-    class ExploreScreen {
-        +loadJobs(filters)
-        +jobMatchesPriceFilter(job)
-    }
-    class JobDetailScreen {
-        +openReviewModal()
-        +handleShare()
-    }
-    class PostJobScreen {
-        +submit(params)
-    }
-    class ChatScreen {
-        +loadPage()
-        +sendMessage()
-    }
+
     User "1" --> "many" Job : uploads
-    Job "1" --> "many" Application : has
     User "1" --> "many" Application : applies
+    Job "1" --> "many" Application : has
     Job "1" --> "many" Message : has
     User "1" --> "many" Message : sends
     User "1" --> "many" Message : receives
-    Job "1" --> "many" Review : has
+    User "1" --> "many" Notification : receives
+    User "1" --> "many" SavedJob : saves
+    Job "1" --> "many" SavedJob : has
     User "1" --> "many" Review : as reviewer
     User "1" --> "many" Review : as reviewee
+    Job "1" --> "many" Review : has
+    User "1" --> "many" Report : files
+    Job "1" --> "many" Report : has
     Message "0..1" --> "1" Message : reply_to
+
     AuthProvider "1" --> "1" User : session
-    LocaleProvider ..> AuthProvider : labels UI
-    FilterCountProvider ..> NearbyScreen
-    FilterCountProvider ..> ExploreScreen
-    JobDetailScreen --> PostJobScreen : manage
-    ChatScreen --> Job
+    LocaleProvider ..> I18n : t(key)
+    ThemeProvider ..> AppTabs : theme
+    FilterCountProvider ..> AppTabs : badges
+    FilterCountProvider ..> NearbyScreen : count
+    FilterCountProvider ..> ExploreScreen : count
+    FilterCountProvider ..> ChatListScreen : count
+    FilterCountProvider ..> NotificationsScreen : count
+
+    SupabaseClient --> User
+    SupabaseClient --> Job
+    SupabaseClient --> Application
+    SupabaseClient --> Message
+    SupabaseClient --> Notification
+    SupabaseClient --> SavedJob
+    SupabaseClient --> Review
+    SupabaseClient --> Report
+    NearbyScreen --> SupabaseClient : loadJobs
+    ExploreScreen --> SupabaseClient : loadJobs
+    JobDetailScreen --> SupabaseClient : load/apply/save/review
+    PostJobScreen --> SupabaseClient : rpc post_job
+    MyJobsScreen --> SupabaseClient : manage
+    ChatListScreen --> SupabaseClient : fetchAll
+    ChatDetailScreen --> SupabaseClient : messages
+    NotificationsScreen --> SupabaseClient : notifications
+    ProfileScreen --> SupabaseClient : profile + cv
+
+    PostJobScreen --> Currency : formatPrice
+    JobDetailScreen --> Currency : formatPrice
+    ExploreScreen --> Currency : formatPrice
+    ProfileScreen --> Currency : formatPrice
+    PostJobScreen --> PickerModal : currency/category
+    ExploreScreen --> PickerModal : filters
+    JobDetailScreen --> ReviewCard : reviews
+    MyJobsScreen --> ReviewCard : reviews
+    AuthProvider ..> NetworkBanner : mounts
 ```
 
 ---
